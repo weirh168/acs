@@ -92,6 +92,8 @@ fun PhoneOpsScreen(
     onBack: () -> Unit,
 ) {
     val check = Prerequisites.check(status, hasMainModel = true)
+    // 降级开关开着时,状态区要明说此刻用的是哪块屏
+    val degradedOn = FeatureFlags.get(LocalContext.current).degradedScreen()
     var confirmUnpair by remember { mutableStateOf(false) }
     PageScaffold(stringResource(R.string.settings_phone_ops), onBack) {
         GroupLabel(stringResource(R.string.settings_status))
@@ -112,6 +114,19 @@ fun PhoneOpsScreen(
                     else PhoneSetupCopy.statusLine(helper, status.usbDebugging, status.rootStart),
                     onClick = { onProblem(Problem.PhoneHelper(helper)) },
                 ) { if (reconnect) RowValue(PhoneSetupCopy.RECONNECT, ValueTone.Link) else RowValue(hText, hTone) }
+                // 降级模式开着时明说此刻用的是哪块屏:助手没在跑就是真的在读用户主屏
+                if (degradedOn) {
+                    val live = helper != BuiltinShellStatus.Running
+                    ListRow(
+                        MikaIcons.Hand, stringResource(R.string.settings_degraded_screen),
+                        if (live) PhoneSetupCopy.DEGRADED_NOW else PhoneSetupCopy.DEGRADED_STANDBY,
+                    ) {
+                        RowValue(
+                            stringResource(if (live) R.string.phone_degraded_live else R.string.phone_degraded_idle),
+                            if (live) ValueTone.Warn else ValueTone.Plain,
+                        )
+                    }
+                }
             }
             val tooOld = status.sdkInt < Prerequisites.MIN_SDK
             val focusWarning = Problem.FocusMayLeak in check.problems

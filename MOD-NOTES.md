@@ -129,3 +129,25 @@ git rebase upstream/main        # 或 git merge upstream/main
 正常路径（内置助手连着、走虚拟屏）跑了一次 `phone_observe`：结果里**没有** `degraded` 字段，
 说明标记不会误报。降级路径本身需要断开内置助手才能触发，会牵动刚配好的连接，
 这一轮没有在真机上强行制造，属单测覆盖。
+
+## 降级模式的界面状态：手机操作页说清"此刻用哪块屏"（2026-11-15 22:20）
+
+状态行加在用户真正会看的那一页：`SettingsSubPages.PhoneOpsScreen`（设置 → 手机操作）。
+
+| 情况 | 显示 |
+|---|---|
+| 降级开关关着 | 不显示（和以前一样） |
+| 开关开着 + 内置助手在跑 | 行标题「没有内置助手时读我的主屏」，副标题「内置助手已连接;断开时会改用你的主屏继续(降级模式)」，右侧胶囊 **备用**（灰） |
+| 开关开着 + 助手没在跑 | 副标题「当前:正在用你的主屏(降级模式)」，胶囊 **正在使用**（警示色） |
+
+### 真机验证
+
+- 开关开着、助手已连接:行出现，「备用」+ 那句说明（截图）
+- 开关改成 false 后重开 App:该行**不再出现**（dump 里搜不到该文案）
+- 验完把开关恢复成原来的 true
+
+### 文案
+
+`values/strings_phone.xml` 与 `values-zh/strings_phone.xml` 各加 4 条：
+`phone_degraded_now` / `phone_degraded_standby` / `phone_degraded_live` / `phone_degraded_idle`。
+其它语言没有对应翻译时回落到默认英文。

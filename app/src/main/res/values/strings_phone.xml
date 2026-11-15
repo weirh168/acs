@@ -57,6 +57,10 @@
     <string name="phone_port_invalid">That number isn’t right</string>
     <string name="phone_working">Pairing and connecting, just a few seconds</string>
     <string name="phone_success">Phone control is set up</string>
+    <string name="phone_degraded_now">Now: working on your own screen (degraded mode)</string>
+    <string name="phone_degraded_standby">The helper is connected now. If it drops, ACS keeps working through your own screen (degraded mode).</string>
+    <string name="phone_degraded_live">In use</string>
+    <string name="phone_degraded_idle">Standby</string>
     <string name="phone_success_note">Keep USB debugging on. After a restart, turn on Wireless debugging and ACS reconnects automatically.</string>
     <string name="phone_start_using">Start using ACS</string>
     <string name="done">Done</string>
