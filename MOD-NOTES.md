@@ -151,3 +151,35 @@ git rebase upstream/main        # 或 git merge upstream/main
 `values/strings_phone.xml` 与 `values-zh/strings_phone.xml` 各加 4 条：
 `phone_degraded_now` / `phone_degraded_standby` / `phone_degraded_live` / `phone_degraded_idle`。
 其它语言没有对应翻译时回落到默认英文。
+
+## 降级模式两件收尾的事（2026-11-15 22:35）
+
+### 一、进入条件更友好
+
+助手没连上时以前只有一句「手机操作还没准备好,去设置」。现在按"离能用差多远"分档
+（判断抽到 `core/cap/phone/PhoneReadiness.kt`,可单测）：
+
+| 情况 | 提示 |
+|---|---|
+| 助手连着 | 不提示 |
+| 助手没连 + 无障碍在 + 开关没开 | **新文案**：直接指出打开「设置 → 手机操作 → 没有内置助手时读我的主屏」就能接着做 |
+| 其余 | 原来的「去设置手机操作」 |
+
+### 二、用户在场时先让一让
+
+降级模式我们和用户共用一块屏。现在动手前先看用户最后一次碰屏的时间：
+
+- `UserPresence.awaitIdle`：用户刚碰过屏就等到安静 1.2 秒，最多等 3 秒，到点照样动手（只等、不抢）
+- 触摸信号来自无障碍服务的 `TYPE_TOUCH_INTERACTION_START/END`（服务配置本来就是 `typeAllMask`）
+- 我们自己的手势也会产生触摸事件，所以注入手势前先 `markSelfInput`，窗口内的触摸不算用户的
+- 播放了等待时，动作结果里带一句说明（`Waited 450ms for you to stop touching the screen before acting.`），模型知道这一步为什么慢
+- 覆盖：点、双击、滑动、节点滚动
+
+单测：`UserPresenceTest` 8 例（不用等/等满/只剩一点/时钟推进/上限到点放弃/中途又碰了重新计时）、
+`PhoneReadinessTest` 4 例。
+
+### 真机验证的限制（如实记）
+
+这两项都要在**降级模式真的生效**时才有意义，也就是内置助手断开。断开助手会牵动刚配好的连接
+（可能要重新配对），这一轮没有在真机上强行制造，属单测覆盖。
+装好的包已经在手机上、开关也开着，等哪次助手自然断开时会走这条路径。

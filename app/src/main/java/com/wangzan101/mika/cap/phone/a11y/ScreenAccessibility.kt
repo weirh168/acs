@@ -69,6 +69,14 @@ open class ScreenAccessibility : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         if (instance.value !== this) return
+        // 用户自己在碰屏幕(降级模式下我们和他共用一块屏,动手前要让一让)。
+        // 我们自己的手势也会产生触摸事件,所以先记下自己的动作窗口,窗口里的事件不算用户碰的。
+        if (event.eventType == AccessibilityEvent.TYPE_TOUCH_INTERACTION_START ||
+            event.eventType == AccessibilityEvent.TYPE_TOUCH_INTERACTION_END
+        ) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (now >= selfInputUntil) lastTouchAt = now
+        }
         if (event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED) windowChanges.tryEmit(Unit)
         if (event.eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED || event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             windowGeneration.incrementAndGet()
@@ -225,6 +233,20 @@ open class ScreenAccessibility : AccessibilityService() {
 
         /** 窗口每加上、拿掉、换页一次就加一(任何屏上的都算);只用来判断「窗口自上次以来变没变」,值本身没有含义。 */
         fun windowGeneration(): Long = windowGeneration.get()
+
+        /** 用户最后一次碰屏的时刻([android.os.SystemClock.elapsedRealtime]),0 表示还没见过。 */
+        @Volatile
+        private var lastTouchAt: Long = 0L
+
+        /** 我们自己手势的窗口终点:这之前收到的触摸事件是注入出来的,不算用户碰的。 */
+        @Volatile
+        private var selfInputUntil: Long = 0L
+
+        /** 用户是不是刚在碰屏幕(降级模式下动手前要让一让)。 */
+        fun userTouchedAt(): Long = lastTouchAt
+
+        /** 记下"接下来这段时间里的触摸是我们自己注入的"。 */
+        fun markSelfInput(untilElapsed: Long) { selfInputUntil = untilElapsed }
         private val notifications = MutableSharedFlow<ScreenEvent>(
             extraBufferCapacity = EVENT_BUFFER,
             onBufferOverflow = BufferOverflow.DROP_OLDEST,

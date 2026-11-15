@@ -1,6 +1,7 @@
 package com.wangzan101.mika.cap.phone.a11y
 
 import android.accessibilityservice.AccessibilityService
+import com.wangzan101.mika.core.cap.phone.UserPresence
 import android.graphics.Bitmap
 import android.graphics.Path
 import android.graphics.Rect
@@ -174,10 +175,31 @@ internal class MainScreenPort(
     override suspend fun doubleTapXY(x: Int, y: Int): ActionResult =
         tapAt(x.toFloat(), y.toFloat(), count = 2)
 
-    private suspend fun tapAt(x: Float, y: Float, count: Int = 1): ActionResult {
-        val ok = runCatching { a11y.taps(Display.DEFAULT_DISPLAY, x, y, count, 0L, 80L) }.getOrDefault(false)
-        return if (ok) ActionResult.Ok(changed = null) else ActionResult.Failed(TAP_FAILED, HINT)
+    /**
+     * 动手前先让一让:用户刚碰过屏就等一会儿(最多 [UserPresence.MAX_WAIT_MS]),
+     * 免得两边同时操作把要点的东西滑走。返回等了多少毫秒。
+     */
+    private suspend fun waitForUser(): Long =
+        UserPresence.awaitIdle(
+            lastTouchAt = { if (ScreenAccessibility.userTouchedAt() <= 0L) 0L else ScreenAccessibility.userTouchedAt() },
+            clock = { android.os.SystemClock.elapsedRealtime() },
+        )
+
+    /** 记下"接下来这段是我们自己的手势",触摸事件不算用户碰的。 */
+    private fun markSelf(ms: Long) {
+        ScreenAccessibility.markSelfInput(android.os.SystemClock.elapsedRealtime() + ms)
     }
+
+    private suspend fun tapAt(x: Float, y: Float, count: Int = 1): ActionResult {
+        val waited = waitForUser()
+        markSelf(600L + count * 120L)
+        val ok = runCatching { a11y.taps(Display.DEFAULT_DISPLAY, x, y, count, 0L, 80L) }.getOrDefault(false)
+        return if (ok) ActionResult.Ok(changed = null, hint = waitedHint(waited)) else ActionResult.Failed(TAP_FAILED, HINT)
+    }
+
+    /** 等过用户就给模型一句说明,让它知道这一步为什么慢了。 */
+    private fun waitedHint(waited: Long): String? =
+        if (waited >= UserPresence.POLL_MS) "Waited ${waited}ms for you to stop touching the screen before acting." else null
 
     override suspend fun scroll(ref: String?, snapshotId: String?, down: Boolean): ActionResult {
         val node = when {
@@ -185,6 +207,7 @@ internal class MainScreenPort(
             else -> null
         }?.let { n -> runCatching { n }.getOrNull() }
         if (node != null) {
+            waitForUser()
             val action = if (down) AccessibilityNodeInfo.ACTION_SCROLL_FORWARD else AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
             val ok = runCatching { node.performAction(action) }.getOrDefault(false)
             if (ok) return ActionResult.Ok(changed = null)
@@ -196,13 +219,15 @@ internal class MainScreenPort(
     }
 
     override suspend fun swipe(x1: Int, y1: Int, x2: Int, y2: Int, durationMs: Long): ActionResult {
+        val waited = waitForUser()
+        markSelf(durationMs + 500L)
         val path = Path().apply {
             moveTo(x1.toFloat(), y1.toFloat())
             lineTo(x2.toFloat(), y2.toFloat())
         }
         val ok = runCatching { a11y.gesture(Display.DEFAULT_DISPLAY, path, durationMs.coerceAtLeast(1L)) }
             .getOrDefault(false)
-        return if (ok) ActionResult.Ok(changed = null) else ActionResult.Failed(SWIPE_FAILED, HINT)
+        return if (ok) ActionResult.Ok(changed = null, hint = waitedHint(waited)) else ActionResult.Failed(SWIPE_FAILED, HINT)
     }
 
     override suspend fun typeText(ref: String?, snapshotId: String?, text: String): ActionResult {
