@@ -78,4 +78,9 @@
     <string name="screens_waiting">等待中</string>
     <string name="screens_needs_you">等你处理</string>
     <string name="screens_zoom">放大这块屏</string>
+    <string name="screens_operate">我来操作</string>
+    <string name="screens_view_only">只看</string>
+    <string name="screens_operate_hint">点按、滑动直接作用在这块屏上。打字请回对话让 ACS 代打。</string>
+    <string name="screens_operate_unavailable">无障碍服务没开，现在只能看。</string>
+    <string name="screens_operate_view_hint">现在是只看。想自己点，就切到「我来操作」。</string>
 </resources>

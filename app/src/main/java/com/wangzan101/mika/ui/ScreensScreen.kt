@@ -1,5 +1,22 @@
 package com.wangzan101.mika.ui
 
+import android.graphics.Path
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.toSize
+import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
+import com.wangzan101.mika.ui.components.ButtonKind
+import com.wangzan101.mika.ui.components.ButtonSize
+import com.wangzan101.mika.ui.components.MikaButton
+import kotlinx.coroutines.launch
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
@@ -160,17 +177,17 @@ private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConver
                     .clickable { open = !open }.testTag("screens-preview-${row.key}"),
                 fontSize = 13.sp, color = c.accent,
             )
-            if (open && frames != null) LiveFrame(frames)
+            if (open && frames != null) LiveFrame(frames, row.displayId)
         }
     }
 }
 
 /**
  * 这块屏的实时画面:每秒最多 5 张,和上一张一样就不换(见 [previewFrames])。收起时不订阅。
- * 点一下放大到整屏,可以捏合缩放、拖动——字小的界面在这一小块里看不清。
+ * 点一下放大到整屏:能捏合缩放看细节,也能切成「我来操作」,点按/滑动直接作用在这块屏上。
  */
 @Composable
-private fun LiveFrame(source: StateFlow<Bitmap?>) {
+private fun LiveFrame(source: StateFlow<Bitmap?>, displayId: Int) {
     val frames = remember(source) { source.filterNotNull().previewFrames(same = ::sameFrame) }
     val frame by frames.collectAsState(initial = null)
     val bmp = frame ?: return
@@ -182,21 +199,123 @@ private fun LiveFrame(source: StateFlow<Bitmap?>) {
             .clickable { zoom = true }.testTag("screens-zoom"),
         contentScale = ContentScale.Fit,
     )
-    if (zoom) FrameZoom(bmp) { zoom = false }
+    if (zoom) FrameZoom(bmp, displayId) { zoom = false }
 }
 
-/** 放大的那块屏:整屏、捏合缩放(1–6 倍)、拖动看边角;点外面或按返回关掉。 */
+/**
+ * 放大的那块屏。两种用法:
+ * - 「只看」(默认):捏合缩放 1–6 倍、拖动看边角;
+ * - 「我来操作」:点一下、划一下直接下发到这块屏,和手指点在手机上一样。
+ *   这时不缩放,免得同一根手指既被当成缩放又被当成点击;打字要回对话让 ACS 代打。
+ */
 @Composable
-private fun FrameZoom(frame: Bitmap, onDismiss: () -> Unit) {
+private fun FrameZoom(frame: Bitmap, displayId: Int, onDismiss: () -> Unit) {
+    val a11y by ScreenAccessibility.instance.collectAsState()
+    val canOperate = a11y != null && displayId >= 0
+    var operate by remember { mutableStateOf(false) }
+    val doOperate = operate && canOperate
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Box(
-            Modifier.fillMaxSize().background(MikaTheme.colors.bg.copy(alpha = 0.96f)).clickable { onDismiss() }
-                .testTag("screens-zoom-dialog"),
-            contentAlignment = Alignment.Center,
-        ) {
-            ZoomableFrame(frame, null, Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(8.dp))
+        Box(Modifier.fillMaxSize().background(MikaTheme.colors.bg.copy(alpha = 0.96f)).testTag("screens-zoom-dialog")) {
+            Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(8.dp)) {
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    if (doOperate) {
+                        InteractiveFrame(frame, displayId, Modifier.fillMaxSize())
+                    } else {
+                        Box(Modifier.fillMaxSize().clickable { onDismiss() }, contentAlignment = Alignment.Center) {
+                            ZoomableFrame(frame, stringResource(R.string.screens_zoom), Modifier.fillMaxSize())
+                        }
+                    }
+                }
+                Text(
+                    when {
+                        doOperate -> stringResource(R.string.screens_operate_hint)
+                        !canOperate -> stringResource(R.string.screens_operate_unavailable)
+                        else -> stringResource(R.string.screens_operate_view_hint)
+                    },
+                    Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    fontSize = 12.5.sp, color = MikaTheme.colors.ink3,
+                )
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = 8.dp).padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (canOperate) {
+                        MikaButton(
+                            if (doOperate) stringResource(R.string.screens_view_only) else stringResource(R.string.screens_operate),
+                            { operate = !operate }, kind = ButtonKind.Tonal, size = ButtonSize.Small,
+                            modifier = Modifier.testTag("screens-operate-toggle"),
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    MikaButton(stringResource(R.string.done), onDismiss, kind = ButtonKind.Text, size = ButtonSize.Small)
+                }
+            }
         }
     }
+}
+
+/**
+ * 「我来操作」的那层:点一下 = 点这块屏,拖一下 = 划一下,都经无障碍手势下发到 [displayId]。
+ * 坐标按「Fit 之后的留白」换算回画面像素;画面就是这块屏的整屏截图,所以画面像素即屏坐标。
+ */
+@Composable
+private fun InteractiveFrame(frame: Bitmap, displayId: Int, modifier: Modifier = Modifier) {
+    val scope = rememberCoroutineScope()
+    var box by remember { mutableStateOf(Size.Zero) }
+    fun sendTap(pos: Offset) {
+        val p = mapToFrame(pos, box, frame) ?: return
+        scope.launch { ScreenAccessibility.instance.value?.taps(displayId, p.x, p.y, 1, 0L, 80L) }
+    }
+    Box(
+        modifier.onSizeChanged { box = it.toSize() }
+            .pointerInput(frame, displayId) {
+                var from: Offset? = null
+                var last = Offset.Zero
+                var startedAt = 0L
+                detectDragGestures(
+                    onDragStart = { from = it; last = it; startedAt = System.currentTimeMillis() },
+                    onDragEnd = {
+                        val a = from?.let { mapToFrame(it, box, frame) }
+                        val b = mapToFrame(last, box, frame)
+                        from = null
+                        if (a != null && b != null) {
+                            val ms = (System.currentTimeMillis() - startedAt).coerceIn(120L, 900L)
+                            scope.launch {
+                                val path = Path().apply { moveTo(a.x, a.y); lineTo(b.x, b.y) }
+                                ScreenAccessibility.instance.value?.gesture(displayId, path, ms)
+                            }
+                        }
+                    },
+                    onDrag = { change, _ -> last = change.position; change.consume() },
+                )
+            }
+            .pointerInput(frame, displayId) {
+                detectTapGestures(onTap = { sendTap(it) })
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(remember(frame) { frame.asImageBitmap() }, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+    }
+}
+
+/** 把「Fit 显示后」的一点换算回画面像素;点在留白里返回 null。 */
+internal fun mapToFrame(pos: Offset, box: Size, frame: Bitmap): Offset? =
+    mapToFrame(pos, box, frame.width, frame.height)
+
+/** 同上,只按画面尺寸算(不碰 Bitmap,方便单测)。 */
+internal fun mapToFrame(pos: Offset, box: Size, frameWidth: Int, frameHeight: Int): Offset? {
+    if (box.width <= 0f || box.height <= 0f) return null
+    val bw = frameWidth.toFloat()
+    val bh = frameHeight.toFloat()
+    if (bw <= 0f || bh <= 0f) return null
+    val scale = minOf(box.width / bw, box.height / bh)
+    val w = bw * scale
+    val h = bh * scale
+    val left = (box.width - w) / 2f
+    val top = (box.height - h) / 2f
+    if (pos.x < left || pos.x > left + w || pos.y < top || pos.y > top + h) return null
+    return Offset((pos.x - left) / scale, (pos.y - top) / scale)
 }
 
 @Composable

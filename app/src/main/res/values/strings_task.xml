@@ -81,4 +81,9 @@
     <string name="screens_waiting">Waiting</string>
     <string name="screens_needs_you">Needs you</string>
     <string name="screens_zoom">Enlarge this screen</string>
+    <string name="screens_operate">Let me operate</string>
+    <string name="screens_view_only">View only</string>
+    <string name="screens_operate_hint">Taps and swipes act on this screen directly. To type, go back to the chat and let ACS type.</string>
+    <string name="screens_operate_unavailable">Accessibility is off, so this is view-only right now.</string>
+    <string name="screens_operate_view_hint">View only. Switch to “Let me operate” to tap it yourself.</string>
 </resources>
