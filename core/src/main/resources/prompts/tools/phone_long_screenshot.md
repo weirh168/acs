@@ -9,3 +9,7 @@ Take one tall screenshot by scrolling and stitching, without repeating or losing
 If a popup, dim overlay or page jump interrupts the scroll, the result carries `blocked` plus a hint and the screen is left untouched: observe it, deal with whatever is in the way, then call again.
 
 Reading text is cheaper with `phone_read_chat`; this tool is for when the layout itself matters.
+`startFrom` positions the page before shooting: `top` scrolls up until the list stops moving, `bottom` scrolls down the same way, `current` (default) shoots where it is. A list someone left half-way down therefore still comes out complete. The result says how many pre-scrolls it took (`preScrolls`) and whether it really hit the edge (`atEdge`).
+
+`settleMs` (0-3000, default 400) is the pause between positioning and the first frame; raise it on slow pages or when the list animates.
+
