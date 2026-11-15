@@ -39,6 +39,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -155,15 +156,23 @@ fun ScreensContent(
 ) {
     // 放大哪块屏由这一页管:画面流在任务卡片里,状态放这儿才不会因为某一帧为空就被重置
     var zoomed by remember { mutableStateOf<Pair<Bitmap, Int>?>(null) }
+    // 每张卡片最后一张画面:任务结束后仍然留着,等用户自己收起,不自动消失
+    val lastFrames = remember { mutableStateMapOf<String, Bitmap>() }
     PageScaffold(ScreensCopy.TITLE, onBack) {
+        // 放大层先摆出来:任务结束、列表变空都不该把它关掉,只有用户点「完成」才关
+        zoomed?.let { (bmp, displayId) -> FrameZoom(bmp, displayId) { zoomed = null } }
         if (rows.isEmpty()) {
             EmptyNote(ScreensCopy.EMPTY)
             return@PageScaffold
         }
         rows.forEach { row ->
-            ScreenCard(row, frames(row.key), onOpenConversation, onZoom = { bmp -> zoomed = bmp to row.displayId })
+            ScreenCard(
+                row, frames(row.key), onOpenConversation,
+                cached = lastFrames[row.key],
+                onCache = { lastFrames[row.key] = it },
+                onZoom = { bmp -> zoomed = bmp to row.displayId },
+            )
         }
-        zoomed?.let { (bmp, displayId) -> FrameZoom(bmp, displayId) { zoomed = null } }
         FooterNote(ScreensCopy.NOTE)
     }
 }
@@ -218,17 +227,29 @@ private fun PreviewSizePicker(current: PreviewSize, onPick: (PreviewSize) -> Uni
 }
 /** 一个任务:在做什么、正在用哪个 App、状态;点这一行回到它的对话,点「看画面」展开实时画面。 */
 @Composable
-private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConversation: (String) -> Unit, onZoom: (Bitmap) -> Unit = {}) {
+private fun ScreenCard(
+    row: ScreenRow,
+    frames: StateFlow<Bitmap?>?,
+    onOpenConversation: (String) -> Unit,
+    /** 上次看到的那张画面(任务结束后还留着,不自动消失)。 */
+    cached: Bitmap? = null,
+    onCache: (Bitmap) -> Unit = {},
+    onZoom: (Bitmap) -> Unit = {},
+) {
     val c = MikaTheme.colors
     var open by rememberSaveable(row.key) { mutableStateOf(false) }
     // 小画面能调三个档,记在这个任务上;默认中档(和原来一样高)
     var size by rememberSaveable(row.key) { mutableStateOf(PreviewSize.Medium) }
+    // 一直记着最后一张:任务结束后画面流会停,不能因此把已经打开的画面收掉
+    LaunchedEffect(row.key, frames) {
+        frames?.filterNotNull()?.previewFrames(same = ::sameFrame)?.collect(onCache)
+    }
     GroupCard(Modifier.padding(top = 8.dp)) {
         ListRow(
             MikaIcons.Screens, row.goal.oneLine(), ScreensCopy.place(row),
             first = true, onClick = { onOpenConversation(row.conversationId) },
         ) { RowValue(ScreensCopy.state(row.state)) }
-        if (row.displayId >= 0 || row.web) {
+        if (row.displayId >= 0 || row.web || frames != null || cached != null) {
             Text(
                 if (open) ScreensCopy.HIDE_PREVIEW else ScreensCopy.PREVIEW,
                 Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
@@ -238,7 +259,11 @@ private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConver
             if (open) {
                 PreviewSizePicker(size) { size = it }
                 val screenHeightDp = LocalConfiguration.current.screenHeightDp
-                if (frames != null) LiveFrame(frames, onZoom, previewHeight(size, screenHeightDp))
+                val h = previewHeight(size, screenHeightDp)
+                if (frames != null) LiveFrame(frames, onZoom, h)
+                cached?.let { still ->
+                    if (frames == null) FrozenFrame(still, onZoom, h)
+                }
             }
         }
     }
@@ -253,7 +278,18 @@ private fun LiveFrame(source: StateFlow<Bitmap?>, onZoom: (Bitmap) -> Unit, heig
     val frames = remember(source) { source.filterNotNull().previewFrames(same = ::sameFrame) }
     val frame by frames.collectAsState(initial = null)
     val bmp = frame ?: return
-    // 整块(图 + 一行说明)都能点:图按 Fit 画,两侧留白点不到,加一条说明把可点区域补上
+    FrameBlock(bmp, onZoom, height, note = null)
+}
+
+/** 任务已经结束、画面流停了:把最后一张摆着,写一句说明,让用户自己决定什么时候收起。 */
+@Composable
+private fun FrozenFrame(bmp: Bitmap, onZoom: (Bitmap) -> Unit, height: Dp) {
+    FrameBlock(bmp, onZoom, height, note = stringResource(R.string.screens_frame_frozen))
+}
+
+/** 画面本体:整块(图 + 说明行)都能点进全屏。 */
+@Composable
+private fun FrameBlock(bmp: Bitmap, onZoom: (Bitmap) -> Unit, height: Dp, note: String?) {
     Column(
         Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
             .clip(RoundedCornerShape(10.dp))
@@ -265,6 +301,12 @@ private fun LiveFrame(source: StateFlow<Bitmap?>, onZoom: (Bitmap) -> Unit, heig
             Modifier.fillMaxWidth().height(height),
             contentScale = ContentScale.Fit,
         )
+        if (note != null) {
+            Text(
+                note, Modifier.fillMaxWidth().padding(top = 6.dp),
+                textAlign = TextAlign.Center, fontSize = 12.5.sp, color = MikaTheme.colors.ink3,
+            )
+        }
         Text(
             stringResource(R.string.screens_tap_to_zoom),
             Modifier.fillMaxWidth().padding(vertical = 6.dp),

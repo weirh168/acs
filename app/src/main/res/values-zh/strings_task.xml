@@ -79,6 +79,7 @@
     <string name="screens_needs_you">等你处理</string>
     <string name="screens_zoom">放大这块屏</string>
     <string name="screens_tap_to_zoom">点这里放大</string>
+    <string name="screens_frame_frozen">任务已结束，画面停在最后一张</string>
     <string name="screens_size_small">小</string>
     <string name="screens_size_medium">中</string>
     <string name="screens_size_large">大</string>
