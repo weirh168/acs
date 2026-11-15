@@ -237,5 +237,10 @@ private fun withHint(r: ToolExecution, hint: String): ToolExecution {
 private suspend fun unreadable(ctx: ToolContext, p: String, r: ToolExecution): ToolExecution {
     val s = ctx.session.peek()
     if (s?.unreadableApp != p || s.elements.any { it.meaningful }) return r
-    return withHint(ToolExecution(JsonObject(r.content + ("readable" to JsonPrimitive(false))), changed = r.changed), Feedback.format("unreadable_window", "app" to p))
+    val reason = com.wangzan101.mika.core.uistate.unreadableReasonOf(s)
+    val extra = buildMap<String, kotlinx.serialization.json.JsonElement> {
+        put("readable", JsonPrimitive(false))
+        reason?.let { put("reason", JsonPrimitive(it)) }
+    }
+    return withHint(ToolExecution(JsonObject(r.content + extra), changed = r.changed), Feedback.format("unreadable_window", "app" to p))
 }

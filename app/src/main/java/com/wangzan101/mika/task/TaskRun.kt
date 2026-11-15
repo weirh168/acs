@@ -709,7 +709,26 @@ class TaskRun(
                     phoneServices.hub.shell.value?.let { s ->
                         withContext(Dispatchers.IO) { runCatching { AppCopyReader.read(s, launchableApps(service.packageManager, service.packageName)) }.getOrNull() }
                     }.orEmpty()
-                }) { connectPhone() }
+                }) acquire@{
+                    // 用户同意时:助手不在(没配对、或刚掉线)就直接用只读的主屏端口,别每次等连接超时
+                    fun degradedOrNull(): com.wangzan101.mika.cap.phone.a11y.MainScreenPort? {
+                        if (!FeatureFlags.get(service).degradedScreen()) return null
+                        val a11yNow = ScreenAccessibility.instance.value ?: return null
+                        return com.wangzan101.mika.cap.phone.a11y.MainScreenPort(a11yNow, metrics.widthPixels, metrics.heightPixels)
+                    }
+                    if (phoneServices.hub.shell.value == null) {
+                        val shell = withTimeoutOrNull(1_500) { phoneServices.hub.shell.filterNotNull().first() }
+                        if (shell == null) {
+                            degradedOrNull()?.let { return@acquire it }
+                            throw com.wangzan101.mika.cap.phone.a11y.PhoneUnavailable(NO_PHONE_HELPER)
+                        }
+                    }
+                    try {
+                        connectPhone()
+                    } catch (e: com.wangzan101.mika.cap.phone.a11y.PhoneUnavailable) {
+                        degradedOrNull() ?: throw e
+                    }
+                }
             val accessedPhone = com.wangzan101.mika.core.uistate.AppAccessScreenPort(
                 phoneScreen, appAccess,
                 packages = { phone?.screen?.accessPackages().orEmpty() },

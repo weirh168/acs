@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_degraded_screen">没有内置助手时读我的主屏</string>
+    <string name="settings_degraded_screen_sub">默认关闭。内置助手没连上时，任务仍可读你的主屏（观察、截图、认字），并用无障碍完成点击、滑动、输入；App 会开在你自己的屏幕上。使用期间 Mika 会读到你屏幕上的内容。</string>
+</resources>

@@ -375,7 +375,7 @@ Mika has its own built-in browser, in which you can get things done on websites.
 - Downloaded files are saved under /workspace/downloads/ in the workspace. Say a file is downloaded only when web_downloads shows status=done. When a download fails, error gives the reason (with the kind of failure): use it to decide whether to retry, try another link or tell the user plainly.
 - web_upload takes the ref of a file picker control (an element with role file in the screen read) and can only upload files under /workspace/. When the user wants to upload a file from their phone, ask them to send it as an attachment in the chat first (it goes into /workspace/inbox/).
 
-==== tools (49) ====
+==== tools (52) ====
 ## wait
 Wait briefly for an app to load or an animation to finish.
 {"type":"object","properties":{"seconds":{"type":"number","description":"0.2-10 seconds.","minimum":0.2,"maximum":10},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":["seconds"],"additionalProperties":false}
@@ -433,6 +433,16 @@ Look up what earlier turns of this conversation found, so you can reuse it inste
 Ask a child agent to research a bounded question. The child has read only web and sandbox tools, cannot ask the user or send anything outward, and returns one limited result as an observation. The child result alone does not complete your task. By default it gets 15 steps and its result is cut at 4000 characters; for a question that needs more reading (several sources or pages) pass maxSteps up to {{maxSteps}} and maxResultChars up to {{maxChars}}, and ask for a compact result. truncated in the result means the end was cut off.
 {"type":"object","properties":{"goal":{"type":"string","description":"A bounded research question for the child agent, using web and sandbox reads only."},"format":{"type":"string","description":"Optional output format.","enum":["text","json"]},"maxSteps":{"type":"integer","description":"Optional step budget for the child, 1-40 (default 15); larger values are lowered to 40.","minimum":1},"maxResultChars":{"type":"integer","description":"Optional length limit of the returned result in characters, 500-8000 (default 4000); values outside are moved into range.","minimum":1},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":["goal"],"additionalProperties":false}
 
+## usage_stats
+See how many tokens this task has already spent, how much budget is left, and how much this phone used today.
+
+`run` is this task: `inputTokens`, `outputTokens`, `cachedInputTokens` (cached reads are part of the input, do not add them again), `tokens` (input + output), `calls` (model calls, retries counted once) and `httpCalls` (actual requests). When the task has a token budget you also get `budget` and `remaining` — near the end, wrap up with what you have instead of starting long explorations.
+
+`today` is the whole phone for the local day, all providers and all tasks together; it is missing when the app cannot read its ledger.
+
+Reading it costs nothing and makes no model call. Use it when a task is getting long, when the user asks about cost, or before deciding whether to keep exploring.
+{"type":"object","properties":{"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":[],"additionalProperties":false}
+
 ## view_past_screens
 See an earlier screen of this task again, whichever screen it was on. Every screen read gives a screenshotId; pass up to 5 in ids. Only the last 20 are kept. For each one you get its app, its step (the step number of the call that read it, the same as "Step N" in the folded summary of earlier steps) and its element text, or the screenshot itself when you can see images. They show the past, not the present: read the screen again before you act.
 {"type":"object","properties":{"ids":{"type":"array","description":"1-5 screenshotIds from earlier screen reads.","minItems":1,"maxItems":5,"items":{"type":"integer","minimum":1}},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":["ids"],"additionalProperties":false}
@@ -475,7 +485,7 @@ Insert 1-100 calendar events in one Android provider batch; prefer for 3 or more
 
 ## web_observe
 Look at the current web page. Returns the site (currentSite), url, title and tabId, and a fresh element snapshot (snapshotId + elements) of what is in view. A screenshot is added when the element list is clearly unreadable or mostly unlabeled. If the target is missing or ambiguous, request web_screenshot or web_find_visually. Prefer tapping a ref from this result with web_tap over guessing coordinates; to read the whole page, use web_read_page.
-{"type":"object","properties":{"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":[],"additionalProperties":false}
+{"type":"object","properties":{"includeOcr":{"type":"boolean","description":"Also run the on-device OCR on this screen even when the accessibility tree looks complete. Use it for self-drawn UI (Canvas, games, Flutter/React-Native surfaces) where the tree has no nodes. Adds ocrOnly (pixel-only lines with 0-999 centers, usable as coordinates for tap) and ocrMs; costs about 0.3-1s."},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":[],"additionalProperties":false}
 
 ## web_list_elements
 List what is on this screen as text, without a screenshot. Each element comes with a ref (@eN); to act on one, pass its ref together with the snapshotId of this list. Positions use the same 0-999 grid as web_tap. When an action answers ref_expired, the screen has moved on: call web_observe or web_list_elements again and use the new refs.
@@ -533,6 +543,26 @@ Open a web page (http or https only) in Mika's built-in browser; the web_* scree
 Read the whole readable text of a web page, not limited to what is on screen: open dialogs first (between <<dialog>> and <<end of dialog>>), then the main content (headings prefixed with #), plus up to 50 links and 20 images. Navigation, footer and other link-list blocks are collapsed to one <<collapsed …>> line each; pass unfold=true to get them in full. Long pages come in parts: pass nextOffset as offset to read on, with the same unfold. Without url it reads the current tab; with url it reads that address in a temporary background tab and leaves the current tab as it is.
 The result tells how the read went: chars, textDensity (share of the text that is not link text) and verdict: ok; thin (little text: still loading, or the content is elsewhere); needs_sign_in (a sign-in form stands in front of the content); refused (a verification, refusal or HTTP error page); image_text (the content is mostly pictures or drawing, which text alone misses). published and updated appear when the page declares them.
 {"type":"object","properties":{"url":{"type":"string","description":"Read this http(s) address in a temporary background tab instead of the current tab; the current tab is not touched."},"maxChars":{"type":"integer","description":"Characters to return, 1-30000 (default 12000).","minimum":1,"maximum":30000},"offset":{"type":"integer","description":"Where to start, from nextOffset of the previous call (default 0).","minimum":0,"maximum":2147483647},"unfold":{"type":"boolean","description":"Give collapsed blocks (navigation, footer, link lists) in full (default false). offset/nextOffset count in the same mode, so keep it the same while paging."},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":[],"additionalProperties":false}
+
+## web_read_all
+Read a list on the current page as structured items: pricing tables, search results, order lists, card feeds. Each item comes back as `title` (heading or first link, may be empty), `text` (its visible text) and `link` (first absolute href, may be empty), plus `count` (returned) and `found` (how many the page has).
+
+Use this instead of web_read_page when the page is a list: read_page flattens the whole page into one text and the item boundaries blur, so you cannot tell which price belongs to which product.
+
+`selector` (optional) is CSS for ONE item, e.g. `li.result`, `.card`, `table tbody tr`. Without it the tool finds the largest group of similar siblings itself and says `autoDetected: true`; if the auto pick is wrong, look at the elements from web_observe and pass the selector of one item.
+
+Reads only: it does not scroll, load more, or click. To get more items, scroll with web_scroll and call it again. Long items are cut at 600 characters.
+{"type":"object","properties":{"selector":{"type":"string","description":"Optional CSS selector for ONE item (e.g. `li.result`, `.card`, `table tbody tr`). Omit to auto-detect the largest repeated group on the page."},"maxItems":{"type":"integer","description":"How many items to return, 1-100 (default 20).","minimum":1,"maximum":100},"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":[],"additionalProperties":false}
+
+## web_auth
+Check whether the page you have open is a sign-in wall, before you spend steps reading or clicking a page that is only a login prompt.
+
+It looks for the three usual giveaways: a password field, a form that posts to a login path, and login wording in the text or the URL. One sign is suspicious, two or more means `needsLogin: true`. You get the site `host` and the `signals` that fired, so you can say why.
+
+When it says `needsLogin: true`, do not type credentials yourself and do not try to work around the wall. Ask the user to sign in: call `mika_login_site` with the reported host, wait for them, then `mika_confirm_login` to record it, and continue with the page.
+
+When it says false, the page is readable as-is. It only reads the current tab and never fills or submits anything.
+{"type":"object","properties":{"reason":{"type":"string","description":"Optional short note on why you are calling this, in the user's language; shown to the user as the step label."}},"required":[],"additionalProperties":false}
 
 ## web_evaluate_js
 Read data from the current web page with JavaScript, and get the result back as JSON (default time limit 10 s, result at most 20000 characters; values that look like credentials or tokens are masked). The script runs inside the real page and sees the live DOM, but it can only read: document, window, location and getComputedStyle are read-only views of the page (querySelectorAll, getAttribute, textContent, getBoundingClientRect and the like work; setting a property, adding or removing elements, click(), focus(), submit(), opening windows or navigating fail with read_only). Password, hidden, one-time-code and card fields read as ***, and cookies and local storage cannot be read. It cannot use the network: fetch, XMLHttpRequest, sendBeacon, WebSocket and loading images or scripts fail with blocked_network; it only reads what the page already has (to read data the page loaded from its APIs, use web_capture). Also available: sleep(ms), URL, URLSearchParams, plain JavaScript (JSON, Math, Array…), and state, an object that keeps what you put in it across calls on the same page (state="new" in the result means it was just created, e.g. after the page changed). script is one expression or the body of an async function that uses return; return plain data (strings, numbers, arrays, objects), not elements. To act on the page use the action tools.

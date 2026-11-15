@@ -380,7 +380,7 @@
             android:name=".task.ExternalScheduleReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.wangzan101.mika.SCHEDULE" />
+                <action android:name="${applicationId}.SCHEDULE" />
             </intent-filter>
         </receiver>
         <receiver android:name=".teach.TeachReceiver" android:exported="false" />

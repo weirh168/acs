@@ -156,9 +156,12 @@ internal class ScreenSession(
     /** 此刻重新读一屏,不登记编号、不改模型手里的读屏;读不到为 null。 */
     suspend fun peek(): ScreenSnapshot? = screenAttempt { screen.peek() }
 
-    suspend fun observe(withImage: Boolean, adaptiveImage: Boolean = false, recordFrame: Boolean = true): ToolExecution {
+    suspend fun observe(withImage: Boolean, adaptiveImage: Boolean = false, recordFrame: Boolean = true, forceOcr: Boolean = false): ToolExecution {
         val s = snapshot()
-        val (tree, ocr, ocrStatus) = readTree(s)
+        val read = readTree(s, forceOcr)
+        val tree = read.tree
+        val ocr = read.ocr
+        val ocrStatus = read.ocrStatus
         val imageReason = if (adaptiveImage && tree.poor) tree.reason else null
         val sendImage = withImage || imageReason != null
         stabilizer?.latest?.let { shown = it; chain.clear(); chain += it.snapshotId }
@@ -180,11 +183,13 @@ internal class ScreenSession(
             s.opened?.let { put("opened", openedJson(it)) }
             if (s.captureError != null) {
                 put("captureError", s.captureError)
+                unreadableReasonOf(s)?.let { put("reason", it) }
                 put("hint", HINT_DISPLAY_CAPTURE)
             }
             else if (s.protected) { put("protected", true); put("hint", HINT_PROTECTED) }
             else if (unreadable(s) != null && ocr.isNullOrEmpty()) {
                 put("readable", false)
+                unreadableReasonOf(s)?.let { put("reason", it) }
                 // 窗口不可读不等于画面不可用:有截图和视觉定位时,不能把它盖成只能 Back 或交用户。
                 put("hint", unreadableHint(s, tree, ocrStatus))
             }
@@ -194,6 +199,9 @@ internal class ScreenSession(
             put("elements", elements)
             if (surface.id == "phone" && s.windows.isNotEmpty()) put("tree", UiTreeJson.windows(s))
             ocr?.let { put("visibleText", VisibleText.json(it)) }
+            // includeOcr 时:只出现在像素上、树里没有的行(自绘界面、画布、Flutter/RN),以及这次识别耗时
+            read.ocrOnly?.let { only -> if (only.isNotEmpty()) put("ocrOnly", VisibleText.json(only)) }
+            read.ocrMs?.let { put("ocrMs", it) }
             if (surface.id == "phone") ScreenMap.json(s, ocr.orEmpty())?.let { put("screenMap", it) }
             val omitted = s.web?.omitted ?: 0
             put("truncated", hidden > 0 || omitted > 0)
@@ -318,7 +326,10 @@ internal class ScreenSession(
                 (ocrStatus?.let { mapOf("ocr" to JsonPrimitive(it)) } ?: emptyMap()) +
                 (s.captureError?.let { mapOf("captureError" to JsonPrimitive(it), "hint" to JsonPrimitive(HINT_DISPLAY_CAPTURE)) } ?:
                     (unreadable(s)?.takeIf { ocr.isNullOrEmpty() }?.let {
-                        mapOf("readable" to JsonPrimitive(false), "hint" to JsonPrimitive(unreadableHint(s, tree, ocrStatus)))
+                        mapOf(
+                            "readable" to JsonPrimitive(false),
+                            "hint" to JsonPrimitive(unreadableHint(s, tree, ocrStatus)),
+                        ) + (unreadableReasonOf(s)?.let { code -> mapOf("reason" to JsonPrimitive(code)) } ?: emptyMap())
                     } ?: treeHint(tree, ocrStatus)?.let { mapOf("hint" to JsonPrimitive(it)) } ?: emptyMap())))
         }
         val text = observationText(s, ocr.orEmpty())
@@ -495,14 +506,29 @@ internal class ScreenSession(
      * 树明显够用、受保护时不读字;判不准时读字再定;树不够用时一定读字:看不到图的主模型靠它,
      * 能看图的主模型也拿它的位置去点,证据账本(回答来源、核查)和 phone_collect 也只能从这里拿到屏上写着什么。
      */
-    private suspend fun readTree(s: ScreenSnapshot): TreeRead {
+    private suspend fun readTree(s: ScreenSnapshot, forceOcr: Boolean = false): TreeRead {
         val tree = TreeAdequacy.ofTree(s)
-        if (tree.quality == TreeQuality.Adequate || tree.quality == TreeQuality.Protected) return TreeRead(tree, null, null).also { lastTree = it.tree }
-        val (ocr, status) = visibleText(s, if (tree.poor) OCR_WAIT_POOR_MS else OCR_WAIT_MS)
-        val checked = TreeAdequacy.withText(tree, ocr)
+        // 树明显够用(或受保护)时平时不读字;includeOcr 要求强制读一次
+        if (!forceOcr && (tree.quality == TreeQuality.Adequate || tree.quality == TreeQuality.Protected))
+            return TreeRead(tree, null, null).also { lastTree = it.tree }
+        val started = System.currentTimeMillis()
+        val (all, status) = visibleText(s, if (tree.poor || forceOcr) OCR_WAIT_POOR_MS else OCR_WAIT_MS, raw = true)
+        val elapsed = System.currentTimeMillis() - started
+        val missing = all?.let { VisibleText.missing(s, it) }
+        // 没读到字(网页、受保护、没窗口)时不给 ocrMs:0,免得模型以为 OCR 跑过了
+        val ocrMs = elapsed.takeIf { all != null }
+        val checked = TreeAdequacy.withText(tree, missing)
         lastTree = checked
+        // 树不够用(或这次强制读字):给模型的文字是「树里没有的行」;强制读字且树够用时给全部行
+        val shown = if (forceOcr && !tree.poor) all else missing
         // 树不够用、屏上文字也一行没有:照实说为什么,模型才知道该看图找,而不是再读一次
-        return TreeRead(checked, ocr, status.takeIf { quality(checked) != null && ocr.isNullOrEmpty() })
+        return TreeRead(
+            tree = checked,
+            ocr = shown,
+            ocrStatus = status.takeIf { quality(checked) != null && missing.isNullOrEmpty() },
+            ocrOnly = missing,
+            ocrMs = ocrMs,
+        )
     }
 
     /**
@@ -510,18 +536,20 @@ internal class ScreenSession(
      * timeout(时限内没认完)、unavailable(端口给不出:没有画面、画面一直在大变)、failed(识别出错)。
      * 不读(网页、受保护、没窗口)时都为 null。树在读的过程中变了也照样读:字的位置来自画面本身,
      * 端口自己会等画面停稳,认的过程中整页变了会重认。
+     *
+     * [raw] 为 true 时返回全部认出的行(不做「树里没有的」过滤),调用方自己算 missing。
      */
-    private suspend fun visibleText(s: ScreenSnapshot, waitMs: Long): Pair<List<VisibleTextLine>?, String?> {
+    private suspend fun visibleText(s: ScreenSnapshot, waitMs: Long, raw: Boolean = false): Pair<List<VisibleTextLine>?, String?> {
         if (surface.id != "phone" || s.protected || s.captureError != null || !s.hasWindow) return null to null
         var timedOut = true
-        val raw = try {
+        val lines = try {
             withTimeoutOrNull(waitMs) { screen.readVisibleText().also { timedOut = false } }
         } catch (e: CancellationException) { throw e } catch (e: Exception) { e.rethrowAppAccess(); return null to "failed" }
-        if (raw == null) return null to if (timedOut) "timeout" else "unavailable"
-        if (raw.isEmpty()) return raw to "empty"
-        val legible = VisibleText.legible(raw)
+        if (lines == null) return null to if (timedOut) "timeout" else "unavailable"
+        if (lines.isEmpty()) return lines to "empty"
+        val legible = VisibleText.legible(lines)
         if (legible.isEmpty()) return legible to "illegible"
-        return VisibleText.missing(s, legible) to null
+        return if (raw) legible to null else VisibleText.missing(s, legible) to null
     }
 
     /** 写进读屏结果的 treeQuality:只在手机上、树不够用时写(网页没有屏上文字可补)。 */
@@ -568,7 +596,17 @@ internal fun inputFields(s: ScreenSnapshot): InputFields {
 internal class InputFields(val names: List<String>, val focused: String?)
 
 /** 一次读屏的树判断、补上的屏上文字,和树不够用而文字一行也没有时的原因(见 ScreenSession.visibleText)。 */
-internal data class TreeRead(val tree: TreeCheck, val ocr: List<VisibleTextLine>?, val ocrStatus: String?)
+internal data class TreeRead(
+    /** 树够不够用。 */
+    val tree: TreeCheck,
+    /** 补树的屏上文字:树不够用时给树里没有的行,树够用但这次强制读字时给全部行。 */
+    val ocr: List<VisibleTextLine>?,
+    val ocrStatus: String?,
+    /** 只出现在像素上、树里没有的行(includeOcr 时单独返回,方便模型判断哪些控件是自绘的)。 */
+    val ocrOnly: List<VisibleTextLine>? = null,
+    /** 这次 OCR 花了多久(毫秒);没读字时为 null。 */
+    val ocrMs: Long? = null,
+)
 
 /** 读屏的元素文字,一行一个;第一行是前台 App。没有文字时为空串。密码框里的字不记。 */
 internal fun screenText(s: ScreenSnapshot): String {

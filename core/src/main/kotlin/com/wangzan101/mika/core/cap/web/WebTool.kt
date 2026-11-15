@@ -27,6 +27,6 @@ internal val WEB_FAMILY = ScreenFamily(
 /** 网页一组:那一套屏幕工具,再加网页专属的导航、读页、标签、下载上传、脚本、等待、任务结束后留下这一页。按发给模型的顺序。 */
 internal object WebGroup {
     val tools: List<AgentTool> = ScreenTool.of(WEB_FAMILY) + listOf(
-        Navigate, ReadPage, EvaluateJs, RunSiteCommand, Tabs, Downloads, Upload, SiteMode, WebScriptTool, Interact, Capture, WebWaitFor, KeepOpen,
+        Navigate, ReadPage, ReadAll, WebAuth, EvaluateJs, RunSiteCommand, Tabs, Downloads, Upload, SiteMode, WebScriptTool, Interact, Capture, WebWaitFor, KeepOpen,
     )
 }

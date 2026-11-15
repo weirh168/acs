@@ -269,6 +269,7 @@ fun DuringWorkScreen(
     selfConfig: Boolean = false, onSelfConfig: (Boolean) -> Unit = {},
     selfOperate: Boolean = false, onSelfOperate: (Boolean) -> Unit = {},
     pipOperate: Boolean = false, onPipOperate: (Boolean) -> Unit = {},
+    degradedScreen: Boolean = false, onDegradedScreen: (Boolean) -> Unit = {},
     externalSchedule: Boolean = false, onExternalSchedule: (Boolean) -> Unit = {},
     stepLimit: Int? = null, onStepLimit: (Int?) -> Unit = {},
     tokenBudget: Long? = null, onTokenBudget: (Long?) -> Unit = {},
@@ -333,6 +334,17 @@ fun DuringWorkScreen(
                 onClick = { onSelfConfig(!selfConfig) },
             ) {
                 MikaSwitch(selfConfig, onSelfConfig, Modifier.testTag("work-self-config"))
+            }
+        }
+        // 没有内置助手时读用户主屏(降级):默认关,读的是用户自己的屏幕
+        GroupCard {
+            ListRow(
+                MikaIcons.Phone, stringResource(R.string.settings_degraded_screen),
+                stringResource(R.string.settings_degraded_screen_sub),
+                first = true,
+                onClick = { onDegradedScreen(!degradedScreen) },
+            ) {
+                MikaSwitch(degradedScreen, onDegradedScreen, Modifier.testTag("work-degraded-screen"))
             }
         }
         // 允许 Mika 操作自己的界面:默认关;打开后任务里才有 mika_open_screen/open_file/notify/copy

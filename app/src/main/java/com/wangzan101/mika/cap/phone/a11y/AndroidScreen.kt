@@ -243,6 +243,149 @@ class AndroidScreen(
         display.current?.latestFramePng()
     }
 
+    /**
+     * 长截图:每次拿当前整帧,滚动一屏,再拿下一帧,最后按重叠拼接。
+     * 内容不再变化(两帧完全一样)或滚动失败时提前停。
+     */
+    override suspend fun longShot(maxScreens: Int, horizontal: Boolean): com.wangzan101.mika.core.uistate.LongShot? = withContext(Dispatchers.IO) {
+        if (!hasDisplay) { Log.w("MikaLongShot", "no display"); return@withContext null }
+        if (!frameServable()) { Log.w("MikaLongShot", "frame not servable"); return@withContext null }
+        if (frameBlack() == true) { Log.w("MikaLongShot", "frame black"); return@withContext null }
+        val frames = mutableListOf<android.graphics.Bitmap>()
+        val shifts = mutableListOf<Int>()
+        var blocked: String? = null
+        try {
+            val limit = maxScreens.coerceIn(1, 12)
+            val firstRaw = display.current?.latestFrameBitmap() ?: run {
+                Log.w("MikaLongShot", "no first frame")
+                return@withContext null
+            }
+            // 横向长截图:把每帧转 90° 当成竖图拼,拼完再转回来,复用同一套锚点对齐。
+            frames += if (horizontal) LongShotStitcher.rotate(firstRaw, true).also { firstRaw.recycle() } else firstRaw
+            while (frames.size < limit) {
+                val last = frames.last()
+                val h = last.height
+                val w = last.width
+                val r = if (horizontal) {
+                    swipe((w * 0.80).toInt(), h / 2, (w * 0.20).toInt(), h / 2, 900L)
+                } else {
+                    swipe(w / 2, (h * 0.70).toInt(), w / 2, (h * 0.55).toInt(), 900L)
+                }
+                if (r is ActionResult.Failed) { Log.w("MikaLongShot", "swipe failed: ${r.reason}"); blocked = "滚动没有成功"; break }
+                awaitSettled()
+                val raw = display.current?.latestFrameBitmap() ?: break
+                val next = if (horizontal) LongShotStitcher.rotate(raw, true).also { raw.recycle() } else raw
+                val minOverlap = (h * 0.10).toInt()
+                val d = LongShotStitcher.shift(last, next, minOverlap)
+                Log.i("MikaLongShot", "shift=$d of $h horizontal=$horizontal")
+                if (d == 0) {
+                    // 两种可能:到底了,或者弹窗/遮罩把画面盖住(整体变暗)
+                    if (dimmed(last, next)) blocked = "画面被弹窗或遮罩盖住了"
+                    next.recycle()
+                    break
+                }
+                if (d < MIN_SHIFT) { next.recycle(); break }
+                if (d > h - minOverlap) {
+                    blocked = "页面跳得太远、和上一屏接不上（可能翻页或跳转）"
+                    next.recycle()
+                    break
+                }
+                frames += next
+                shifts += d
+            }
+            val stitched = LongShotStitcher.stitch(frames, shifts, blocked) ?: run {
+                Log.w("MikaLongShot", "stitch returned null")
+                return@withContext null
+            }
+            val segments = if (horizontal) unrotate(stitched.segments) else stitched.segments
+            val outWidth = if (horizontal) stitched.height else stitched.width
+            val outHeight = if (horizontal) stitched.width else stitched.height
+            com.wangzan101.mika.core.uistate.LongShot(
+                segments, outWidth, outHeight, stitched.screens, stitched.overlaps, stitched.blocked,
+            )
+        } catch (e: Throwable) {
+            Log.w("MikaLongShot", "failed", e)
+            null
+        } finally {
+            frames.forEach { it.recycle() }
+        }
+    }
+
+    /** 横向拼接出来的段是竖着的,转回横向再交出去。 */
+    private fun unrotate(segments: List<ByteArray>): List<ByteArray> = segments.mapNotNull { bytes ->
+        val bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return@mapNotNull null
+        val rotated = LongShotStitcher.rotate(bmp, false)
+        bmp.recycle()
+        val out = java.io.ByteArrayOutputStream()
+        rotated.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+        rotated.recycle()
+        out.toByteArray()
+    }
+
+    /** 这一帧比上一帧整体暗了一截:多半是弹窗把背景压暗了。 */
+    private fun dimmed(before: android.graphics.Bitmap, after: android.graphics.Bitmap): Boolean {
+        val a = averageLuma(before)
+        val b = averageLuma(after)
+        return a > 20 && b < a * 0.78
+    }
+
+    private fun averageLuma(bmp: android.graphics.Bitmap): Double {
+        val stepX = (bmp.width / 24).coerceAtLeast(1)
+        val stepY = (bmp.height / 24).coerceAtLeast(1)
+        var sum = 0.0
+        var n = 0
+        var y = 0
+        while (y < bmp.height) {
+            var x = 0
+            while (x < bmp.width) {
+                val c = bmp.getPixel(x, y)
+                sum += 0.299 * ((c shr 16) and 0xFF) + 0.587 * ((c shr 8) and 0xFF) + 0.114 * (c and 0xFF)
+                n++
+                x += stepX
+            }
+            y += stepY
+        }
+        return if (n == 0) 0.0 else sum / n
+    }
+
+    /** 位移小于这么多像素就当到底了(滚动惯性只剩一两像素的那种)。 */
+    private val MIN_SHIFT = 32
+    /** 长图高度预算:留点余量,避免整张图因为超长而被丢掉。 */
+    private val HEIGHT_BUDGET = 19_000
+
+    /** 等画面稳定:连续两帧一样就算停了,最多等 3 秒。 */
+    private suspend fun awaitSettled() {
+        var prev: android.graphics.Bitmap? = null
+        try {
+            val deadline = System.currentTimeMillis() + 3000
+            while (System.currentTimeMillis() < deadline) {
+                kotlinx.coroutines.delay(250)
+                val now = display.current?.latestFrameBitmap()?.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
+                if (now != null) {
+                    if (prev != null && sameBitmap(prev, now)) { now.recycle(); return }
+                    prev?.recycle()
+                    prev = now
+                }
+            }
+        } finally {
+            prev?.recycle()
+        }
+    }
+
+    private fun sameBitmap(a: android.graphics.Bitmap, b: android.graphics.Bitmap): Boolean {
+        if (a.width != b.width || a.height != b.height) return false
+        val pa = IntArray(a.width)
+        val pb = IntArray(b.width)
+        var y = 0
+        while (y < a.height) {
+            a.getPixels(pa, 0, a.width, 0, y, a.width, 1)
+            b.getPixels(pb, 0, b.width, 0, y, b.width, 1)
+            if (!pa.contentEquals(pb)) return false
+            y += 17
+        }
+        return true
+    }
+
     /** 最近一次启动开始的单调时钟时刻（纳秒），与虚拟屏生产者的帧时间戳比较。 */
     @Volatile private var frameGuardSince: Long? = null
 
@@ -276,6 +419,34 @@ class AndroidScreen(
         StillFrameRead.read(SystemClock::uptimeMillis, { delay(it) }, ::frameSignature) {
             display.current?.latestFrameBitmap()?.let { PhoneOcr.read(it) }
         }
+    }
+
+    /**
+     * 只识别一块区域:[region] 是 0–999 的 `[左,上,右,下]`,先按当前帧尺寸换成像素再裁,其余流程和整屏一致。
+     * 区域为空或裁不出有效尺寸时返回 null(工具据此报 empty_region)。
+     */
+    override suspend fun readVisibleTextIn(region: List<Int>?): List<VisibleTextLine>? {
+        if (region == null || region.size != 4) return readVisibleText()
+        return withContext(Dispatchers.IO) {
+            if (!hasDisplay || !frameServable() || frameBlack() == true) return@withContext null
+            StillFrameRead.read(SystemClock::uptimeMillis, { delay(it) }, ::frameSignature, recognize = recognize@{
+                val frame = display.current?.latestFrameBitmap() ?: return@recognize null
+                val cropped = cropRegion(frame, region)
+                if (cropped != frame) frame.recycle()
+                cropped?.let { PhoneOcr.read(it) }
+            })
+        }
+    }
+
+    /** 按 0–999 归一化坐标裁一块;裁不出有效尺寸返回 null(调用方负责回收原图)。 */
+    private fun cropRegion(frame: android.graphics.Bitmap, region: List<Int>): android.graphics.Bitmap? {
+        fun px(n: Int, size: Int) = ((n.coerceIn(0, 999) * (size - 1)) / 999.0).toInt()
+        val left = px(region[0], frame.width)
+        val top = px(region[1], frame.height)
+        val right = px(region[2], frame.width)
+        val bottom = px(region[3], frame.height)
+        if (right - left < 2 || bottom - top < 2) return null
+        return runCatching { android.graphics.Bitmap.createBitmap(frame, left, top, right - left, bottom - top) }.getOrNull()
     }
 
     override suspend fun frameGrid(): FrameGrid? = withContext(Dispatchers.IO) {

@@ -4,6 +4,7 @@ import com.wangzan101.mika.core.gate.IrreversibleDetector
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.uistate.ScreenFamily
 import com.wangzan101.mika.core.tool.Args
+import com.wangzan101.mika.core.tool.bool
 import com.wangzan101.mika.core.tool.HINT_PROTECTED
 import com.wangzan101.mika.core.tool.HINT_DISPLAY_CAPTURE
 import com.wangzan101.mika.core.uistate.ScreenDiagnosis
@@ -30,11 +31,16 @@ internal class Observe(f: ScreenFamily) : ScreenTool(f, "observe") {
     override val verb = Verb.Observe
     override val label = "看屏幕"
     override val risk = Risk.Read
-    override val def by lazy { ToolDef(name, describe()) }
+    override val def by lazy { ToolDef(name, describe(), mapOf(
+        "includeOcr" to bool("Also run the on-device OCR on this screen even when the accessibility tree looks complete. " +
+            "Use it for self-drawn UI (Canvas, games, Flutter/React-Native surfaces) where the tree has no nodes. " +
+            "Adds ocrOnly (pixel-only lines with 0-999 centers, usable as coordinates for tap) and ocrMs; costs about 0.3-1s."),
+    )) }
 
     override suspend fun execute(a: Args, ctx: ToolContext) = ctx.session.observe(
         withImage = ctx.config.visionEnabled && !ctx.config.adaptiveVision,
         adaptiveImage = ctx.config.visionEnabled && ctx.config.adaptiveVision,
+        forceOcr = a.bool("includeOcr", false),
     )
 }
 

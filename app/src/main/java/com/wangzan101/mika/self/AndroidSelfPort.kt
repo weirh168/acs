@@ -54,6 +54,22 @@ class AndroidSelfPort(
 ) : SelfPort {
     private val nextId = AtomicInteger(1000)
 
+    /** 今天的用量:账本按小时记,这里换成「本地今天」的合计。只给数字。 */
+    override suspend fun usageToday(): com.wangzan101.mika.core.self.SelfUsage? = withContext(Dispatchers.IO) {
+        runCatching {
+            val snapshot = app.usage.snapshot()
+            val report = com.wangzan101.mika.core.usage.UsageQuery.report(
+                snapshot,
+                com.wangzan101.mika.core.usage.UsageRange.LastDays(1),
+                java.time.Instant.now(),
+                java.time.ZoneId.systemDefault(),
+                emptyMap(),
+            )
+            val t = report.totals
+            com.wangzan101.mika.core.self.SelfUsage(t.tokens, t.input, t.output, t.cached, t.calls)
+        }.getOrNull()
+    }
+
     override suspend fun status(): SelfStatus = withContext(Dispatchers.IO) {
         val flags = FeatureFlags.get(app)
         val operate = flags.selfOperate()

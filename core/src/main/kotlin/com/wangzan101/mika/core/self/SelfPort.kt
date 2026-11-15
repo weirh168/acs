@@ -58,9 +58,23 @@ interface SelfPort {
     /** 打开链接的同意文案(用 App 当前语言);[query] 不为 null 时是搜索。 */
     fun browserConsent(url: String, query: String?, replaces: Boolean): SelfConsent = SelfConsent("", "", "")
 
+    /**
+     * 今天(本地日期)的模型用量合计;拿不到为 null。只给数字,不含对话内容。
+     */
+    suspend fun usageToday(): SelfUsage? = null
+
     /** 代登录的同意文案。 */
     fun loginConsent(host: String, replaces: Boolean): SelfConsent = SelfConsent("", "", "")
 }
+
+/** 今天的用量合计,token 都是输入+输出(缓存命中已算在输入里)。 */
+data class SelfUsage(
+    val tokens: Long,
+    val input: Long,
+    val output: Long,
+    val cached: Long,
+    val calls: Long,
+)
 
 /** 用户浏览器此刻的样子;不含历史。 */
 data class SelfBrowserState(

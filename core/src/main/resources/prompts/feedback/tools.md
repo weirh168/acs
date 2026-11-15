@@ -669,3 +669,42 @@ The command hit its time limit and was stopped. Use a larger timeoutSec (up to 3
 
 ## root.truncated
 The output was clipped to its head and tail. Narrow the command (grep, head, tail, a smaller query) to see the part you need.
+
+## read_all.empty
+This page has no repeated items this tool could find. Use web_read_page for the page text, or web_observe and pass a selector naming one item.
+
+## read_all.auto
+The group was picked automatically; if these items look unrelated, use web_observe to find one item of the list and pass its CSS selector.
+
+## screenshot_save_unavailable
+Saving screenshots is not available for this task. Ask for the image another way, or just describe what is on screen.
+
+## tap_ocr.unavailable
+The screen could not be read with on-device OCR right now (no picture, protected content, or the frame kept changing). Try phone_observe first; if the target has an accessibility node, tap it by ref instead.
+
+## tap_ocr.no_match
+No visible text matched "{{text}}". Nearby text: {{nearby}}. Use phone_observe (includeOcr is on) to see the exact wording, or tap by ref.
+
+## read_chat.empty
+Nothing readable on this screen. Scroll to the content first, or use phone_observe.
+
+## long_shot.save_path_required
+This model cannot view images. Give savePath (a new .png under /workspace) to keep the long screenshot, then share_file it.
+
+## long_shot.unavailable
+A long screenshot is not available here: the screen is protected, has no picture, or this surface does not support stitching.
+
+## web_auth.needs_login
+This page is behind a sign-in wall ({{host}}). Do not type credentials yourself: call mika_login_site with host {{host}}, let the user sign in, then mika_confirm_login and continue.
+
+## long_shot.segmented_needs_path
+This page is too long for one image and was split into several; give savePath so the parts can be written (they come back as name-1.png, name-2.png …).
+
+## long_shot.blocked
+The long screenshot stopped early: {{why}}. The screen was left as it is — look at it with phone_observe, deal with the popup or the page change, then take the long screenshot again.
+
+## ocr.invalid_region
+region must be `left,top,right,bottom` in 0–999 coordinates with left < right and top < bottom, e.g. `0,0,999,400` for the top strip. Omit it to read the whole screen.
+
+## usage.run_unavailable
+This run does not keep a token tally (it is not a normal task), so only the device-wide numbers are available.

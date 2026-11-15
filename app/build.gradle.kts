@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -10,16 +12,36 @@ val gitHash: String = runCatching {
     providers.exec { commandLine("git", "rev-parse", "--short=7", "HEAD") }.standardOutput.asText.get().trim()
 }.getOrNull()?.takeIf { it.isNotEmpty() } ?: "dev"
 
+// 发布签名:keystore.properties 在同目录(不进版本库),没有它时 release 包仍是未签名,行为与上游一致。
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.wangzan101.mika"
     compileSdk = 36
 
+    signingConfigs {
+        if (keystoreProps.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     defaultConfig {
-        applicationId = "com.wangzan101.mika"
+        // 并存安装用:与官方 com.wangzan101.mika 分开,签名不同也能装在同一台手机上。
+        // namespace 保持不变,所以 R / BuildConfig / 无障碍服务类名都不受影响。
+        applicationId = "com.wangzan101.mika.mod"
+        resValue("string", "app_name", "Mika Mod")
         minSdk = 29
         targetSdk = 35
-        versionCode = 43
-        versionName = "0.1.42"
+        versionCode = 44
+        versionName = "0.1.42-mod.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_HASH", "\"$gitHash\"")
         // 关于页版本号后的 Beta 标记;出正式版时改成 false
@@ -55,10 +77,26 @@ android {
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("eval/tasks"))
 
     buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.findByName("release")
+            // 正式包不再挂 Beta 标记(调试包仍是 beta)
+            buildConfigField("boolean", "BETA", "false")
+            buildConfigField("boolean", "ADB_LOGS", "false")
+            isMinifyEnabled = false
+        }
         // 真机验收时并排安装,保留发行版和用户数据;默认构建标识不变。
         if (providers.gradleProperty("devInstall").isPresent) getByName("debug") {
             applicationIdSuffix = ".dev"
             resValue("string", "app_name", "Mika Dev")
+        }
+        // 发布候选的验收包:和 release 完全同源同签名,只是包名加 .rel,能和调试包并排装在一台手机上,
+        // 用来在不丢调试数据的前提下确认真实发布包能装、能启动。
+        create("releaseCheck") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".rel"
+            versionNameSuffix = "-rel"
+            signingConfig = signingConfigs.findByName("release")
+            matchingFallbacks += "release"
         }
         // 看流畅度用的包:和发布版一样不可调试(调试包不做预先编译,界面慢好几倍,手感不作数),
         // 用本机调试签名,能直接覆盖调试包、保留数据;可被性能工具采样。./gradlew :app:assemblePerf

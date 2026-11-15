@@ -126,6 +126,7 @@ fun SettingsScreen(
     var stepLimit by remember { mutableStateOf(flags.taskStepLimit()) }
     var tokenBudget by remember { mutableStateOf(flags.taskTokenBudget()) }
     var selfConfig by remember { mutableStateOf(flags.selfConfig()) }
+    var degradedScreen by remember { mutableStateOf(flags.degradedScreen()) }
     var selfOperate by remember { mutableStateOf(flags.selfOperate()) }
     var pipOperate by remember { mutableStateOf(flags.pipOperate()) }
     var externalSchedule by remember { mutableStateOf(flags.externalSchedule()) }
@@ -237,6 +238,7 @@ fun SettingsScreen(
             stepLimit = stepLimit, onStepLimit = { flags.setTaskStepLimit(it); stepLimit = it },
             tokenBudget = tokenBudget, onTokenBudget = { flags.setTaskTokenBudget(it); tokenBudget = it },
             selfConfig = selfConfig, onSelfConfig = { flags.setSelfConfig(it); selfConfig = it },
+            degradedScreen = degradedScreen, onDegradedScreen = { flags.setDegradedScreen(it); degradedScreen = it },
             selfOperate = selfOperate, onSelfOperate = { flags.setSelfOperate(it); selfOperate = it },
             pipOperate = pipOperate, onPipOperate = { flags.setPipOperate(it); pipOperate = it },
             externalSchedule = externalSchedule, onExternalSchedule = { flags.setExternalSchedule(it); externalSchedule = it },

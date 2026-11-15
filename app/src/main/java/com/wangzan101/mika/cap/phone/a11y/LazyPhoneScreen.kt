@@ -75,7 +75,9 @@ class LazyPhoneScreen(
     override suspend fun snapshot(): ScreenSnapshot = port?.snapshot() ?: empty()
     override suspend fun peek(): ScreenSnapshot = port?.peek() ?: empty()
     override suspend fun screenshotPng(): ByteArray? = port?.screenshotPng()
+    override suspend fun longShot(maxScreens: Int, horizontal: Boolean): com.wangzan101.mika.core.uistate.LongShot? = port?.longShot(maxScreens, horizontal)
     override suspend fun readVisibleText(): List<VisibleTextLine>? = port?.readVisibleText()
+    override suspend fun readVisibleTextIn(region: List<Int>?): List<VisibleTextLine>? = port?.readVisibleTextIn(region)
     override suspend fun tapRef(ref: String, snapshotId: String) = port?.tapRef(ref, snapshotId) ?: NO_APP_OPEN
     override suspend fun tapXY(x: Int, y: Int) = port?.tapXY(x, y) ?: NO_APP_OPEN
     override suspend fun doubleTapRef(ref: String, snapshotId: String) = port?.doubleTapRef(ref, snapshotId) ?: NO_APP_OPEN

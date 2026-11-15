@@ -43,6 +43,18 @@ class RunUsageTally(val tokenBudget: Long? = null) : AbstractCoroutineContextEle
     /** 已报告的输入加输出；缓存命中已包含在输入里，不能重复相加。 */
     fun totalTokens(): Long = input.get() + output.get()
 
+    fun inputTokens(): Long = input.get()
+
+    fun outputTokens(): Long = output.get()
+
+    fun cachedTokens(): Long = cached.get()
+
+    /** 逻辑调用次数(一次重试算一次)。 */
+    fun logicalCalls(): Int = logicalCalls.get()
+
+    /** 实际 HTTP 请求次数(含适配器内部重发)。 */
+    fun httpCalls(): Int = calls.get()
+
     /** 在下一次实际请求前调用；达到预算时不允许收尾、重试或旁路调用继续消耗。 */
     fun checkBudget() {
         val limit = tokenBudget ?: return

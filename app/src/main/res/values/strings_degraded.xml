@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_degraded_screen">Read my screen when the helper is unavailable</string>
+    <string name="settings_degraded_screen_sub">Off by default. When the built-in helper is not connected, tasks can still read your main screen (observe, screenshots, OCR) and use accessibility for taps, swipes and typing. Apps open on your own screen. While this is used, Mika reads what is on your display.</string>
+</resources>

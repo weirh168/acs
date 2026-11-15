@@ -93,7 +93,9 @@ class AppAccessScreenPort(
     override suspend fun snapshot() = observed { inner.snapshot() }
     override suspend fun peek() = observed { inner.peek() }
     override suspend fun screenshotPng() = checked { inner.screenshotPng() }
+    override suspend fun longShot(maxScreens: Int, horizontal: Boolean) = checked { inner.longShot(maxScreens, horizontal) }
     override suspend fun readVisibleText() = checked { inner.readVisibleText() }
+    override suspend fun readVisibleTextIn(region: List<Int>?) = checked { inner.readVisibleTextIn(region) }
     override suspend fun frameGrid() = checked { inner.frameGrid() }
     override suspend fun isProtected() = checked { inner.isProtected() }
     override suspend fun checkScreen() = checked { inner.checkScreen() }

@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.util.Log
+import com.wangzan101.mika.BuildConfig
 import com.wangzan101.mika.chat.ConversationStore
 import com.wangzan101.mika.core.trigger.TriggerDefinition
 import com.wangzan101.mika.core.trigger.TriggerSource
@@ -16,11 +17,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * 外部脚本经广播(com.wangzan101.mika.SCHEDULE)建定时任务的入口。
+ * 外部脚本经广播(<applicationId>.SCHEDULE)建定时任务的入口。
  * 广播是 fire-and-forget,没有返回值:拒绝原因写进 logcat,绝不静默排队。
+ *
+ * 动作名跟着 applicationId 走,并存安装的两个包各收各的广播,不会互相投递。
  */
 object ExternalSchedule {
-    const val ACTION = "com.wangzan101.mika.SCHEDULE"
+    val ACTION: String = BuildConfig.APPLICATION_ID + ".SCHEDULE"
 
     /** 每分钟最多接几条;超过直接拒绝,不排队。 */
     private const val LIMIT_PER_MINUTE = 5

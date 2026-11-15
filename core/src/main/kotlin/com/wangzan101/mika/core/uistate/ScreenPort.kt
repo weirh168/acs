@@ -136,6 +136,51 @@ data class ScreenEvent(val type: String, val packageName: String?, val text: Str
 /** 本机 OCR 从当前屏幕图像读出的文字行，边界采用与无障碍元素相同的 0–999 坐标；[confidence] 是识别给的 0–1 置信度，没有为 null。 */
 data class VisibleTextLine(val text: String, val bounds: List<Int>, val confidence: Float? = null)
 
+/** 窗口不可读的原因码:画面是黑的(防截屏/DRM)。 */
+const val UNREADABLE_PROTECTED = "protected_frame"
+
+/** 窗口不可读的原因码:这块屏上没有它的窗口(开在用户屏上、或还在启动)。 */
+const val UNREADABLE_NO_WINDOW = "no_window_here"
+
+/** 窗口不可读的原因码:有窗口,但树里没有任何可读内容。 */
+const val UNREADABLE_EMPTY_TREE = "empty_tree"
+
+/**
+ * 到了前台却读不到窗口时的原因码,给模型指方向;可读(或没有"读不到"这回事)返回 null。
+ * [ScreenSnapshot.unreadableApp] 不为 null 且树里没有可读元素时才算不可读。
+ */
+fun unreadableReasonOf(s: ScreenSnapshot): String? {
+    if (s.unreadableApp == null) return null
+    if (s.elements.any { it.meaningful }) return null
+    return when {
+        s.captureError != null -> UNREADABLE_PROTECTED
+        !s.hasWindow -> UNREADABLE_NO_WINDOW
+        else -> UNREADABLE_EMPTY_TREE
+    }
+}
+
+/**
+ * 长截图(滚动拼接)的结果。
+ *
+ * [segments] 是拼好的图,超长时按段切开(每段都是完整 PNG);单段时就是整张图。[width]/[height] 是整张图的尺寸,
+ * [screens] 是实际用了几帧(内容没变时早停,可能少于请求的帧数),[overlaps] 是每次实际滚动的像素。
+ * [blocked] 不为 null 表示中途被挡住(弹窗、遮罩、页面跳转),值是给模型看的一句话。
+ */
+class LongShot(
+    val segments: List<ByteArray>,
+    val width: Int,
+    val height: Int,
+    val screens: Int,
+    val overlaps: List<Int> = emptyList(),
+    val blocked: String? = null,
+) {
+    /** 第一段(单段时就是整张图)。 */
+    val png: ByteArray get() = segments.first()
+
+    /** 是否被切成了多段。 */
+    val segmented: Boolean get() = segments.size > 1
+}
+
 /** 内置助手以 Android shell 身份执行命令的结果。 */
 data class SystemCommandResult(val exitCode: Int, val output: String)
 
@@ -207,8 +252,19 @@ interface ScreenPort {
     /** 读一屏但不登记编号(模型手里的 ref 不受影响);不可逆判定用。 */
     suspend fun peek(): ScreenSnapshot = snapshot()
     suspend fun screenshotPng(): ByteArray?
+    /**
+     * 长截图:滚一屏、截一帧、按重叠拼接,最多 [maxScreens] 帧;内容不再变化时提前停。
+     * 端口不支持(网页、没有画面、受保护页面)时返回 null。
+     */
+    suspend fun longShot(maxScreens: Int, horizontal: Boolean = false): LongShot? = null
     /** 可选的本机文字识别；null 表示当前画面不可读或端口没有 OCR。 */
     suspend fun readVisibleText(): List<VisibleTextLine>? = null
+
+    /**
+     * 只识别屏幕的一块:[region] 是 0–999 坐标的 `[左, 上, 右, 下]`,null 表示整屏。
+     * 默认实现忽略区域、读整屏(端口不支持裁剪时照样能用)。
+     */
+    suspend fun readVisibleTextIn(region: List<Int>?): List<VisibleTextLine>? = readVisibleText()
     suspend fun tapRef(ref: String, snapshotId: String): ActionResult
     suspend fun tapXY(x: Int, y: Int): ActionResult
     /** 双击(两次点击间隔在系统认双击的时限内);不支持的端口报 double_tap_unsupported。 */

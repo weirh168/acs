@@ -195,6 +195,16 @@ class FeatureFlags(private val prefs: SharedPreferences) {
      * 允许用户在对话里的虚拟屏小窗直接操作(点 / 滑 / 返回),不用把 App 整个挪到主屏。
      * 默认关:开着时小窗展开后点画面会真实注入到虚拟屏,手滑一下可能点歪 AI 正在跑的任务。
      */
+    /**
+     * 内置助手连不上时,允许降级用无障碍读用户主屏(只读:观察、截图、认字)。
+     * 默认关:读的是用户自己的屏幕,要用户明确同意。
+     */
+    fun degradedScreen(): Boolean = prefs.getBoolean(DEGRADED_SCREEN, false)
+
+    fun setDegradedScreen(on: Boolean) {
+        prefs.edit().putBoolean(DEGRADED_SCREEN, on).commit()
+    }
+
     fun pipOperate(): Boolean = prefs.getBoolean(PIP_OPERATE, false)
 
     fun setPipOperate(on: Boolean) {
@@ -375,6 +385,7 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val OPERATING_PACE = "operating_pace"
         private const val AUTO_ARCHIVE_DAYS = "auto_archive_days"
         private const val SELF_CONFIG = "self_config"
+        private const val DEGRADED_SCREEN = "degraded_screen"
         private const val SELF_OPERATE = "self_operate"
         private const val PIP_OPERATE = "pip_operate"
         private const val EXTERNAL_SCHEDULE = "external_schedule"
