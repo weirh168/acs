@@ -29,6 +29,7 @@ import com.wangzan101.mika.core.tool.HINT_PROTECTED
 import com.wangzan101.mika.core.tool.HINT_DISPLAY_CAPTURE
 import com.wangzan101.mika.core.tool.MAX_READ_CHARS
 import com.wangzan101.mika.core.tool.NOTE_CHANGED_DURING_READ
+import com.wangzan101.mika.core.tool.NOTE_DEGRADED_SCREEN
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.okObj
@@ -179,7 +180,13 @@ internal class ScreenSession(
             quality(tree)?.let { put("treeQuality", it) }
             ocrStatus?.let { put("ocr", it) }
             put("screenChangedDuringRead", s.changedDuringRead)
-            if (s.changedDuringRead) put("note", NOTE_CHANGED_DURING_READ)
+            // 降级模式要说清楚:这几步真的发生在用户眼前的屏幕上,节奏和"能折腾的程度"都不一样。
+            if (screen.degradedScreen) put("degraded", true)
+            val notes = buildList {
+                if (s.changedDuringRead) add(NOTE_CHANGED_DURING_READ)
+                if (screen.degradedScreen) add(NOTE_DEGRADED_SCREEN)
+            }
+            if (notes.isNotEmpty()) put("note", notes.joinToString(" "))
             s.opened?.let { put("opened", openedJson(it)) }
             if (s.captureError != null) {
                 put("captureError", s.captureError)

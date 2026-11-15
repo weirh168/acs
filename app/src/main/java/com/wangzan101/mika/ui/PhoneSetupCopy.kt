@@ -120,6 +120,9 @@ object PhoneSetupCopy {
     val CONNECT_PORT_HINT: String get() = tr(R.string.phone_connect_port_hint)
     val CONNECT_PORT_SUBMIT: String get() = tr(R.string.phone_connect_port_submit)
     val SUCCESS_LINE: String get() = tr(R.string.phone_success)
+    /** 降级模式开着时这一页要说清此刻在用哪块屏:助手没连上=真的在用你的主屏,连上了=备用。 */
+    val DEGRADED_NOW: String get() = tr(R.string.phone_degraded_now)
+    val DEGRADED_STANDBY: String get() = tr(R.string.phone_degraded_standby)
     /** 成功页底部的提醒:手机重启后怎么让助手回来,看它上次是怎么起的。 */
     fun successNote(restart: HelperRestart): String =
         if (restart == HelperRestart.UsbCommand) tr(R.string.phone_success_note_usb) else tr(R.string.phone_success_note)

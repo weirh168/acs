@@ -720,7 +720,17 @@ class TaskRun(
                         val shell = withTimeoutOrNull(1_500) { phoneServices.hub.shell.filterNotNull().first() }
                         if (shell == null) {
                             degradedOrNull()?.let { return@acquire it }
-                            throw com.wangzan101.mika.cap.phone.a11y.PhoneUnavailable(NO_PHONE_HELPER)
+                            // 助手没连上、降级开关也没开:无障碍在的话,直接告诉用户打开哪个开关就能接着做
+                            val why = com.wangzan101.mika.core.cap.phone.PhoneReadiness.unavailable(
+                                helperConnected = false,
+                                degradedApproved = FeatureFlags.get(service).degradedScreen(),
+                                accessibilityOn = ScreenAccessibility.instance.value != null,
+                            )
+                            throw com.wangzan101.mika.cap.phone.a11y.PhoneUnavailable(
+                                if (why == com.wangzan101.mika.core.cap.phone.PhoneReadiness.Unavailable.HelperMissingCanDegrade)
+                                    NO_PHONE_HELPER_DEGRADED_OFF
+                                else NO_PHONE_HELPER,
+                            )
                         }
                     }
                     try {
@@ -1540,6 +1550,8 @@ class TaskRun(
         const val A11Y_WAIT_MS = 5_000L
         val NO_PHONE_HELPER: String get() = tr(R.string.task_no_phone_helper)
         val NO_PHONE_HELPER_USB: String get() = tr(R.string.task_no_phone_helper_usb)
+        /** 助手没连上、但无障碍可用、只是降级开关没开:告诉用户打开哪个开关就能继续。 */
+        val NO_PHONE_HELPER_DEGRADED_OFF: String get() = tr(R.string.task_no_phone_helper_degraded_off)
         const val TAG = "MikaTask"
     }
 }

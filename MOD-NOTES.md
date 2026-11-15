@@ -98,3 +98,88 @@ git rebase upstream/main        # 或 git merge upstream/main
 
 - `CompositeToolsTest`：**32 例全过**（新增 16 例，覆盖上面每个参数的正常路径与边界）
 - `prompt-surface` 金样同步更新（模型看到的 schema 与工具说明已含新参数）
+
+## 降级模式：让模型知道自己在你自己的屏幕上（2026-11-15 21:55）
+
+降级模式（`FeatureFlags.degradedScreen()`，内置助手没连上时读用户主屏）能力其实很全：
+`MainScreenPort` 有读屏、截图、点击、滚动、长截图（还带手势滚不动时退回无障碍滚动的兜底）。
+缺的是**模型不知道自己在用户眼前操作**——它会按"后台虚拟屏可以随便折腾"的习惯做事。
+
+### 改动
+
+| 位置 | 内容 |
+|---|---|
+| `ScreenPort` | 新增 `val degradedScreen: Boolean get() = false`，注释说明这个端口操作的是用户主屏 |
+| `MainScreenPort` | `override val degradedScreen = true`（它就是降级模式本身） |
+| `LazyPhoneScreen` | `port?.degradedScreen == true`：接上之后才知道走的是哪块屏 |
+| `AppAccessScreenPort` | 显式转发（该类约定每个成员都手写，不靠 `by`） |
+| `ScreenSession.observe` | 结果里加 `"degraded": true`，并把一句说明并进 `note`（和「读的时候屏在变」那条并存，不互相覆盖） |
+| `prompts/feedback/tools.md` | 新增 `degraded_screen` 说明：截图至少隔一秒、手势更钝、长截图每帧好几秒；少滚动、不做没被要求的长截图、用户可能同时也在动这块屏，并在回答里说明正在操作他的屏幕 |
+| `phone_read_chat` / `phone_long_screenshot` | 结果带 `"degraded": true`（这两个要翻屏/连拍，最费时间） |
+
+### 测试
+
+- 新增 `DegradedScreenTest` 3 例：降级读屏带标记与说明、正常屏不带、和「屏在变」的 note 并存
+- `CompositeToolsTest` 加 3 例：读聊天/长截图在降级下带标记、正常端口不带（共 **35 例**）
+- `AppAccessScreenPortTest` 的「每个成员都被显式转发/检查」清单加上 `getDegradedScreen`
+- 受影响的老测试（`UnreadableReasonTest` 等）全过
+
+### 真机
+
+正常路径（内置助手连着、走虚拟屏）跑了一次 `phone_observe`：结果里**没有** `degraded` 字段，
+说明标记不会误报。降级路径本身需要断开内置助手才能触发，会牵动刚配好的连接，
+这一轮没有在真机上强行制造，属单测覆盖。
+
+## 降级模式的界面状态：手机操作页说清"此刻用哪块屏"（2026-11-15 22:20）
+
+状态行加在用户真正会看的那一页：`SettingsSubPages.PhoneOpsScreen`（设置 → 手机操作）。
+
+| 情况 | 显示 |
+|---|---|
+| 降级开关关着 | 不显示（和以前一样） |
+| 开关开着 + 内置助手在跑 | 行标题「没有内置助手时读我的主屏」，副标题「内置助手已连接;断开时会改用你的主屏继续(降级模式)」，右侧胶囊 **备用**（灰） |
+| 开关开着 + 助手没在跑 | 副标题「当前:正在用你的主屏(降级模式)」，胶囊 **正在使用**（警示色） |
+
+### 真机验证
+
+- 开关开着、助手已连接:行出现，「备用」+ 那句说明（截图）
+- 开关改成 false 后重开 App:该行**不再出现**（dump 里搜不到该文案）
+- 验完把开关恢复成原来的 true
+
+### 文案
+
+`values/strings_phone.xml` 与 `values-zh/strings_phone.xml` 各加 4 条：
+`phone_degraded_now` / `phone_degraded_standby` / `phone_degraded_live` / `phone_degraded_idle`。
+其它语言没有对应翻译时回落到默认英文。
+
+## 降级模式两件收尾的事（2026-11-15 22:35）
+
+### 一、进入条件更友好
+
+助手没连上时以前只有一句「手机操作还没准备好,去设置」。现在按"离能用差多远"分档
+（判断抽到 `core/cap/phone/PhoneReadiness.kt`,可单测）：
+
+| 情况 | 提示 |
+|---|---|
+| 助手连着 | 不提示 |
+| 助手没连 + 无障碍在 + 开关没开 | **新文案**：直接指出打开「设置 → 手机操作 → 没有内置助手时读我的主屏」就能接着做 |
+| 其余 | 原来的「去设置手机操作」 |
+
+### 二、用户在场时先让一让
+
+降级模式我们和用户共用一块屏。现在动手前先看用户最后一次碰屏的时间：
+
+- `UserPresence.awaitIdle`：用户刚碰过屏就等到安静 1.2 秒，最多等 3 秒，到点照样动手（只等、不抢）
+- 触摸信号来自无障碍服务的 `TYPE_TOUCH_INTERACTION_START/END`（服务配置本来就是 `typeAllMask`）
+- 我们自己的手势也会产生触摸事件，所以注入手势前先 `markSelfInput`，窗口内的触摸不算用户的
+- 播放了等待时，动作结果里带一句说明（`Waited 450ms for you to stop touching the screen before acting.`），模型知道这一步为什么慢
+- 覆盖：点、双击、滑动、节点滚动
+
+单测：`UserPresenceTest` 8 例（不用等/等满/只剩一点/时钟推进/上限到点放弃/中途又碰了重新计时）、
+`PhoneReadinessTest` 4 例。
+
+### 真机验证的限制（如实记）
+
+这两项都要在**降级模式真的生效**时才有意义，也就是内置助手断开。断开助手会牵动刚配好的连接
+（可能要重新配对），这一轮没有在真机上强行制造，属单测覆盖。
+装好的包已经在手机上、开关也开着，等哪次助手自然断开时会走这条路径。

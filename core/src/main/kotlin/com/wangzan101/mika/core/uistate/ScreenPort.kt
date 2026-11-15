@@ -244,6 +244,13 @@ enum class AppWait {
 interface ScreenPort {
     val appAccess: com.wangzan101.mika.core.access.AppAccessPolicy get() = com.wangzan101.mika.core.access.AppAccessPolicy.ALLOW
 
+    /**
+     * 这个端口操作的是**用户自己的主屏**(降级模式:内置助手没连上、用户打开了「读我的主屏」),
+     * 而不是后台虚拟屏。动作会真的发生在用户眼前的屏幕上;截图有最小间隔、滚动更"钝",
+     * 每一步都可能被用户同时的操作打断。工具据此提醒模型。
+     */
+    val degradedScreen: Boolean get() = false
+
     /** 仅核对窗口归属,不读取屏幕内容。空屏可用;有窗口但归属未知时拒绝。 */
     suspend fun checkAppAccess() {}
 

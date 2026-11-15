@@ -65,6 +65,7 @@
     <string name="task_stopped_body">你停止了这个任务</string>
     <string name="gate_user_on_page">你在操作，ACS 已暂停</string>
     <string name="task_no_phone_helper_usb">手机助手已停止(多半是手机重启过):打开 ACS,再运行一次 USB 启动命令,命令在「设置手机操作」里可以复制。网页和文件类的事不受影响。</string>
+    <string name="task_no_phone_helper_degraded_off">内置手机助手没连上。想现在就继续的话,打开「设置 → 手机操作 → 没有内置助手时读我的主屏」,ACS 会改用你的主屏(无障碍)接着做;不打开的话,先按「设置手机操作」把助手连上。网页和文件类的事不受影响。</string>
     <string name="drawer_screens">后台屏</string>
     <string name="screens_title">后台屏</string>
     <string name="screens_empty">现在没有任务在跑。</string>

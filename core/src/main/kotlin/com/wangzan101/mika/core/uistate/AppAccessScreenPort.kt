@@ -90,6 +90,7 @@ class AppAccessScreenPort(
     }
 
     // ---------- 读屏 ----------
+    override val degradedScreen: Boolean get() = inner.degradedScreen
     override suspend fun snapshot() = observed { inner.snapshot() }
     override suspend fun peek() = observed { inner.peek() }
     override suspend fun screenshotPng() = checked { inner.screenshotPng() }

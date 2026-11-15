@@ -57,6 +57,10 @@
     <string name="phone_port_invalid">冒号后面的数字不对</string>
     <string name="phone_working">正在配对并连接,几秒钟就好</string>
     <string name="phone_success">手机操作已经设置好了</string>
+    <string name="phone_degraded_now">当前:正在用你的主屏(降级模式)</string>
+    <string name="phone_degraded_standby">内置助手已连接;断开时会改用你的主屏继续(降级模式)</string>
+    <string name="phone_degraded_live">正在使用</string>
+    <string name="phone_degraded_idle">备用</string>
     <string name="phone_success_note">请保持 USB 调试开启;手机重启后打开无线调试即可自动重连</string>
     <string name="phone_start_using">开始使用</string>
     <string name="done">完成</string>
