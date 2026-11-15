@@ -158,14 +158,31 @@ fun ScreensContent(
     var zoomed by remember { mutableStateOf<Pair<Bitmap, Int>?>(null) }
     // 每张卡片最后一张画面:任务结束后仍然留着,等用户自己收起,不自动消失
     val lastFrames = remember { mutableStateMapOf<String, Bitmap>() }
+    // 任务结束后这一行会从 runs 里消失:见过就留着,等用户自己离开这一页,画面才跟着走
+    val sticky = remember { mutableStateMapOf<String, ScreenRow>() }
+    LaunchedEffect(rows) { rows.forEach { sticky[it.key] = it } }
     PageScaffold(ScreensCopy.TITLE, onBack) {
         // 放大层先摆出来:任务结束、列表变空都不该把它关掉,只有用户点「完成」才关
         zoomed?.let { (bmp, displayId) -> FrameZoom(bmp, displayId) { zoomed = null } }
-        if (rows.isEmpty()) {
+        val shown = if (sticky.isEmpty()) rows else sticky.values.toList()
+        // 已经结束、但还留在这页的那些:给一个手动清掉的入口,不靠自动消失
+        val liveKeys = rows.map { it.key }.toSet()
+        val ended = sticky.values.filter { it.key !in liveKeys }
+        if (ended.isNotEmpty()) {
+            Text(
+                ScreensCopy.CLEAR_ENDED,
+                Modifier.padding(top = 4.dp).clip(RoundedCornerShape(10.dp))
+                    .clickable { ended.forEach { sticky.remove(it.key) } }
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .testTag("screens-clear-ended"),
+                fontSize = 12.5.sp, color = MikaTheme.colors.ink3,
+            )
+        }
+        if (shown.isEmpty()) {
             EmptyNote(ScreensCopy.EMPTY)
             return@PageScaffold
         }
-        rows.forEach { row ->
+        shown.forEach { row ->
             ScreenCard(
                 row, frames(row.key), onOpenConversation,
                 cached = lastFrames[row.key],
@@ -474,6 +491,7 @@ object ScreensCopy {
     val NOTE: String get() = tr(R.string.screens_note)
     val PREVIEW: String get() = tr(R.string.screens_preview)
     val HIDE_PREVIEW: String get() = tr(R.string.screens_hide_preview)
+    val CLEAR_ENDED: String get() = tr(R.string.screens_clear_ended)
 
     /** 卡片第二行:正在用哪个 App(或浏览器);还没打开 App、或暂时看不到时各有一句。 */
     fun place(row: ScreenRow): String = when {

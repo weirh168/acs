@@ -83,6 +83,7 @@
     <string name="screens_zoom">Enlarge this screen</string>
     <string name="screens_tap_to_zoom">Tap to enlarge</string>
     <string name="screens_frame_frozen">Task ended — showing the last frame</string>
+    <string name="screens_clear_ended">Clear ended</string>
     <string name="screens_size_small">S</string>
     <string name="screens_size_medium">M</string>
     <string name="screens_size_large">L</string>
