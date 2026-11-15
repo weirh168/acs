@@ -463,9 +463,9 @@ phone_set_timer #e43baba93ba9
 phone_show_alarms #204c8e3c11e5
 phone_add_calendar_event #3f6e40cadb1a
 phone_calendar_bulk_insert #5ed09ed2c263
-phone_tap_ocr #e7a4b3bc2c24
-phone_read_chat #a184eb8b6a9d
-phone_long_screenshot #4dcdfe0a7721
+phone_tap_ocr #52c7cc03439b
+phone_read_chat #6a961b2ec239
+phone_long_screenshot #5bc70bda61c8
 run_command #69bc057cc9fd
 run_bundled_script #54259e6ba008
 read_file #e444edafa8ea

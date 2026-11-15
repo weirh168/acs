@@ -56,3 +56,45 @@ git rebase upstream/main        # 或 git merge upstream/main
 
 包名仍是 `com.wangzan101.mika.mod`：这样可以直接覆盖安装，不丢已有的模型 Key、配对和任务记录，也能和手机上的 ACS 0.2.0 并存。
 如果将来要改成独立的 ACS 包名，改 `app/build.gradle.kts` 的 `applicationId` 与 `namespace` 即可（需要卸载重装）。
+
+## 本次改动：三个手机工具的参数增强
+
+给 `phone_read_chat`、`phone_tap_ocr`、`phone_long_screenshot` 各补了实战里最缺的参数，
+**原有行为完全不变**（不传新参数时与改前一致）。全部有单元测试；关键路径在真机上跑通。
+
+### `phone_read_chat`
+
+| 参数 | 作用 |
+|---|---|
+| `direction` | `down`（默认）/ `up`：往上读旧内容。聊天与通知都锚在最新一条，往上滚才是历史；`up` 时屏序自动倒置，`lines` 仍是阅读顺序（最旧在前） |
+| `settleMs` | 每滚一屏后等多久再读（100–3000，默认 500），原来是硬编码 |
+| `until` | 读到含该文字的那一行就停，并包含该行；返回 `stoppedBy: "until"`。用来读回到某个已知地标，不必猜 `maxScreens` |
+| `match` | 滚完、去重之后只保留含该文字的行（不区分大小写），回报 `matched` / `dropped`。长群里只取一个人的发言或某个关键词，省 token |
+
+### `phone_tap_ocr`
+
+| 参数 | 作用 |
+|---|---|
+| `index` | 0 起，同名文字出现多次时点第 N 个（原来只能点第一个）；越界报 `ocr_index_out_of_range` 并给出真实数量，不会乱点 |
+| `waitMs` | 界面还在动时每 250ms 重读，直到命中或超时（0–5000，默认 0＝只读一次）；命中后结果带 `waitedMs` |
+
+排序规则也写清楚了：整行相等 > 更短 > 更靠上，因此 `index` 的语义是确定的。
+
+### `phone_long_screenshot`
+
+| 参数 | 作用 |
+|---|---|
+| `startFrom` | `current`（默认）/ `top` / `bottom`：拍之前先把页面滚到那一端（滚到「这一下界面没变化」为止）。中途被翻过的列表也能完整截出来；返回 `preScrolls` / `atEdge` |
+| `settleMs` | 定位后、第一帧前等多久（0–3000，默认 400） |
+
+### 调试探针（仅调试包）
+
+`PhoneDebug.allowForceWait` 由 `MikaApp` 在 `BuildConfig.DEBUG` 时打开；打开后
+`phone_tap_ocr` 可以先故意忽略第一次读到的结果（参数 `_forceWaitMs`，或 App 私有目录存在
+`debug-force-wait` 文件），把 `waitedMs` 逼出来，用于验证等待循环本身。
+**release 包里这个开关恒为 false，两条触发都不生效。**
+
+### 测试
+
+- `CompositeToolsTest`：**32 例全过**（新增 16 例，覆盖上面每个参数的正常路径与边界）
+- `prompt-surface` 金样同步更新（模型看到的 schema 与工具说明已含新参数）
