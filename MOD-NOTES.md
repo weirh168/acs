@@ -98,3 +98,34 @@ git rebase upstream/main        # 或 git merge upstream/main
 
 - `CompositeToolsTest`：**32 例全过**（新增 16 例，覆盖上面每个参数的正常路径与边界）
 - `prompt-surface` 金样同步更新（模型看到的 schema 与工具说明已含新参数）
+
+## 降级模式：让模型知道自己在你自己的屏幕上（2026-11-15 21:55）
+
+降级模式（`FeatureFlags.degradedScreen()`，内置助手没连上时读用户主屏）能力其实很全：
+`MainScreenPort` 有读屏、截图、点击、滚动、长截图（还带手势滚不动时退回无障碍滚动的兜底）。
+缺的是**模型不知道自己在用户眼前操作**——它会按"后台虚拟屏可以随便折腾"的习惯做事。
+
+### 改动
+
+| 位置 | 内容 |
+|---|---|
+| `ScreenPort` | 新增 `val degradedScreen: Boolean get() = false`，注释说明这个端口操作的是用户主屏 |
+| `MainScreenPort` | `override val degradedScreen = true`（它就是降级模式本身） |
+| `LazyPhoneScreen` | `port?.degradedScreen == true`：接上之后才知道走的是哪块屏 |
+| `AppAccessScreenPort` | 显式转发（该类约定每个成员都手写，不靠 `by`） |
+| `ScreenSession.observe` | 结果里加 `"degraded": true`，并把一句说明并进 `note`（和「读的时候屏在变」那条并存，不互相覆盖） |
+| `prompts/feedback/tools.md` | 新增 `degraded_screen` 说明：截图至少隔一秒、手势更钝、长截图每帧好几秒；少滚动、不做没被要求的长截图、用户可能同时也在动这块屏，并在回答里说明正在操作他的屏幕 |
+| `phone_read_chat` / `phone_long_screenshot` | 结果带 `"degraded": true`（这两个要翻屏/连拍，最费时间） |
+
+### 测试
+
+- 新增 `DegradedScreenTest` 3 例：降级读屏带标记与说明、正常屏不带、和「屏在变」的 note 并存
+- `CompositeToolsTest` 加 3 例：读聊天/长截图在降级下带标记、正常端口不带（共 **35 例**）
+- `AppAccessScreenPortTest` 的「每个成员都被显式转发/检查」清单加上 `getDegradedScreen`
+- 受影响的老测试（`UnreadableReasonTest` 等）全过
+
+### 真机
+
+正常路径（内置助手连着、走虚拟屏）跑了一次 `phone_observe`：结果里**没有** `degraded` 字段，
+说明标记不会误报。降级路径本身需要断开内置助手才能触发，会牵动刚配好的连接，
+这一轮没有在真机上强行制造，属单测覆盖。

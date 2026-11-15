@@ -36,6 +36,9 @@ class LazyPhoneScreen(
     private val lock = Mutex()
     @Volatile private var port: ScreenPort? = null
 
+    /** 接上之后才知道走的是虚拟屏还是用户的主屏(降级);没接上时按虚拟屏算。 */
+    override val degradedScreen: Boolean get() = port?.degradedScreen == true
+
     /** 模型标下的任务结束时各 App 的去留;收尾时由任务交给内置助手执行(没接上过手机就没有可处理的)。 */
     override val afterTask = AfterTaskMarks()
 

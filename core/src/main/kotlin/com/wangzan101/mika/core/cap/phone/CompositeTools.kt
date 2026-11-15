@@ -271,6 +271,8 @@ internal object ReadChat : PhoneTool {
             put("direction", if (down) "down" else "up")
             put("lines", JsonArray(kept.map { kotlinx.serialization.json.JsonPrimitive(it) }))
             put("truncated", truncated)
+            // 降级模式:翻的是用户自己的屏幕,他看得见、也可能同时在动
+            if (ctx.screen.degradedScreen) put("degraded", true)
             stoppedBy?.let { put("stoppedBy", it) }
             if (match != null) {
                 put("matched", kept.size)
@@ -367,6 +369,8 @@ internal object LongScreenshot : PhoneTool {
                 put("direction", if (horizontal) "horizontal" else "vertical")
                 put("startFrom", startFrom)
                 if (preScrolls > 0) put("preScrolls", preScrolls)
+                // 降级模式:每帧之间要等主屏截图的最小间隔,比虚拟屏慢得多,顺手说清楚在哪拍的
+                if (ctx.screen.degradedScreen) put("degraded", true)
                 if (startFrom != "current") put("atEdge", atEdge)
                 if (shot.segments.size > 1) put("segments", shot.segments.size)
                 if (shot.overlaps.isNotEmpty()) put("overlaps", shot.overlaps.joinToString(","))

@@ -34,6 +34,9 @@ internal class MainScreenPort(
     private val height: Int,
 ) : com.wangzan101.mika.core.uistate.ScreenPort {
 
+    /** 这就是降级模式本身:读写的都是用户自己的主屏。 */
+    override val degradedScreen: Boolean get() = true
+
     private val ids = NodeIds()
     private val counter = java.util.concurrent.atomic.AtomicInteger()
 

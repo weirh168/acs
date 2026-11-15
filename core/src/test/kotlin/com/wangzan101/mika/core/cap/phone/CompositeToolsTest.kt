@@ -29,7 +29,9 @@ class CompositeToolsTest {
         private val lines: List<List<VisibleTextLine>>,
         private val shot: com.wangzan101.mika.core.uistate.LongShot? = null,
         private val vision: Boolean = false,
+        private val degraded: Boolean = false,
     ) : ScreenPort by FakeScreen() {
+        override val degradedScreen: Boolean get() = degraded
         var reads = 0
         var scrolls = 0
         val downFlags = mutableListOf<Boolean>()
@@ -142,6 +144,28 @@ class CompositeToolsTest {
         assertEquals("0", r.s("matched"))
         assertEquals("3", r.s("dropped"))
         assertTrue(r.s("hint")!!.contains("王五"))
+    }
+
+    // ── 降级模式：工具结果里要标明"在读用户自己的主屏" ─────────────────────
+
+    @Test fun readChatOnMainScreenSaysDegraded() = runTest {
+        val p = Phone(listOf(chatScreen()), degraded = true)
+        val r = d(p).execute(Part.ToolCall("c1", "phone_read_chat", """{"maxScreens":1}""")).content
+        assertEquals("true", r.s("degraded"))
+    }
+
+    @Test fun longShotOnMainScreenSaysDegraded() = runTest {
+        val p = Phone(listOf(emptyList()), shot = shotFor(), degraded = true)
+        val t = toolDispatcher(p, visionEnabled = true)
+        t.execute(Part.ToolCall("o", "phone_observe", "{}"))
+        val r = t.execute(Part.ToolCall("c1", "phone_long_screenshot", """{"maxScreens":2}""")).content
+        assertEquals("true", r.s("degraded"))
+    }
+
+    @Test fun normalPortsHaveNoDegradedField() = runTest {
+        val p = Phone(listOf(chatScreen()))
+        val r = d(p).execute(Part.ToolCall("c1", "phone_read_chat", """{"maxScreens":1}""")).content
+        assertEquals(null, r.s("degraded"))
     }
 
     /** 手机一组是收着的:先读一屏把它展开,后面才能按名字调组里的工具。 */
