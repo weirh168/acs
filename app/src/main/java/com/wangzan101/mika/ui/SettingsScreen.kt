@@ -579,19 +579,23 @@ private fun sandboxValue(s: SandboxStatus): String = when (s) {
  */
 @Composable
 private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Unit, onOpenNotifications: () -> Unit) {
-    val problem = check.problems.firstOrNull { it != Problem.FocusMayLeak }
-    if (problem == null) {
-        StateCard(MikaIcons.Check, stringResource(R.string.all_ready), stringResource(R.string.settings_all_ready_detail), TileTone.Ok, Modifier.testTag("settings-status"))
-    } else {
-        val copy = StatusCopy.banner(problem)
-        // 通知被调低:卡片上只说一句,点开进「通知」内页看完整说明和怎么改
-        val toPage = problem is Problem.AttentionLowered
-        StateCard(
-            MikaIcons.Exclaim, copy.title, copy.detail,
-            if (problem in check.blockers) TileTone.Bad else TileTone.Warn,
-            Modifier.testTag("settings-status"),
-        ) {
-            MikaButton(copy.link, { if (toPage) onOpenNotifications() else onProblem(problem) }, kind = ButtonKind.Tonal, size = ButtonSize.Small)
+    // 通知被调低不在这里出卡片:下面的「通知」一行已经标了「有 N 项不会弹出」,
+    // 顶栏只在真有别的毛病时占用(没有别的毛病时也不硬说「一切就绪」)。
+    val problem = check.problems.firstOrNull { it != Problem.FocusMayLeak && it !is Problem.AttentionLowered }
+    val onlyLoweredNotifications = problem == null && check.problems.any { it !is Problem.FocusMayLeak }
+    when {
+        onlyLoweredNotifications -> Unit
+        problem == null ->
+            StateCard(MikaIcons.Check, stringResource(R.string.all_ready), stringResource(R.string.settings_all_ready_detail), TileTone.Ok, Modifier.testTag("settings-status"))
+        else -> {
+            val copy = StatusCopy.banner(problem)
+            StateCard(
+                MikaIcons.Exclaim, copy.title, copy.detail,
+                if (problem in check.blockers) TileTone.Bad else TileTone.Warn,
+                Modifier.testTag("settings-status"),
+            ) {
+                MikaButton(copy.link, { onProblem(problem) }, kind = ButtonKind.Tonal, size = ButtonSize.Small)
+            }
         }
     }
 }
