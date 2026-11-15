@@ -50,6 +50,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
@@ -167,15 +168,28 @@ fun ScreensContent(
     }
 }
 
-/** 小画面四档:小 200dp、中 260dp(原来那样)、大 460dp、超大 800dp。 */
-private enum class PreviewSize(val height: Dp, val label: Int) {
-    Small(200.dp, R.string.screens_size_small),
-    Medium(260.dp, R.string.screens_size_medium),
-    Large(460.dp, R.string.screens_size_large),
-    Huge(800.dp, R.string.screens_size_huge),
+/**
+ * 小画面的档位。前三档是固定高度;「满屏」按手机可用高度算,所以真的能铺到接近整屏。
+ */
+internal enum class PreviewSize(val label: Int) {
+    Small(R.string.screens_size_small),
+    Medium(R.string.screens_size_medium),
+    Large(R.string.screens_size_large),
+    Full(R.string.screens_size_full),
 }
 
-/** 小/中/大三个小按钮:想把画面看大一点就往上切。 */
+/**
+ * 各档的实际高度。「满屏」= 屏幕高度减去状态栏、标题栏和上下留白,最少给 700dp,
+ * 所以不管手机多矮都比「大」更高,比它再往上就只能进全屏捏合了。
+ */
+internal fun previewHeight(size: PreviewSize, screenHeightDp: Int): Dp = when (size) {
+    PreviewSize.Small -> 200.dp
+    PreviewSize.Medium -> 260.dp
+    PreviewSize.Large -> 460.dp
+    PreviewSize.Full -> (screenHeightDp - 150).coerceAtLeast(700).dp
+}
+
+/** 小/中/大/满屏四个小按钮:想把画面看大一点就往右切。 */
 @Composable
 private fun PreviewSizePicker(current: PreviewSize, onPick: (PreviewSize) -> Unit) {
     Row(
@@ -223,7 +237,8 @@ private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConver
             )
             if (open) {
                 PreviewSizePicker(size) { size = it }
-                if (frames != null) LiveFrame(frames, onZoom, size.height)
+                val screenHeightDp = LocalConfiguration.current.screenHeightDp
+                if (frames != null) LiveFrame(frames, onZoom, previewHeight(size, screenHeightDp))
             }
         }
     }
