@@ -31,6 +31,7 @@
     <string name="heads_up_action">去打开</string>
     <string name="heads_up_card_detail">只进通知栏，不会弹出。</string>
     <string name="heads_up_card_action">看看怎么改</string>
+    <string name="heads_up_card_title_short">「%1$s」</string>
     <string name="heads_up_page_title">让这两类通知弹出来</string>
     <string name="heads_up_page_intro">下面每一行点进去就是那个频道的系统设置。要的效果是「在屏幕上弹出」（有的系统叫「横幅」「悬浮通知」）。</string>
     <string name="heads_up_title">「%1$s」的通知不会弹出</string>

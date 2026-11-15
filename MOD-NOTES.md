@@ -115,3 +115,15 @@ git rebase upstream/main        # 或 git merge upstream/main
 改动文件：`StatusCopy.kt`（卡片文案换成短句、新增 `headsUpExplain()` 给内页用）、
 `SettingsScreen.kt`（`StatusSummary` 对 `AttentionLowered` 改为跳内页）、
 `SettingsSubPages.kt`（通知内页顶部加说明块）、中英文 `strings_status.xml` 各 4 条新文案。
+
+### 追加：继续压短 + 修掉内页不显示的问题（2026-11-15 23:10）
+
+- 卡片再压：标题只留频道名「任务结果」，去掉整句说明，只留按钮「看看怎么改」
+  （原来副标题那句「只进通知栏，不会弹出。」也去掉了）
+- **修一个 bug**：通知内页的解释块一开始用 `notificationOverview().result.warn` 判断，
+  和设置页卡片用的 `status.resultLowered` 不是同一个来源，导致「卡片在提示、内页却没有说明」。
+  改成统一用 `status.attentionLowered / status.resultLowered`。
+
+真机验证：
+- 设置首页卡片：`「任务结果」` + `看看怎么改`（截图）
+- 打开「设置 › 通知」：顶部出现「让这两类通知弹出来」说明块（截图），下面是通知总开关与三个频道行

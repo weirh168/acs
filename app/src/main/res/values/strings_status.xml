@@ -33,6 +33,7 @@
     <string name="heads_up_action">Turn on</string>
     <string name="heads_up_card_detail">Stays in the shade, never pops up.</string>
     <string name="heads_up_card_action">How to change it</string>
+    <string name="heads_up_card_title_short">“%1$s”</string>
     <string name="heads_up_page_title">Let these two kinds of notification pop up</string>
     <string name="heads_up_page_intro">Each row below opens that channel in system settings. What you want is Pop on screen (some phones call it Banner or Floating notification).</string>
     <string name="heads_up_title">“%1$s” notifications won’t pop up</string>

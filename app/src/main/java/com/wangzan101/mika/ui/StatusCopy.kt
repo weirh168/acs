@@ -122,6 +122,10 @@ object StatusCopy {
     fun headsUpFix(p: Problem.AttentionLowered): Fix = if (p.attention) Fix.OpenAttentionChannel else Fix.OpenResultChannel
 
     private fun headsUpTitle(p: Problem.AttentionLowered) =
+        tr(R.string.heads_up_card_title_short, if (p.attention) ATTENTION_CHANNEL else RESULT_CHANNEL)
+
+    /** 完整说明用的长标题(卡片上只留频道名)。 */
+    private fun headsUpLongTitle(p: Problem.AttentionLowered) =
         tr(R.string.heads_up_title, if (p.attention) ATTENTION_CHANNEL else RESULT_CHANNEL)
 
     private fun headsUpBody(p: Problem.AttentionLowered): String {
@@ -181,7 +185,7 @@ object StatusCopy {
         Problem.NoModel -> BannerCopy(tr(R.string.banner_no_model), tr(R.string.banner_no_model_detail), tr(R.string.add))
         Problem.NotificationsOff -> BannerCopy(tr(R.string.banner_notif_off), tr(R.string.banner_notif_off_detail), tr(R.string.allow))
         // 卡片上只写一句话,别把整段说明塞进首页;详情和入口都在「通知」内页
-        is Problem.AttentionLowered -> BannerCopy(headsUpTitle(p), HEADS_UP_CARD_DETAIL, HEADS_UP_CARD_ACTION)
+        is Problem.AttentionLowered -> BannerCopy(headsUpTitle(p), "", HEADS_UP_CARD_ACTION)
         Problem.FocusMayLeak -> BannerCopy(tr(R.string.banner_focus), tr(R.string.banner_focus_detail), tr(R.string.learn_more))
     }
 
@@ -226,7 +230,7 @@ object StatusCopy {
             null, null,
         )
         is Problem.AttentionLowered -> Explanation(
-            headsUpTitle(p), headsUpBody(p) + "\n\n" + headsUpPath(p), HEADS_UP_ACTION, headsUpFix(p),
+            headsUpLongTitle(p), headsUpBody(p) + "\n\n" + headsUpPath(p), HEADS_UP_ACTION, headsUpFix(p),
         )
         Problem.NotificationsOff -> Explanation(
             tr(R.string.explain_notif), tr(R.string.explain_notif_body),

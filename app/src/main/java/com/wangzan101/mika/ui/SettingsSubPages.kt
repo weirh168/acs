@@ -178,9 +178,10 @@ fun NotificationsScreen(status: SystemStatus, onFix: (Fix) -> Unit, onBack: () -
     }
     PageScaffold(StatusCopy.NOTIFICATIONS, onBack) {
         // 有频道被调低时,先把「为什么重要、要改成什么」讲清楚,再去点具体那一行
+        // 和设置页那张卡片用同一个来源(status.*Lowered),避免一边提示一边这里不显示
         val lowered = when {
-            o.attention.warn -> Problem.AttentionLowered(attention = true, result = o.result.warn)
-            o.result.warn -> Problem.AttentionLowered(attention = false, result = true)
+            status.attentionLowered -> Problem.AttentionLowered(attention = true, result = status.resultLowered)
+            status.resultLowered -> Problem.AttentionLowered(attention = false, result = true)
             else -> null
         }
         if (lowered != null) {
