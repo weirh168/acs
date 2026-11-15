@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="proactive_learn_title">Mika가 알게 된 것</string>
+    <string name="proactive_learn_title">ACS가 알게 된 것</string>
     <string name="proactive_learn_state">대기 %1$d · 메모리 %2$d</string>
     <string name="proactive_learn_state_budget">오늘의 능동 기능 예산을 모두 썼습니다. 학습은 내일 다시 시작합니다.</string>
     <string name="proactive_learn_state_store">지금은 주제 저장소를 열 수 없습니다. 나중에 다시 시도합니다.</string>
@@ -20,8 +20,8 @@
     <string name="proactive_learn_topic_detail">%1$s · %2$s · %3$d일 · 마지막 %4$s</string>
     <string name="proactive_learn_topic_outcomes">앱 %1$d개 · 열어 봄 %2$d · 지움 %3$d</string>
     <string name="proactive_learn_delete">삭제</string>
-    <string name="proactive_learn_clear_all">Mika가 모은 내용 모두 지우기</string>
-    <string name="proactive_learn_clear_all_body">Mika가 모은 모든 주제, 연락처, 요약과 저장된 알림 텍스트를 삭제할까요? 되돌릴 수 없습니다. 이후 새 알림에서 다시 모으기 시작합니다.</string>
+    <string name="proactive_learn_clear_all">ACS가 모은 내용 모두 지우기</string>
+    <string name="proactive_learn_clear_all_body">ACS가 모은 모든 주제, 연락처, 요약과 저장된 알림 텍스트를 삭제할까요? 되돌릴 수 없습니다. 이후 새 알림에서 다시 모으기 시작합니다.</string>
     <string name="proactive_learn_clear_app">%1$s에서 온 것 지우기</string>
     <string name="proactive_learn_clear_app_body">%1$s에서 모은 내용을 모두 지울까요? 이 앱만 근거인 주제, 이 앱의 연락처, 알림 텍스트, 거기서 만든 요약 문장이 모두 삭제됩니다.</string>
     <string name="proactive_learn_sensitive">민감한 추론</string>
@@ -50,14 +50,14 @@
     <string name="proactive_learn_rel_user">%1$s · 직접 설정</string>
     <string name="proactive_learn_relation">관계</string>
     <string name="proactive_learn_relation_title">%1$s와(과)의 관계</string>
-    <string name="proactive_learn_relation_reset">Mika에게 맡기기</string>
+    <string name="proactive_learn_relation_reset">ACS에게 맡기기</string>
     <string name="proactive_learn_contacts_allow_again">삭제한 연락처 다시 허용</string>
     <string name="proactive_learn_contacts_blocked">삭제한 대화 %1$d개는 기록하지 않음</string>
     <string name="proactive_learn_contacts_feed">연락처 %1$d · 이름 %2$d · 연락처 분류 채택 %3$d, 거부 %4$d</string>
     <string name="proactive_learn_digest_switch">그날의 알림 요약</string>
-    <string name="proactive_learn_digest_sub">그날의 알림을 남겨 두어 Mika가 요약할 수 있게 합니다. 기본값은 꺼짐입니다.</string>
+    <string name="proactive_learn_digest_sub">그날의 알림을 남겨 두어 ACS가 요약할 수 있게 합니다. 기본값은 꺼짐입니다.</string>
     <string name="proactive_learn_digest_on">켜짐 · 이 기기에 알림 텍스트 %1$d개 보관 중</string>
-    <string name="proactive_learn_digest_body">하루의 알림을 요약하려면 알림 내용을 남겨 두어야 합니다. 켜면 요약 대상 앱의 알림 제목과 본문이 암호화되어 이 기기에 최대 이틀 동안 저장된 뒤 삭제됩니다. 요약할 때 확인한 모델로 전송됩니다. 거기서 만든 문장은 8일, 날짜별 요약은 35일 보관합니다. 주별 요약은 날짜별 요약으로 만들어 26주 동안, 월별 요약은 주별 요약으로 만들어 2년 동안 보관합니다.\n\n끄면 저장된 텍스트가 삭제됩니다. 이미 만든 문장과 요약은 남아 있으며 \'Mika가 알게 된 것\'에서 지울 수 있습니다. 앱을 \'읽지 않음\' 또는 \'낮음\'으로 바꾸면 그 앱의 텍스트와 함께, 그 앱에서 만든 문장과 요약 속 그 앱에서 나온 문장도 삭제됩니다.</string>
+    <string name="proactive_learn_digest_body">하루의 알림을 요약하려면 알림 내용을 남겨 두어야 합니다. 켜면 요약 대상 앱의 알림 제목과 본문이 암호화되어 이 기기에 최대 이틀 동안 저장된 뒤 삭제됩니다. 요약할 때 확인한 모델로 전송됩니다. 거기서 만든 문장은 8일, 날짜별 요약은 35일 보관합니다. 주별 요약은 날짜별 요약으로 만들어 26주 동안, 월별 요약은 주별 요약으로 만들어 2년 동안 보관합니다.\n\n끄면 저장된 텍스트가 삭제됩니다. 이미 만든 문장과 요약은 남아 있으며 \'ACS가 알게 된 것\'에서 지울 수 있습니다. 앱을 \'읽지 않음\' 또는 \'낮음\'으로 바꾸면 그 앱의 텍스트와 함께, 그 앱에서 만든 문장과 요약 속 그 앱에서 나온 문장도 삭제됩니다.</string>
     <string name="proactive_learn_digest_today">오늘의 메시지</string>
     <string name="proactive_learn_digest_empty">오늘은 아직 요약이 없습니다. 알림이 어느 정도 모이면 여기에 표시됩니다.</string>
     <string name="proactive_learn_day_today">오늘의 요약</string>
@@ -75,12 +75,12 @@
     <string name="proactive_learn_level_conservative_sub">주제는 2일 동안 나타나야 인정합니다. 앱마다 하루 최대 10개의 대화를 알립니다. 모은 내용은 작업에 가져가지 않습니다.</string>
     <string name="proactive_learn_level_balanced_sub">주제는 2일 동안 나타나야 인정합니다. 앱마다 하루 최대 20개의 대화를 알립니다. \'높음\'으로 설정한 앱에서 모은 내용을 작업에 가져갑니다.</string>
     <string name="proactive_learn_level_aggressive_sub">주제는 1일만 나타나도 인정합니다. 알림 수에 제한이 없습니다. \'중간\'과 \'높음\' 앱에서 모은 내용을 작업에 가져갑니다.</string>
-    <string name="proactive_learn_level_note">\'작업에 가져간다\'는 것은 이 기기에서 시작하는 각 작업에 오늘과 어제의 요약, 그리고 Mika가 사용자에 대해 알게 된 내용을 덧붙인다는 뜻입니다. 알림에서 온 것이며 사용자가 말한 것이 아님을 표시합니다. 어느 수준에서도 Mika가 먼저 말을 걸거나 대신 답장하지는 않습니다. 가져가는 내용은 작업을 수행하는 모델로 전송되며, 알림 판정용으로 확인한 모델이 아닐 수 있습니다. 작업에 필요하면 이 앱들의 오늘과 어제 알림 텍스트도 읽을 수 있습니다. 여유가 있으면 지난주와 지난달 요약도 함께 붙으며, 더 필요하면 작업이 저장된 일·주·월별 요약을 읽을 수 있습니다. 이 내용이 전달된 작업에서는 끝난 뒤 사용자의 말에서 기억을 자동으로 추출하지 않습니다. 직접 말로 기억해 달라고 한 내용은 그대로 저장합니다.</string>
+    <string name="proactive_learn_level_note">\'작업에 가져간다\'는 것은 이 기기에서 시작하는 각 작업에 오늘과 어제의 요약, 그리고 ACS가 사용자에 대해 알게 된 내용을 덧붙인다는 뜻입니다. 알림에서 온 것이며 사용자가 말한 것이 아님을 표시합니다. 어느 수준에서도 ACS가 먼저 말을 걸거나 대신 답장하지는 않습니다. 가져가는 내용은 작업을 수행하는 모델로 전송되며, 알림 판정용으로 확인한 모델이 아닐 수 있습니다. 작업에 필요하면 이 앱들의 오늘과 어제 알림 텍스트도 읽을 수 있습니다. 여유가 있으면 지난주와 지난달 요약도 함께 붙으며, 더 필요하면 작업이 저장된 일·주·월별 요약을 읽을 수 있습니다. 이 내용이 전달된 작업에서는 끝난 뒤 사용자의 말에서 기억을 자동으로 추출하지 않습니다. 직접 말로 기억해 달라고 한 내용은 그대로 저장합니다.</string>
     <string name="proactive_learn_tier_title">%1$s의 출처 수준</string>
     <string name="proactive_learn_tier_low">낮음</string>
     <string name="proactive_learn_tier_mid">중간</string>
     <string name="proactive_learn_tier_high">높음</string>
-    <string name="proactive_learn_tier_low_sub">판정과 알림만 하고 더는 모으지 않습니다. 아직 요약하지 않은 알림, 저장된 텍스트, 이 앱에서 만든 일·주·월별 요약 문장은 삭제됩니다. 이미 모은 주제와 연락처는 남아 있으며 \'Mika가 알게 된 것\'에서 지울 수 있습니다.</string>
+    <string name="proactive_learn_tier_low_sub">판정과 알림만 하고 더는 모으지 않습니다. 아직 요약하지 않은 알림, 저장된 텍스트, 이 앱에서 만든 일·주·월별 요약 문장은 삭제됩니다. 이미 모은 주제와 연락처는 남아 있으며 \'ACS가 알게 된 것\'에서 지울 수 있습니다.</string>
     <string name="proactive_learn_tier_mid_sub">모으며, \'적극\'에서만 작업에 가져갑니다.</string>
     <string name="proactive_learn_tier_high_sub">모으며, \'균형\'과 \'적극\'에서는 작업에 가져갑니다.</string>
     <string name="proactive_learn_week_this">이번 주 요약</string>

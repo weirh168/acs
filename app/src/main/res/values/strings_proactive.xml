@@ -13,12 +13,12 @@
     <string name="proactive_inbox_empty">Nothing yet</string>
     <string name="proactive_history_more">+%1$d earlier</string>
     <string name="proactive_apps">Apps to read (%1$d selected)</string>
-    <string name="proactive_helper_grant">Let Mika\'s helper grant it</string>
-    <string name="proactive_helper_grant_body">Mika\'s phone helper will turn on \"Notification access\" for Mika in system settings.\n\nThis is a sensitive permission: technically it allows reading all notifications. Mika only reads the apps you tick on this page. You can revoke it any time in system settings.</string>
+    <string name="proactive_helper_grant">Let ACS\'s helper grant it</string>
+    <string name="proactive_helper_grant_body">ACS\'s phone helper will turn on \"Notification access\" for ACS in system settings.\n\nThis is a sensitive permission: technically it allows reading all notifications. ACS only reads the apps you tick on this page. You can revoke it any time in system settings.</string>
     <string name="proactive_helper_grant_confirm">Grant</string>
     <string name="proactive_helper_unavailable">Phone control isn\'t set up yet. Set it up first, or use \"Grant access\" above.</string>
     <string name="proactive_helper_failed">Couldn\'t grant it this way. Try \"Grant access\" above.</string>
-    <string name="proactive_off_note">Turning the switch off: nothing more is read or sent, and unhandled notifications and stored notification text are deleted. Topics, contacts and digests already gathered stay; delete them under “What Mika has gathered”. Notification access itself stays granted until you revoke it in system settings.</string>
+    <string name="proactive_off_note">Turning the switch off: nothing more is read or sent, and unhandled notifications and stored notification text are deleted. Topics, contacts and digests already gathered stay; delete them under “What ACS has gathered”. Notification access itself stays granted until you revoke it in system settings.</string>
     <string name="proactive_triage_no_model">No model is set up. Choose one in Settings › Models first.</string>
     <string name="proactive_triage_consent_title">Send notifications to a model?</string>
     <string name="proactive_triage_reconfirm">The provider or model changed. Paused until you confirm again.</string>
@@ -41,7 +41,7 @@
     <string name="proactive_triage_no_verdict">no decision given</string>
     <string name="proactive_triage_capped">this app reached today\'s alert limit</string>
     <string name="notice_hint_title">Worth a look</string>
-    <string name="notice_hint_capsule_desc">Mika, %1$d notifications worth a look</string>
+    <string name="notice_hint_capsule_desc">ACS, %1$d notifications worth a look</string>
     <string name="notice_hint_open">Show notifications worth a look</string>
     <string name="notice_hint_entry">Worth a look (%1$d)</string>
     <string name="notice_hint_feedback">Seen %1$d · handled before seeing %2$d</string>
@@ -60,7 +60,7 @@
     <string name="proactive_known_sub">%1$d topics · %2$d people and groups</string>
     <string name="proactive_diag">Diagnostics</string>
     <string name="proactive_footer_send">Sent to the model: the title, text and recent messages of notifications from the apps you chose, one app at a time, to the model you confirmed; plus the app\'s package name, whether it is a group or private chat, whether you opened or dismissed each notification, and the names of up to 30 existing topics. Daily, weekly and monthly digests are made only from sentences already written, not from the notification text. The daily one is also given the names of the chats.</string>
-    <string name="proactive_footer_store">Stored on this phone, encrypted: short topics, and the names and guessed relationships of the people and groups you chat with. Sorting results stay in memory only. When you open a reminder, those notifications are written into a conversation and kept like your other conversations; if you continue there, that text goes to the model doing the work. Turning this off, or deleting or clearing things under “What Mika has gathered”, does not delete that conversation.</string>
+    <string name="proactive_footer_store">Stored on this phone, encrypted: short topics, and the names and guessed relationships of the people and groups you chat with. Sorting results stay in memory only. When you open a reminder, those notifications are written into a conversation and kept like your other conversations; if you continue there, that text goes to the model doing the work. Turning this off, or deleting or clearing things under “What ACS has gathered”, does not delete that conversation.</string>
     <string name="proactive_footer_digest">Daily digest is on, so these are also stored: notification text (up to 2 days), the notes made from it (8 days), each day\'s digest (35 days), weekly digests (26 weeks) and monthly digests (2 years).</string>
     <string name="proactive_footer_no_text">Apart from reminders you open, notification text is not stored: it stays in memory only until it has been handled.</string>
     <string name="proactive_app_off">Not read</string>

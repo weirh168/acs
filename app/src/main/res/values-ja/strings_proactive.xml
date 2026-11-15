@@ -13,12 +13,12 @@
     <string name="proactive_inbox_empty">まだありません</string>
     <string name="proactive_history_more">さらに前に %1$d 件</string>
     <string name="proactive_apps">読み取るアプリ（%1$d 件選択）</string>
-    <string name="proactive_helper_grant">Mika のヘルパーで許可</string>
-    <string name="proactive_helper_grant_body">Mika のスマホヘルパーが、システム設定で Mika の「通知へのアクセス」をオンにします。\n\nこれは重要な権限で、技術的にはすべての通知を読めます。Mika が読むのはこのページでチェックしたアプリだけです。システム設定でいつでも取り消せます。</string>
+    <string name="proactive_helper_grant">ACS のヘルパーで許可</string>
+    <string name="proactive_helper_grant_body">ACS のスマホヘルパーが、システム設定で ACS の「通知へのアクセス」をオンにします。\n\nこれは重要な権限で、技術的にはすべての通知を読めます。ACS が読むのはこのページでチェックしたアプリだけです。システム設定でいつでも取り消せます。</string>
     <string name="proactive_helper_grant_confirm">許可</string>
     <string name="proactive_helper_unavailable">スマホ操作の準備がまだです。先に設定するか、上の「アクセスを許可」を使ってください。</string>
     <string name="proactive_helper_failed">この方法では許可できませんでした。上の「アクセスを許可」を試してください。</string>
-    <string name="proactive_off_note">スイッチをオフにすると、読み取りも送信も行いません。未処理の通知と保存してある通知テキストは削除します。すでに集めたトピック、連絡先、各まとめは残ります。削除は「Mika が把握していること」から行えます。通知へのアクセス自体は、システム設定で取り消すまで有効です。</string>
+    <string name="proactive_off_note">スイッチをオフにすると、読み取りも送信も行いません。未処理の通知と保存してある通知テキストは削除します。すでに集めたトピック、連絡先、各まとめは残ります。削除は「ACS が把握していること」から行えます。通知へのアクセス自体は、システム設定で取り消すまで有効です。</string>
     <string name="proactive_triage_no_model">モデルが設定されていません。先に 設定 › モデル で選んでください。</string>
     <string name="proactive_triage_consent_title">通知をモデルに送信しますか？</string>
     <string name="proactive_triage_reconfirm">プロバイダーまたはモデルが変わりました。再確認するまで一時停止しています。</string>
@@ -41,7 +41,7 @@
     <string name="proactive_triage_no_verdict">判定なし</string>
     <string name="proactive_triage_capped">このアプリは今日の通知上限に達しました</string>
     <string name="notice_hint_title">知らせる価値あり</string>
-    <string name="notice_hint_capsule_desc">Mika、知らせる価値のある通知 %1$d 件</string>
+    <string name="notice_hint_capsule_desc">ACS、知らせる価値のある通知 %1$d 件</string>
     <string name="notice_hint_open">知らせる価値のある通知を見る</string>
     <string name="notice_hint_entry">知らせる価値あり (%1$d)</string>
     <string name="notice_hint_feedback">確認済み %1$d · 見る前に処理 %2$d</string>
@@ -60,7 +60,7 @@
     <string name="proactive_known_sub">トピック %1$d 件 · 人とグループ %2$d 件</string>
     <string name="proactive_diag">診断</string>
     <string name="proactive_footer_send">モデルに送るもの：選んだアプリの通知のタイトル、本文、最近のメッセージ。一度に 1 つのアプリの分だけを、確認したモデルに送ります。あわせてアプリのパッケージ名、グループか個人チャットか、各通知を開いたか消したか、既存トピックの名前（最大 30 件）も送ります。日・週・月ごとのまとめは、すでに書かれた文だけから作り、通知の原文は送りません。日ごとのまとめにはチャットの名前も渡します。</string>
-    <string name="proactive_footer_store">この端末に暗号化して保存するもの：短いトピック、やり取りしている人やグループの名前と推測した関係。判定結果はメモリ内だけです。リマインダーを開くと、その通知が会話に書き込まれ、ほかの会話と同じように保存されます。そこで続けて話すと、そのテキストは作業するモデルに送られます。スイッチをオフにしても、「Mika が把握していること」の内容を削除・消去しても、その会話は削除されません。</string>
+    <string name="proactive_footer_store">この端末に暗号化して保存するもの：短いトピック、やり取りしている人やグループの名前と推測した関係。判定結果はメモリ内だけです。リマインダーを開くと、その通知が会話に書き込まれ、ほかの会話と同じように保存されます。そこで続けて話すと、そのテキストは作業するモデルに送られます。スイッチをオフにしても、「ACS が把握していること」の内容を削除・消去しても、その会話は削除されません。</string>
     <string name="proactive_footer_digest">「その日の通知のまとめ」がオンなので、次も保存されます：通知テキスト（最長 2 日）、そこから作った文（8 日）、日ごとのまとめ（35 日）、週ごとのまとめ（26 週）、月ごとのまとめ（2 年）。</string>
     <string name="proactive_footer_no_text">開いたリマインダーを除き、通知テキストは保存しません。処理が終わるまでメモリ内にあるだけです。</string>
     <string name="proactive_app_off">読まない</string>

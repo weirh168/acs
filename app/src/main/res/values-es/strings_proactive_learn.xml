@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="proactive_learn_title">Lo que Mika ha reunido</string>
+    <string name="proactive_learn_title">Lo que ACS ha reunido</string>
     <string name="proactive_learn_state">En espera %1$d · en memoria %2$d</string>
     <string name="proactive_learn_state_budget">Se agotó el presupuesto proactivo de hoy. El aprendizaje sigue mañana.</string>
     <string name="proactive_learn_state_store">Ahora no se puede abrir el almacén de temas. Se volverá a intentar más tarde.</string>
@@ -9,7 +9,7 @@
     <string name="proactive_learn_never">aún no se ha aprendido nada</string>
     <string name="proactive_learn_apps">Apps de las que aprender</string>
     <string name="proactive_learn_feed">Recibidas %1$d · aprendidas %2$d · lotes %3$d (fallidos %4$d) · temas aceptados %5$d, rechazados %6$d</string>
-    <string name="proactive_learn_topics">Lo que Mika ha notado</string>
+    <string name="proactive_learn_topics">Lo que ACS ha notado</string>
     <string name="proactive_learn_unsure">Aún no es seguro</string>
     <string name="proactive_learn_empty">Nada todavía</string>
     <string name="proactive_learn_kind_interest">Interés</string>
@@ -20,8 +20,8 @@
     <string name="proactive_learn_topic_detail">%1$s · %2$s · %3$d días · visto por última vez %4$s</string>
     <string name="proactive_learn_topic_outcomes">%1$d apps · abiertas %2$d · descartadas %3$d</string>
     <string name="proactive_learn_delete">Eliminar</string>
-    <string name="proactive_learn_clear_all">Borrar todo lo que Mika ha reunido</string>
-    <string name="proactive_learn_clear_all_body">¿Eliminar todos los temas, contactos y resúmenes que Mika ha reunido, y el texto de notificaciones guardado? No se puede deshacer. Mika volverá a reunir a partir de las notificaciones nuevas.</string>
+    <string name="proactive_learn_clear_all">Borrar todo lo que ACS ha reunido</string>
+    <string name="proactive_learn_clear_all_body">¿Eliminar todos los temas, contactos y resúmenes que ACS ha reunido, y el texto de notificaciones guardado? No se puede deshacer. ACS volverá a reunir a partir de las notificaciones nuevas.</string>
     <string name="proactive_learn_clear_app">Borrar lo que vino de %1$s</string>
     <string name="proactive_learn_clear_app_body">¿Quitar todo lo recogido de %1$s? Se eliminan los temas que solo ella respaldaba, sus contactos, su texto de notificaciones y las líneas de resumen sacadas de ella.</string>
     <string name="proactive_learn_sensitive">Inferencias sensibles</string>
@@ -34,7 +34,7 @@
     <string name="proactive_learn_sensitive_tag">sensible</string>
     <string name="proactive_learn_contacts">Personas y grupos</string>
     <string name="proactive_learn_contacts_empty">Nada todavía</string>
-    <string name="proactive_learn_contacts_sub">Los nombres salen de las propias notificaciones, nunca del modelo. Una relación es solo una suposición salvo que la fijes tú: se muestra cuando ha aparecido al menos dos días y en la mayoría de las suposiciones. Un contacto queda establecido tras tres días. Eliminar un contacto también impide que Mika vuelva a registrar esa conversación. No se siguen por separado las personas dentro de un grupo. Las frases que escribe el resumen del día pueden mencionar quién dijo algo en un grupo.</string>
+    <string name="proactive_learn_contacts_sub">Los nombres salen de las propias notificaciones, nunca del modelo. Una relación es solo una suposición salvo que la fijes tú: se muestra cuando ha aparecido al menos dos días y en la mayoría de las suposiciones. Un contacto queda establecido tras tres días. Eliminar un contacto también impide que ACS vuelva a registrar esa conversación. No se siguen por separado las personas dentro de un grupo. Las frases que escribe el resumen del día pueden mencionar quién dijo algo en un grupo.</string>
     <string name="proactive_learn_contact_detail">%1$s · %2$s · %3$s · %4$d días · visto por última vez %5$s</string>
     <string name="proactive_learn_contact_topics">Temas: %1$s</string>
     <string name="proactive_learn_type_person">Persona</string>
@@ -50,14 +50,14 @@
     <string name="proactive_learn_rel_user">%1$s · fijada por ti</string>
     <string name="proactive_learn_relation">Relación</string>
     <string name="proactive_learn_relation_title">Relación con %1$s</string>
-    <string name="proactive_learn_relation_reset">Que decida Mika</string>
+    <string name="proactive_learn_relation_reset">Que decida ACS</string>
     <string name="proactive_learn_contacts_allow_again">Volver a permitir los contactos eliminados</string>
     <string name="proactive_learn_contacts_blocked">%1$d conversaciones eliminadas no se registran</string>
     <string name="proactive_learn_contacts_feed">Contactos %1$d · nombres %2$d · clasificaciones de contacto aceptadas %3$d, rechazadas %4$d</string>
     <string name="proactive_learn_digest_switch">Resumen del día</string>
-    <string name="proactive_learn_digest_sub">Guarda las notificaciones del día para que Mika pueda resumirlas. Desactivado por defecto.</string>
+    <string name="proactive_learn_digest_sub">Guarda las notificaciones del día para que ACS pueda resumirlas. Desactivado por defecto.</string>
     <string name="proactive_learn_digest_on">Activado · %1$d textos de notificaciones guardados en este teléfono</string>
-    <string name="proactive_learn_digest_body">Para resumir tu día, Mika necesita conservar lo que decían las notificaciones. Con esto activado, el título y el texto de las notificaciones de las apps que se resumen se guardan cifrados en este teléfono hasta dos días y luego se eliminan. Se envían al modelo que confirmaste para resumirlos. Las notas sacadas de ellos se conservan 8 días y el resumen de cada día 35 días. Los resúmenes semanales se hacen a partir de los diarios y se conservan 26 semanas; los mensuales, a partir de los semanales, 2 años.\n\nAl desactivarlo se eliminan los textos guardados; las notas y resúmenes ya hechos se quedan y puedes borrarlos en «Lo que Mika ha reunido». Si pones una app en «No leer» o «Bajo», se eliminan sus textos y también las notas y las líneas de los resúmenes hechas a partir de ella.</string>
+    <string name="proactive_learn_digest_body">Para resumir tu día, ACS necesita conservar lo que decían las notificaciones. Con esto activado, el título y el texto de las notificaciones de las apps que se resumen se guardan cifrados en este teléfono hasta dos días y luego se eliminan. Se envían al modelo que confirmaste para resumirlos. Las notas sacadas de ellos se conservan 8 días y el resumen de cada día 35 días. Los resúmenes semanales se hacen a partir de los diarios y se conservan 26 semanas; los mensuales, a partir de los semanales, 2 años.\n\nAl desactivarlo se eliminan los textos guardados; las notas y resúmenes ya hechos se quedan y puedes borrarlos en «Lo que ACS ha reunido». Si pones una app en «No leer» o «Bajo», se eliminan sus textos y también las notas y las líneas de los resúmenes hechas a partir de ella.</string>
     <string name="proactive_learn_digest_today">Mensajes de hoy</string>
     <string name="proactive_learn_digest_empty">Hoy todavía no hay nada resumido. Las notas aparecen cuando llega un lote de notificaciones.</string>
     <string name="proactive_learn_day_today">Resumen de hoy</string>
@@ -68,19 +68,19 @@
     <string name="proactive_learn_day_made">Hasta las %1$s</string>
     <string name="proactive_learn_day_make">Resumir lo que va de hoy</string>
     <string name="proactive_learn_day_make_action">Resumir</string>
-    <string name="proactive_learn_level">Hasta dónde llega Mika</string>
+    <string name="proactive_learn_level">Hasta dónde llega ACS</string>
     <string name="proactive_learn_level_conservative">Prudente</string>
     <string name="proactive_learn_level_balanced">Equilibrado</string>
     <string name="proactive_learn_level_aggressive">Atrevido</string>
     <string name="proactive_learn_level_conservative_sub">Un tema cuenta tras 2 días. Se avisan hasta 10 chats al día por app. Nada de lo recogido entra en las tareas.</string>
     <string name="proactive_learn_level_balanced_sub">Un tema cuenta tras 2 días. Se avisan hasta 20 chats al día por app. Lo recogido de las apps en nivel Alto entra en las tareas.</string>
     <string name="proactive_learn_level_aggressive_sub">Un tema cuenta tras 1 día. Sin límite de chats avisados. Lo recogido de las apps en nivel Medio o Alto entra en las tareas.</string>
-    <string name="proactive_learn_level_note">«Entra en las tareas» significa que cada tarea que inicies en este teléfono recibe el resumen de hoy y de ayer y lo que Mika ha notado sobre ti, marcado como procedente de las notificaciones y no de ti. En ningún nivel Mika habla sin que se lo pidas ni responde por ti. Lo que se lleva se envía al modelo que ejecute la tarea, que puede no ser el que confirmaste para clasificar las notificaciones. Una tarea también puede leer el texto de las notificaciones de hoy y de ayer de esas apps cuando lo necesite. Si cabe, también se adjuntan los resúmenes de la semana pasada y del mes pasado, y una tarea que necesite más puede leer los resúmenes diarios, semanales y mensuales guardados. Tras una tarea que recibió esto, no se extraen recuerdos automáticamente de lo que dijiste; lo que tú mismo digas que hay que recordar se sigue guardando.</string>
+    <string name="proactive_learn_level_note">«Entra en las tareas» significa que cada tarea que inicies en este teléfono recibe el resumen de hoy y de ayer y lo que ACS ha notado sobre ti, marcado como procedente de las notificaciones y no de ti. En ningún nivel ACS habla sin que se lo pidas ni responde por ti. Lo que se lleva se envía al modelo que ejecute la tarea, que puede no ser el que confirmaste para clasificar las notificaciones. Una tarea también puede leer el texto de las notificaciones de hoy y de ayer de esas apps cuando lo necesite. Si cabe, también se adjuntan los resúmenes de la semana pasada y del mes pasado, y una tarea que necesite más puede leer los resúmenes diarios, semanales y mensuales guardados. Tras una tarea que recibió esto, no se extraen recuerdos automáticamente de lo que dijiste; lo que tú mismo digas que hay que recordar se sigue guardando.</string>
     <string name="proactive_learn_tier_title">Nivel de fuente de %1$s</string>
     <string name="proactive_learn_tier_low">Bajo</string>
     <string name="proactive_learn_tier_mid">Medio</string>
     <string name="proactive_learn_tier_high">Alto</string>
-    <string name="proactive_learn_tier_low_sub">Solo se clasifica y se avisa; ya no se recoge. Se eliminan sus notificaciones aún sin resumir, sus textos guardados y las líneas del resumen sacadas de ella. Los temas y contactos ya recogidos se quedan hasta que los borres en «Lo que Mika ha reunido».</string>
+    <string name="proactive_learn_tier_low_sub">Solo se clasifica y se avisa; ya no se recoge. Se eliminan sus notificaciones aún sin resumir, sus textos guardados y las líneas del resumen sacadas de ella. Los temas y contactos ya recogidos se quedan hasta que los borres en «Lo que ACS ha reunido».</string>
     <string name="proactive_learn_tier_mid_sub">Se recoge; entra en las tareas solo en Atrevido.</string>
     <string name="proactive_learn_tier_high_sub">Se recoge, y entra en las tareas en Equilibrado o Atrevido.</string>
     <string name="proactive_learn_week_this">Resumen de esta semana</string>

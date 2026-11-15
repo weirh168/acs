@@ -37,7 +37,7 @@ android {
         // 并存安装用:与官方 com.wangzan101.mika 分开,签名不同也能装在同一台手机上。
         // namespace 保持不变,所以 R / BuildConfig / 无障碍服务类名都不受影响。
         applicationId = "com.wangzan101.mika.mod"
-        resValue("string", "app_name", "Mika Mod")
+        resValue("string", "app_name", "ACS")
         minSdk = 29
         targetSdk = 35
         versionCode = 44
@@ -87,7 +87,7 @@ android {
         // 真机验收时并排安装,保留发行版和用户数据;默认构建标识不变。
         if (providers.gradleProperty("devInstall").isPresent) getByName("debug") {
             applicationIdSuffix = ".dev"
-            resValue("string", "app_name", "Mika Dev")
+            resValue("string", "app_name", "ACS Dev")
         }
         // 发布候选的验收包:和 release 完全同源同签名,只是包名加 .rel,能和调试包并排装在一台手机上,
         // 用来在不丢调试数据的前提下确认真实发布包能装、能启动。
@@ -113,7 +113,7 @@ android {
             versionNameSuffix = "-logs"
             isDebuggable = true
             isProfileable = false
-            resValue("string", "app_name", "Mika Logs")
+            resValue("string", "app_name", "ACS Logs")
             buildConfigField("boolean", "ADB_LOGS", "true")
             matchingFallbacks += "release"
         }

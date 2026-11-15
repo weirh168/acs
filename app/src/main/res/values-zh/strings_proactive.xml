@@ -13,12 +13,12 @@
     <string name="proactive_inbox_empty">还没有</string>
     <string name="proactive_history_more">更早还有 %1$d 条</string>
     <string name="proactive_apps">读取这些 App（已选 %1$d 个）</string>
-    <string name="proactive_helper_grant">由 Mika 助手授权</string>
-    <string name="proactive_helper_grant_body">Mika 的手机助手会在系统设置里为 Mika 打开「通知使用权」。\n\n这是一项敏感权限，技术上可以读取所有通知；Mika 只读你在本页勾选的 App。你随时可以在系统设置里收回。</string>
+    <string name="proactive_helper_grant">由 ACS 助手授权</string>
+    <string name="proactive_helper_grant_body">ACS 的手机助手会在系统设置里为 ACS 打开「通知使用权」。\n\n这是一项敏感权限，技术上可以读取所有通知；ACS 只读你在本页勾选的 App。你随时可以在系统设置里收回。</string>
     <string name="proactive_helper_grant_confirm">授权</string>
     <string name="proactive_helper_unavailable">手机操作还没准备好。可以先完成设置，或者用上面的「去授权」。</string>
     <string name="proactive_helper_failed">没能这样授权，请用上面的「去授权」。</string>
-    <string name="proactive_off_note">关掉开关：不再读取，也不再发送；没处理完的通知和存着的通知原文会删掉。已经归纳出的话题、联系人和各级归纳留着，要删到「Mika 知道了什么」里删。系统里的通知使用权要你在系统设置里收回才会取消。</string>
+    <string name="proactive_off_note">关掉开关：不再读取，也不再发送；没处理完的通知和存着的通知原文会删掉。已经归纳出的话题、联系人和各级归纳留着，要删到「ACS 知道了什么」里删。系统里的通知使用权要你在系统设置里收回才会取消。</string>
     <string name="proactive_triage_no_model">还没有配置模型，请先在 设置 › 模型 里选择。</string>
     <string name="proactive_triage_consent_title">把通知发给模型？</string>
     <string name="proactive_triage_reconfirm">服务商或模型变了，已暂停，等你重新确认。</string>
@@ -41,7 +41,7 @@
     <string name="proactive_triage_no_verdict">没有给出判定</string>
     <string name="proactive_triage_capped">今天这个 App 的提示已达上限</string>
     <string name="notice_hint_title">值得提醒</string>
-    <string name="notice_hint_capsule_desc">Mika，%1$d 条值得提醒</string>
+    <string name="notice_hint_capsule_desc">ACS，%1$d 条值得提醒</string>
     <string name="notice_hint_open">查看值得提醒的通知</string>
     <string name="notice_hint_entry">值得提醒 (%1$d)</string>
     <string name="notice_hint_feedback">看过 %1$d · 没看就处理了 %2$d</string>
@@ -60,7 +60,7 @@
     <string name="proactive_known_sub">话题 %1$d · 联系人 %2$d</string>
     <string name="proactive_diag">诊断</string>
     <string name="proactive_footer_send">发给模型的：你选的 App 的通知标题、正文和最近的消息，一次只发一个 App 的，发给你确认过的那个模型；另带 App 包名、是群聊还是私聊、每条通知你点开还是划掉了，以及最多 30 个已有话题的名字。日、周、月归纳只用已经写出的句子，不再发通知原文。当日归纳还会带上会话的名字。</string>
-    <string name="proactive_footer_store">加密存在这台手机上的：简短的话题；和你聊天的人和群的名字、猜测的关系。判定结果只在内存里。你点开提醒时，那几条通知会写进一个对话，和别的对话一样保存；你在里面接着说，这些文字会发给干活的模型。关掉开关，或者删除、清空「Mika 知道了什么」里的内容，都不会删这个对话。</string>
+    <string name="proactive_footer_store">加密存在这台手机上的：简短的话题；和你聊天的人和群的名字、猜测的关系。判定结果只在内存里。你点开提醒时，那几条通知会写进一个对话，和别的对话一样保存；你在里面接着说，这些文字会发给干活的模型。关掉开关，或者删除、清空「ACS 知道了什么」里的内容，都不会删这个对话。</string>
     <string name="proactive_footer_digest">「当日消息归纳」开着，所以还存着：通知原文（最多 2 天）、归纳出的句子（8 天）、每天的归纳（35 天）、每周的归纳（26 周）和每月的归纳（2 年）。</string>
     <string name="proactive_footer_no_text">除了你点开的提醒，不存通知原文：只在内存里留到处理完。</string>
     <string name="proactive_app_off">不读</string>

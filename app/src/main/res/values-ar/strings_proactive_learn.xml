@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="proactive_learn_title">ما جمعه Mika</string>
+    <string name="proactive_learn_title">ما جمعه ACS</string>
     <string name="proactive_learn_state">قيد الانتظار %1$d · في الذاكرة %2$d</string>
     <string name="proactive_learn_state_budget">نفدت ميزانية الميزات الاستباقية لليوم. يُستأنف التعلّم غدًا.</string>
     <string name="proactive_learn_state_store">لا يمكن فتح مخزن المواضيع الآن. ستُعاد المحاولة لاحقًا.</string>
@@ -9,7 +9,7 @@
     <string name="proactive_learn_never">لم يُتعلَّم شيء بعد</string>
     <string name="proactive_learn_apps">التطبيقات التي يُتعلَّم منها</string>
     <string name="proactive_learn_feed">المستلمة %1$d · المتعلَّمة %2$d · الدفعات %3$d (الفاشلة %4$d) · مواضيع مقبولة %5$d، مرفوضة %6$d</string>
-    <string name="proactive_learn_topics">ما لاحظه Mika</string>
+    <string name="proactive_learn_topics">ما لاحظه ACS</string>
     <string name="proactive_learn_unsure">غير مؤكد بعد</string>
     <string name="proactive_learn_empty">لا شيء بعد</string>
     <string name="proactive_learn_kind_interest">اهتمام</string>
@@ -20,8 +20,8 @@
     <string name="proactive_learn_topic_detail">%1$s · %2$s · %3$d يوم · آخر ظهور %4$s</string>
     <string name="proactive_learn_topic_outcomes">تطبيقات: %1$d · فُتح %2$d · رُفض %3$d</string>
     <string name="proactive_learn_delete">حذف</string>
-    <string name="proactive_learn_clear_all">مسح كل ما جمعه Mika</string>
-    <string name="proactive_learn_clear_all_body">حذف كل المواضيع وجهات الاتصال والملخّصات التي جمعها Mika، ونص الإشعارات المحفوظ؟ لا يمكن التراجع. سيبدأ Mika الجمع من جديد من الإشعارات الجديدة.</string>
+    <string name="proactive_learn_clear_all">مسح كل ما جمعه ACS</string>
+    <string name="proactive_learn_clear_all_body">حذف كل المواضيع وجهات الاتصال والملخّصات التي جمعها ACS، ونص الإشعارات المحفوظ؟ لا يمكن التراجع. سيبدأ ACS الجمع من جديد من الإشعارات الجديدة.</string>
     <string name="proactive_learn_clear_app">مسح ما جاء من %1$s</string>
     <string name="proactive_learn_clear_app_body">إزالة كل ما جُمع من %1$s؟ تُحذف المواضيع التي يدعمها وحده، وجهات اتصاله، ونص إشعاراته، وأسطر الملخّصات المأخوذة منه.</string>
     <string name="proactive_learn_sensitive">استنتاجات حساسة</string>
@@ -34,7 +34,7 @@
     <string name="proactive_learn_sensitive_tag">حساس</string>
     <string name="proactive_learn_contacts">الأشخاص والمجموعات</string>
     <string name="proactive_learn_contacts_empty">لا شيء بعد</string>
-    <string name="proactive_learn_contacts_sub">تؤخذ الأسماء من الإشعارات نفسها، ولا تأتي من النموذج أبدًا. العلاقة مجرد تخمين ما لم تحددها أنت: تظهر بعد أن تتكرر في يومين على الأقل وفي أغلب التخمينات. تُعدّ جهة الاتصال ثابتة بعد ثلاثة أيام. حذف جهة اتصال يمنع Mika أيضًا من تسجيل تلك المحادثة مجددًا. لا يُتابَع أعضاء مجموعة الدردشة كلٌّ على حدة. الجمل التي يكتبها ملخّص اليوم قد تذكر من قال شيئًا في مجموعة.</string>
+    <string name="proactive_learn_contacts_sub">تؤخذ الأسماء من الإشعارات نفسها، ولا تأتي من النموذج أبدًا. العلاقة مجرد تخمين ما لم تحددها أنت: تظهر بعد أن تتكرر في يومين على الأقل وفي أغلب التخمينات. تُعدّ جهة الاتصال ثابتة بعد ثلاثة أيام. حذف جهة اتصال يمنع ACS أيضًا من تسجيل تلك المحادثة مجددًا. لا يُتابَع أعضاء مجموعة الدردشة كلٌّ على حدة. الجمل التي يكتبها ملخّص اليوم قد تذكر من قال شيئًا في مجموعة.</string>
     <string name="proactive_learn_contact_detail">%1$s · %2$s · %3$s · عدد الأيام %4$d · آخر ظهور %5$s</string>
     <string name="proactive_learn_contact_topics">الموضوعات: %1$s</string>
     <string name="proactive_learn_type_person">شخص</string>
@@ -50,14 +50,14 @@
     <string name="proactive_learn_rel_user">%1$s · حددتها أنت</string>
     <string name="proactive_learn_relation">العلاقة</string>
     <string name="proactive_learn_relation_title">العلاقة مع %1$s</string>
-    <string name="proactive_learn_relation_reset">اترك القرار لـ Mika</string>
+    <string name="proactive_learn_relation_reset">اترك القرار لـ ACS</string>
     <string name="proactive_learn_contacts_allow_again">السماح مجددًا بجهات الاتصال المحذوفة</string>
     <string name="proactive_learn_contacts_blocked">محادثات محذوفة لا تُسجَّل: %1$d</string>
     <string name="proactive_learn_contacts_feed">جهات الاتصال %1$d · الأسماء %2$d · تصنيفات جهات الاتصال المقبولة %3$d، والمرفوضة %4$d</string>
     <string name="proactive_learn_digest_switch">ملخّص اليوم</string>
-    <string name="proactive_learn_digest_sub">يحتفظ بإشعارات اليوم ليتمكن Mika من تلخيصها. متوقف افتراضيًا.</string>
+    <string name="proactive_learn_digest_sub">يحتفظ بإشعارات اليوم ليتمكن ACS من تلخيصها. متوقف افتراضيًا.</string>
     <string name="proactive_learn_digest_on">مفعّل · %1$d من نصوص الإشعارات محفوظة على هذا الهاتف</string>
-    <string name="proactive_learn_digest_body">لتلخيص يومك يحتاج Mika إلى الاحتفاظ بما ورد في الإشعارات. عند التفعيل، يُحفظ عنوان ونص إشعارات التطبيقات التي يجري تلخيصها مشفّرًا على هذا الهاتف لمدة تصل إلى يومين ثم يُحذف. وتُرسل إلى النموذج الذي أكّدته لتلخيصها. تُحفظ الملاحظات المستخلصة منها 8 أيام، وملخّص كل يوم 35 يومًا. الملخّصات الأسبوعية تُعدّ من ملخّصات الأيام وتُحفظ 26 أسبوعًا، والملخّصات الشهرية تُعدّ من الأسبوعية وتُحفظ سنتين.\n\nإيقاف هذا الخيار يحذف النصوص المحفوظة؛ أما الملاحظات والملخّصات المعدّة سابقًا فتبقى، ويمكنك حذفها من «ما جمعه Mika». وضبط تطبيق على «لا يُقرأ» أو «منخفض» يحذف نصوصه وكذلك الملاحظات وأسطر الملخّصات المعدّة منه.</string>
+    <string name="proactive_learn_digest_body">لتلخيص يومك يحتاج ACS إلى الاحتفاظ بما ورد في الإشعارات. عند التفعيل، يُحفظ عنوان ونص إشعارات التطبيقات التي يجري تلخيصها مشفّرًا على هذا الهاتف لمدة تصل إلى يومين ثم يُحذف. وتُرسل إلى النموذج الذي أكّدته لتلخيصها. تُحفظ الملاحظات المستخلصة منها 8 أيام، وملخّص كل يوم 35 يومًا. الملخّصات الأسبوعية تُعدّ من ملخّصات الأيام وتُحفظ 26 أسبوعًا، والملخّصات الشهرية تُعدّ من الأسبوعية وتُحفظ سنتين.\n\nإيقاف هذا الخيار يحذف النصوص المحفوظة؛ أما الملاحظات والملخّصات المعدّة سابقًا فتبقى، ويمكنك حذفها من «ما جمعه ACS». وضبط تطبيق على «لا يُقرأ» أو «منخفض» يحذف نصوصه وكذلك الملاحظات وأسطر الملخّصات المعدّة منه.</string>
     <string name="proactive_learn_digest_today">رسائل اليوم</string>
     <string name="proactive_learn_digest_empty">لا يوجد ملخّص اليوم بعد. تظهر الملاحظات بعد وصول مجموعة من الإشعارات.</string>
     <string name="proactive_learn_day_today">ملخّص اليوم</string>
@@ -68,19 +68,19 @@
     <string name="proactive_learn_day_made">حتى %1$s</string>
     <string name="proactive_learn_day_make">لخّص اليوم حتى الآن</string>
     <string name="proactive_learn_day_make_action">لخّص</string>
-    <string name="proactive_learn_level">إلى أي مدى يذهب Mika</string>
+    <string name="proactive_learn_level">إلى أي مدى يذهب ACS</string>
     <string name="proactive_learn_level_conservative">حذر</string>
     <string name="proactive_learn_level_balanced">متوازن</string>
     <string name="proactive_learn_level_aggressive">جريء</string>
     <string name="proactive_learn_level_conservative_sub">يُحتسب الموضوع بعد يومين. يُنبَّه إلى ما يصل إلى 10 محادثات يوميًا لكل تطبيق. لا يدخل شيء مما جُمع في المهام.</string>
     <string name="proactive_learn_level_balanced_sub">يُحتسب الموضوع بعد يومين. يُنبَّه إلى ما يصل إلى 20 محادثة يوميًا لكل تطبيق. ما جُمع من التطبيقات ذات المستوى «مرتفع» يدخل في المهام.</string>
     <string name="proactive_learn_level_aggressive_sub">يُحتسب الموضوع بعد يوم واحد. لا حدّ للمحادثات المنبَّه إليها. ما جُمع من التطبيقات ذات المستوى «متوسط» أو «مرتفع» يدخل في المهام.</string>
-    <string name="proactive_learn_level_note">«يدخل في المهام» يعني أن كل مهمة تبدؤها على هذا الهاتف يُرفق بها ملخّص اليوم وأمس وما لاحظه Mika عنك، مع بيان أنه مأخوذ من الإشعارات وليس من كلامك. في أي مستوى، لا يبادر Mika بالكلام ولا يردّ بالنيابة عنك. ما يُرفق يُرسَل إلى النموذج الذي ينفّذ المهمة، وقد لا يكون النموذج الذي أكّدته لفرز الإشعارات. ويمكن للمهمة عند الحاجة أن تقرأ نص إشعارات اليوم وأمس من تلك التطبيقات. وعند توفّر المساحة يُرفق أيضًا ملخّصا الأسبوع الماضي والشهر الماضي، وللمهمة التي تحتاج إلى أكثر أن تقرأ الملخّصات اليومية والأسبوعية والشهرية المحفوظة. بعد انتهاء مهمة أُرفق بها هذا المحتوى، لا تُستخرج ذكريات تلقائيًا مما قلته؛ وما تقوله أنت بنفسك وتطلب تذكّره يُحفظ كالمعتاد.</string>
+    <string name="proactive_learn_level_note">«يدخل في المهام» يعني أن كل مهمة تبدؤها على هذا الهاتف يُرفق بها ملخّص اليوم وأمس وما لاحظه ACS عنك، مع بيان أنه مأخوذ من الإشعارات وليس من كلامك. في أي مستوى، لا يبادر ACS بالكلام ولا يردّ بالنيابة عنك. ما يُرفق يُرسَل إلى النموذج الذي ينفّذ المهمة، وقد لا يكون النموذج الذي أكّدته لفرز الإشعارات. ويمكن للمهمة عند الحاجة أن تقرأ نص إشعارات اليوم وأمس من تلك التطبيقات. وعند توفّر المساحة يُرفق أيضًا ملخّصا الأسبوع الماضي والشهر الماضي، وللمهمة التي تحتاج إلى أكثر أن تقرأ الملخّصات اليومية والأسبوعية والشهرية المحفوظة. بعد انتهاء مهمة أُرفق بها هذا المحتوى، لا تُستخرج ذكريات تلقائيًا مما قلته؛ وما تقوله أنت بنفسك وتطلب تذكّره يُحفظ كالمعتاد.</string>
     <string name="proactive_learn_tier_title">مستوى المصدر لـ %1$s</string>
     <string name="proactive_learn_tier_low">منخفض</string>
     <string name="proactive_learn_tier_mid">متوسط</string>
     <string name="proactive_learn_tier_high">مرتفع</string>
-    <string name="proactive_learn_tier_low_sub">فرز وتنبيه فقط، ولا يُجمع منه بعد الآن. تُحذف إشعاراته التي لم تُلخَّص بعد ونصوصه المحفوظة وأسطر الملخّص المأخوذة منه. المواضيع وجهات الاتصال التي جُمعت سابقًا تبقى إلى أن تمسحها من «ما جمعه Mika».</string>
+    <string name="proactive_learn_tier_low_sub">فرز وتنبيه فقط، ولا يُجمع منه بعد الآن. تُحذف إشعاراته التي لم تُلخَّص بعد ونصوصه المحفوظة وأسطر الملخّص المأخوذة منه. المواضيع وجهات الاتصال التي جُمعت سابقًا تبقى إلى أن تمسحها من «ما جمعه ACS».</string>
     <string name="proactive_learn_tier_mid_sub">يُجمع منه؛ ولا يدخل في المهام إلا في «جريء».</string>
     <string name="proactive_learn_tier_high_sub">يُجمع منه، ويدخل في المهام في «متوازن» أو «جريء».</string>
     <string name="proactive_learn_week_this">ملخّص هذا الأسبوع</string>

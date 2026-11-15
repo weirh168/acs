@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="proactive_learn_title">Yang telah dikumpulkan Mika</string>
+    <string name="proactive_learn_title">Yang telah dikumpulkan ACS</string>
     <string name="proactive_learn_state">Menunggu %1$d · di memori %2$d</string>
     <string name="proactive_learn_state_budget">Anggaran proaktif hari ini sudah habis. Pembelajaran lanjut besok.</string>
     <string name="proactive_learn_state_store">Penyimpanan topik tidak bisa dibuka sekarang. Akan dicoba lagi nanti.</string>
@@ -9,7 +9,7 @@
     <string name="proactive_learn_never">belum ada yang dipelajari</string>
     <string name="proactive_learn_apps">Aplikasi untuk dipelajari</string>
     <string name="proactive_learn_feed">Diterima %1$d · dipelajari %2$d · batch %3$d (gagal %4$d) · topik diterima %5$d, ditolak %6$d</string>
-    <string name="proactive_learn_topics">Yang diperhatikan Mika</string>
+    <string name="proactive_learn_topics">Yang diperhatikan ACS</string>
     <string name="proactive_learn_unsure">Belum pasti</string>
     <string name="proactive_learn_empty">Belum ada</string>
     <string name="proactive_learn_kind_interest">Minat</string>
@@ -20,8 +20,8 @@
     <string name="proactive_learn_topic_detail">%1$s · %2$s · %3$d hari · terakhir %4$s</string>
     <string name="proactive_learn_topic_outcomes">%1$d aplikasi · dibuka %2$d · ditutup %3$d</string>
     <string name="proactive_learn_delete">Hapus</string>
-    <string name="proactive_learn_clear_all">Hapus semua yang dikumpulkan Mika</string>
-    <string name="proactive_learn_clear_all_body">Hapus semua topik, kontak, dan ringkasan yang dikumpulkan Mika, beserta teks notifikasi yang tersimpan? Ini tidak dapat dibatalkan. Mika akan mulai mengumpulkan lagi dari notifikasi baru.</string>
+    <string name="proactive_learn_clear_all">Hapus semua yang dikumpulkan ACS</string>
+    <string name="proactive_learn_clear_all_body">Hapus semua topik, kontak, dan ringkasan yang dikumpulkan ACS, beserta teks notifikasi yang tersimpan? Ini tidak dapat dibatalkan. ACS akan mulai mengumpulkan lagi dari notifikasi baru.</string>
     <string name="proactive_learn_clear_app">Hapus yang berasal dari %1$s</string>
     <string name="proactive_learn_clear_app_body">Hapus semua yang dikumpulkan dari %1$s? Topik yang hanya didukung olehnya, kontaknya, teks notifikasinya, dan baris ringkasan yang dibuat darinya semuanya dihapus.</string>
     <string name="proactive_learn_sensitive">Inferensi sensitif</string>
@@ -34,7 +34,7 @@
     <string name="proactive_learn_sensitive_tag">sensitif</string>
     <string name="proactive_learn_contacts">Orang dan grup</string>
     <string name="proactive_learn_contacts_empty">Belum ada</string>
-    <string name="proactive_learn_contacts_sub">Nama diambil dari notifikasi itu sendiri, tidak pernah dari model. Hubungan hanya tebakan kecuali kamu yang menetapkannya: baru ditampilkan setelah muncul setidaknya pada dua hari dan menjadi mayoritas tebakan. Kontak dianggap mapan setelah tiga hari. Menghapus kontak juga membuat Mika tidak mencatat percakapan itu lagi. Anggota di dalam grup chat tidak dicatat satu per satu. Kalimat yang ditulis ringkasan harian bisa menyebut siapa yang mengatakan sesuatu di grup.</string>
+    <string name="proactive_learn_contacts_sub">Nama diambil dari notifikasi itu sendiri, tidak pernah dari model. Hubungan hanya tebakan kecuali kamu yang menetapkannya: baru ditampilkan setelah muncul setidaknya pada dua hari dan menjadi mayoritas tebakan. Kontak dianggap mapan setelah tiga hari. Menghapus kontak juga membuat ACS tidak mencatat percakapan itu lagi. Anggota di dalam grup chat tidak dicatat satu per satu. Kalimat yang ditulis ringkasan harian bisa menyebut siapa yang mengatakan sesuatu di grup.</string>
     <string name="proactive_learn_contact_detail">%1$s · %2$s · %3$s · %4$d hari · terakhir %5$s</string>
     <string name="proactive_learn_contact_topics">Topik: %1$s</string>
     <string name="proactive_learn_type_person">Orang</string>
@@ -50,14 +50,14 @@
     <string name="proactive_learn_rel_user">%1$s · kamu yang tetapkan</string>
     <string name="proactive_learn_relation">Hubungan</string>
     <string name="proactive_learn_relation_title">Hubungan dengan %1$s</string>
-    <string name="proactive_learn_relation_reset">Biarkan Mika menilai</string>
+    <string name="proactive_learn_relation_reset">Biarkan ACS menilai</string>
     <string name="proactive_learn_contacts_allow_again">Izinkan lagi kontak yang dihapus</string>
     <string name="proactive_learn_contacts_blocked">%1$d percakapan yang dihapus tidak dicatat</string>
     <string name="proactive_learn_contacts_feed">Kontak %1$d · nama %2$d · klasifikasi kontak diterima %3$d, ditolak %4$d</string>
     <string name="proactive_learn_digest_switch">Ringkasan harian</string>
-    <string name="proactive_learn_digest_sub">Menyimpan notifikasi hari itu agar Mika bisa merangkumnya. Nonaktif secara default.</string>
+    <string name="proactive_learn_digest_sub">Menyimpan notifikasi hari itu agar ACS bisa merangkumnya. Nonaktif secara default.</string>
     <string name="proactive_learn_digest_on">Aktif · %1$d teks notifikasi disimpan di ponsel ini</string>
-    <string name="proactive_learn_digest_body">Untuk merangkum hari Anda, Mika perlu menyimpan isi notifikasi. Jika diaktifkan, judul dan isi notifikasi dari aplikasi yang dirangkum disimpan terenkripsi di ponsel ini hingga dua hari, lalu dihapus. Teks itu dikirim ke model yang Anda konfirmasi untuk dirangkum. Catatan yang dibuat darinya disimpan 8 hari, dan ringkasan tiap hari 35 hari. Ringkasan mingguan dibuat dari ringkasan harian dan disimpan 26 minggu; ringkasan bulanan dibuat dari ringkasan mingguan dan disimpan 2 tahun.\n\nMenonaktifkan ini menghapus teks yang tersimpan; catatan dan ringkasan yang sudah dibuat tetap ada dan dapat dihapus di “Yang telah dikumpulkan Mika”. Mengatur sebuah aplikasi ke “Tidak dibaca” atau “Rendah” menghapus teksnya serta catatan dan baris ringkasan yang dibuat darinya.</string>
+    <string name="proactive_learn_digest_body">Untuk merangkum hari Anda, ACS perlu menyimpan isi notifikasi. Jika diaktifkan, judul dan isi notifikasi dari aplikasi yang dirangkum disimpan terenkripsi di ponsel ini hingga dua hari, lalu dihapus. Teks itu dikirim ke model yang Anda konfirmasi untuk dirangkum. Catatan yang dibuat darinya disimpan 8 hari, dan ringkasan tiap hari 35 hari. Ringkasan mingguan dibuat dari ringkasan harian dan disimpan 26 minggu; ringkasan bulanan dibuat dari ringkasan mingguan dan disimpan 2 tahun.\n\nMenonaktifkan ini menghapus teks yang tersimpan; catatan dan ringkasan yang sudah dibuat tetap ada dan dapat dihapus di “Yang telah dikumpulkan ACS”. Mengatur sebuah aplikasi ke “Tidak dibaca” atau “Rendah” menghapus teksnya serta catatan dan baris ringkasan yang dibuat darinya.</string>
     <string name="proactive_learn_digest_today">Pesan hari ini</string>
     <string name="proactive_learn_digest_empty">Belum ada yang dirangkum hari ini. Catatan muncul setelah sekumpulan notifikasi masuk.</string>
     <string name="proactive_learn_day_today">Ringkasan hari ini</string>
@@ -68,19 +68,19 @@
     <string name="proactive_learn_day_made">Hingga %1$s</string>
     <string name="proactive_learn_day_make">Rangkum hari ini sejauh ini</string>
     <string name="proactive_learn_day_make_action">Rangkum</string>
-    <string name="proactive_learn_level">Seberapa jauh Mika melangkah</string>
+    <string name="proactive_learn_level">Seberapa jauh ACS melangkah</string>
     <string name="proactive_learn_level_conservative">Hati-hati</string>
     <string name="proactive_learn_level_balanced">Seimbang</string>
     <string name="proactive_learn_level_aggressive">Berani</string>
     <string name="proactive_learn_level_conservative_sub">Topik dihitung setelah 2 hari. Hingga 10 obrolan per hari per aplikasi ditandai. Yang dikumpulkan tidak dibawa ke tugas.</string>
     <string name="proactive_learn_level_balanced_sub">Topik dihitung setelah 2 hari. Hingga 20 obrolan per hari per aplikasi ditandai. Yang dikumpulkan dari aplikasi tingkat Tinggi dibawa ke tugas.</string>
     <string name="proactive_learn_level_aggressive_sub">Topik dihitung setelah 1 hari. Tanpa batas obrolan yang ditandai. Yang dikumpulkan dari aplikasi tingkat Sedang atau Tinggi dibawa ke tugas.</string>
-    <string name="proactive_learn_level_note">“Dibawa ke tugas” berarti setiap tugas yang Anda mulai di ponsel ini diberi ringkasan hari ini dan kemarin serta apa yang Mika perhatikan tentang Anda, ditandai berasal dari notifikasi dan bukan dari Anda. Di tingkat mana pun, Mika tidak berbicara tanpa diminta atau membalas atas nama Anda. Yang dibawa dikirim ke model yang menjalankan tugas, yang mungkin bukan model yang Anda konfirmasi untuk menilai notifikasi. Tugas juga dapat membaca teks notifikasi hari ini dan kemarin dari aplikasi tersebut bila diperlukan. Jika masih muat, ringkasan minggu lalu dan bulan lalu juga dilampirkan, dan tugas yang membutuhkan lebih banyak dapat membaca ringkasan harian, mingguan, dan bulanan yang tersimpan. Setelah tugas yang diberi konten ini selesai, memori tidak diambil secara otomatis dari ucapan Anda; hal yang Anda sampaikan sendiri untuk diingat tetap disimpan.</string>
+    <string name="proactive_learn_level_note">“Dibawa ke tugas” berarti setiap tugas yang Anda mulai di ponsel ini diberi ringkasan hari ini dan kemarin serta apa yang ACS perhatikan tentang Anda, ditandai berasal dari notifikasi dan bukan dari Anda. Di tingkat mana pun, ACS tidak berbicara tanpa diminta atau membalas atas nama Anda. Yang dibawa dikirim ke model yang menjalankan tugas, yang mungkin bukan model yang Anda konfirmasi untuk menilai notifikasi. Tugas juga dapat membaca teks notifikasi hari ini dan kemarin dari aplikasi tersebut bila diperlukan. Jika masih muat, ringkasan minggu lalu dan bulan lalu juga dilampirkan, dan tugas yang membutuhkan lebih banyak dapat membaca ringkasan harian, mingguan, dan bulanan yang tersimpan. Setelah tugas yang diberi konten ini selesai, memori tidak diambil secara otomatis dari ucapan Anda; hal yang Anda sampaikan sendiri untuk diingat tetap disimpan.</string>
     <string name="proactive_learn_tier_title">Tingkat sumber untuk %1$s</string>
     <string name="proactive_learn_tier_low">Rendah</string>
     <string name="proactive_learn_tier_mid">Sedang</string>
     <string name="proactive_learn_tier_high">Tinggi</string>
-    <string name="proactive_learn_tier_low_sub">Hanya dinilai dan ditandai; tidak lagi dikumpulkan. Notifikasinya yang belum dirangkum, teks yang tersimpan, dan baris ringkasan yang dibuat darinya dihapus. Topik dan kontak yang sudah dikumpulkan tetap ada sampai Anda menghapusnya di “Yang telah dikumpulkan Mika”.</string>
+    <string name="proactive_learn_tier_low_sub">Hanya dinilai dan ditandai; tidak lagi dikumpulkan. Notifikasinya yang belum dirangkum, teks yang tersimpan, dan baris ringkasan yang dibuat darinya dihapus. Topik dan kontak yang sudah dikumpulkan tetap ada sampai Anda menghapusnya di “Yang telah dikumpulkan ACS”.</string>
     <string name="proactive_learn_tier_mid_sub">Dikumpulkan; dibawa ke tugas hanya pada Berani.</string>
     <string name="proactive_learn_tier_high_sub">Dikumpulkan, dan dibawa ke tugas pada Seimbang atau Berani.</string>
     <string name="proactive_learn_week_this">Ringkasan minggu ini</string>

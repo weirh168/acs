@@ -164,7 +164,7 @@
     <string name="signin_openrouter_authorize">صدور مجوز در OpenRouter</string>
     <string name="signin_openrouter_waiting">در مرورگر تأیید کنید و سپس به میکا برگردید.</string>
     <string name="signin_openrouter_manage">باز کردن صفحهٔ Keys در OpenRouter</string>
-    <string name="signin_openrouter_signed_in_note">مصرف از موجودی OpenRouter شما کسر می‌شود. کلید در این گوشی رمزگذاری و ذخیره می‌شود؛ برای توقف استفاده، کلید «Mika» را در صفحهٔ Keys ‏OpenRouter حذف کنید.</string>
+    <string name="signin_openrouter_signed_in_note">مصرف از موجودی OpenRouter شما کسر می‌شود. کلید در این گوشی رمزگذاری و ذخیره می‌شود؛ برای توقف استفاده، کلید «ACS» را در صفحهٔ Keys ‏OpenRouter حذف کنید.</string>
     <string name="signin_openrouter_signed_out_note">کلید از این گوشی حذف شد، اما همچنان در OpenRouter وجود دارد؛ آن را در صفحهٔ Keys حذف کنید. انتخاب مدل‌ها حفظ می‌شود.</string>
     <string name="signin_set_main">تنظیم به‌عنوان مدل اصلی</string>
     <string name="signin_set_main_note">میکا از آن برای انجام کارها استفاده می‌کند</string>

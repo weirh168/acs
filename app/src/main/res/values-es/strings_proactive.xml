@@ -13,12 +13,12 @@
     <string name="proactive_inbox_empty">Aún no hay nada</string>
     <string name="proactive_history_more">+%1$d anteriores</string>
     <string name="proactive_apps">Apps que leer (%1$d seleccionadas)</string>
-    <string name="proactive_helper_grant">Que el asistente de Mika lo conceda</string>
-    <string name="proactive_helper_grant_body">El asistente de teléfono de Mika activará el \"Acceso a notificaciones\" de Mika en los ajustes del sistema.\n\nEs un permiso sensible: técnicamente permite leer todas las notificaciones. Mika solo lee las apps que marques en esta página. Puedes revocarlo cuando quieras en los ajustes del sistema.</string>
+    <string name="proactive_helper_grant">Que el asistente de ACS lo conceda</string>
+    <string name="proactive_helper_grant_body">El asistente de teléfono de ACS activará el \"Acceso a notificaciones\" de ACS en los ajustes del sistema.\n\nEs un permiso sensible: técnicamente permite leer todas las notificaciones. ACS solo lee las apps que marques en esta página. Puedes revocarlo cuando quieras en los ajustes del sistema.</string>
     <string name="proactive_helper_grant_confirm">Conceder</string>
     <string name="proactive_helper_unavailable">El control del teléfono aún no está listo. Configúralo primero o usa \"Conceder acceso\" arriba.</string>
     <string name="proactive_helper_failed">No se pudo conceder así. Prueba con \"Conceder acceso\" arriba.</string>
-    <string name="proactive_off_note">Al desactivar el interruptor no se lee ni se envía nada más, y se eliminan las notificaciones sin procesar y el texto guardado. Los temas, contactos y resúmenes ya recogidos se quedan; bórralos en «Lo que Mika ha reunido». El acceso a las notificaciones sigue concedido hasta que lo revoques en los ajustes del sistema.</string>
+    <string name="proactive_off_note">Al desactivar el interruptor no se lee ni se envía nada más, y se eliminan las notificaciones sin procesar y el texto guardado. Los temas, contactos y resúmenes ya recogidos se quedan; bórralos en «Lo que ACS ha reunido». El acceso a las notificaciones sigue concedido hasta que lo revoques en los ajustes del sistema.</string>
     <string name="proactive_triage_no_model">No hay ningún modelo configurado. Elige uno primero en Ajustes › Modelos.</string>
     <string name="proactive_triage_consent_title">¿Enviar notificaciones a un modelo?</string>
     <string name="proactive_triage_reconfirm">Cambió el proveedor o el modelo. En pausa hasta que vuelvas a confirmar.</string>
@@ -41,7 +41,7 @@
     <string name="proactive_triage_no_verdict">sin decisión</string>
     <string name="proactive_triage_capped">esta app alcanzó el límite de avisos de hoy</string>
     <string name="notice_hint_title">Vale la pena verlas</string>
-    <string name="notice_hint_capsule_desc">Mika, %1$d notificaciones que vale la pena ver</string>
+    <string name="notice_hint_capsule_desc">ACS, %1$d notificaciones que vale la pena ver</string>
     <string name="notice_hint_open">Ver notificaciones que vale la pena ver</string>
     <string name="notice_hint_entry">Vale la pena verlas (%1$d)</string>
     <string name="notice_hint_feedback">Vistas %1$d · atendidas sin verlas %2$d</string>
@@ -60,7 +60,7 @@
     <string name="proactive_known_sub">%1$d temas · %2$d personas y grupos</string>
     <string name="proactive_diag">Diagnóstico</string>
     <string name="proactive_footer_send">Lo que se envía al modelo: el título, el texto y los mensajes recientes de las notificaciones de las apps que elegiste, de una app cada vez, al modelo que confirmaste; además, el nombre del paquete de la app, si es un chat de grupo o privado, si abriste o descartaste cada notificación y los nombres de hasta 30 temas ya existentes. Los resúmenes diarios, semanales y mensuales se hacen solo con frases ya escritas, no con el texto de las notificaciones. El diario recibe además los nombres de los chats.</string>
-    <string name="proactive_footer_store">Lo que se guarda cifrado en este teléfono: temas breves, y los nombres y la relación supuesta de las personas y grupos con los que chateas. Los resultados de la clasificación quedan solo en memoria. Cuando abres un aviso, esas notificaciones se escriben en una conversación y se guardan como las demás; si sigues hablando allí, ese texto se envía al modelo que hace el trabajo. Desactivar el interruptor, o borrar o vaciar lo que hay en «Lo que Mika ha reunido», no elimina esa conversación.</string>
+    <string name="proactive_footer_store">Lo que se guarda cifrado en este teléfono: temas breves, y los nombres y la relación supuesta de las personas y grupos con los que chateas. Los resultados de la clasificación quedan solo en memoria. Cuando abres un aviso, esas notificaciones se escriben en una conversación y se guardan como las demás; si sigues hablando allí, ese texto se envía al modelo que hace el trabajo. Desactivar el interruptor, o borrar o vaciar lo que hay en «Lo que ACS ha reunido», no elimina esa conversación.</string>
     <string name="proactive_footer_digest">El resumen del día está activado, así que además se guardan: el texto de las notificaciones (hasta 2 días), las notas sacadas de él (8 días), el resumen de cada día (35 días), los resúmenes semanales (26 semanas) y los mensuales (2 años).</string>
     <string name="proactive_footer_no_text">Salvo los avisos que abras, el texto de las notificaciones no se guarda: solo queda en memoria hasta que se procesa.</string>
     <string name="proactive_app_off">No leer</string>

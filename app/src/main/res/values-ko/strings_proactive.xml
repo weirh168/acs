@@ -13,12 +13,12 @@
     <string name="proactive_inbox_empty">아직 없음</string>
     <string name="proactive_history_more">이전 %1$d개 더</string>
     <string name="proactive_apps">읽을 앱(%1$d개 선택)</string>
-    <string name="proactive_helper_grant">Mika 도우미로 허용</string>
-    <string name="proactive_helper_grant_body">Mika의 휴대폰 도우미가 시스템 설정에서 Mika의 \'알림 접근\'을 켭니다.\n\n민감한 권한으로, 기술적으로는 모든 알림을 읽을 수 있습니다. Mika는 이 페이지에서 선택한 앱만 읽습니다. 시스템 설정에서 언제든 취소할 수 있습니다.</string>
+    <string name="proactive_helper_grant">ACS 도우미로 허용</string>
+    <string name="proactive_helper_grant_body">ACS의 휴대폰 도우미가 시스템 설정에서 ACS의 \'알림 접근\'을 켭니다.\n\n민감한 권한으로, 기술적으로는 모든 알림을 읽을 수 있습니다. ACS는 이 페이지에서 선택한 앱만 읽습니다. 시스템 설정에서 언제든 취소할 수 있습니다.</string>
     <string name="proactive_helper_grant_confirm">허용</string>
     <string name="proactive_helper_unavailable">휴대폰 조작이 아직 준비되지 않았습니다. 먼저 설정하거나 위의 \'권한 허용\'을 사용하세요.</string>
     <string name="proactive_helper_failed">이 방법으로는 허용하지 못했습니다. 위의 \'권한 허용\'을 사용해 보세요.</string>
-    <string name="proactive_off_note">스위치를 끄면 더는 읽거나 보내지 않으며, 처리하지 않은 알림과 저장된 알림 텍스트가 삭제됩니다. 이미 모은 주제, 연락처, 요약은 남아 있으며 \'Mika가 알게 된 것\'에서 지울 수 있습니다. 알림 접근 권한 자체는 시스템 설정에서 해제해야 취소됩니다.</string>
+    <string name="proactive_off_note">스위치를 끄면 더는 읽거나 보내지 않으며, 처리하지 않은 알림과 저장된 알림 텍스트가 삭제됩니다. 이미 모은 주제, 연락처, 요약은 남아 있으며 \'ACS가 알게 된 것\'에서 지울 수 있습니다. 알림 접근 권한 자체는 시스템 설정에서 해제해야 취소됩니다.</string>
     <string name="proactive_triage_no_model">설정된 모델이 없습니다. 먼저 설정 › 모델에서 선택하세요.</string>
     <string name="proactive_triage_consent_title">알림을 모델로 보낼까요?</string>
     <string name="proactive_triage_reconfirm">제공업체 또는 모델이 바뀌었습니다. 다시 확인할 때까지 일시 중지됩니다.</string>
@@ -41,7 +41,7 @@
     <string name="proactive_triage_no_verdict">판정 없음</string>
     <string name="proactive_triage_capped">이 앱은 오늘 알림 한도에 도달함</string>
     <string name="notice_hint_title">알릴 만함</string>
-    <string name="notice_hint_capsule_desc">Mika, 알릴 만한 알림 %1$d개</string>
+    <string name="notice_hint_capsule_desc">ACS, 알릴 만한 알림 %1$d개</string>
     <string name="notice_hint_open">알릴 만한 알림 보기</string>
     <string name="notice_hint_entry">알릴 만함 (%1$d)</string>
     <string name="notice_hint_feedback">확인함 %1$d · 보기 전에 처리함 %2$d</string>
@@ -60,7 +60,7 @@
     <string name="proactive_known_sub">주제 %1$d개 · 사람과 그룹 %2$d개</string>
     <string name="proactive_diag">진단</string>
     <string name="proactive_footer_send">모델로 보내는 것: 선택한 앱의 알림 제목, 본문, 최근 메시지를 한 번에 앱 하나씩, 확인한 모델로 보냅니다. 앱 패키지 이름, 그룹인지 개인 대화인지, 각 알림을 열었는지 지웠는지, 기존 주제 이름(최대 30개)도 함께 보냅니다. 일·주·월별 요약은 이미 만든 문장만으로 만들며 알림 원문은 보내지 않습니다. 일별 요약에는 대화 이름도 함께 보냅니다.</string>
-    <string name="proactive_footer_store">이 기기에 암호화되어 저장되는 것: 짧은 주제, 대화하는 사람과 그룹의 이름 및 추정한 관계. 판정 결과는 메모리에만 있습니다. 알림 안내를 열면 해당 알림이 대화에 기록되어 다른 대화처럼 저장되고, 거기서 이어서 말하면 그 텍스트가 작업하는 모델로 전송됩니다. 스위치를 끄거나 ‘Mika가 알게 된 것’의 내용을 삭제하거나 비워도 그 대화는 삭제되지 않습니다.</string>
+    <string name="proactive_footer_store">이 기기에 암호화되어 저장되는 것: 짧은 주제, 대화하는 사람과 그룹의 이름 및 추정한 관계. 판정 결과는 메모리에만 있습니다. 알림 안내를 열면 해당 알림이 대화에 기록되어 다른 대화처럼 저장되고, 거기서 이어서 말하면 그 텍스트가 작업하는 모델로 전송됩니다. 스위치를 끄거나 ‘ACS가 알게 된 것’의 내용을 삭제하거나 비워도 그 대화는 삭제되지 않습니다.</string>
     <string name="proactive_footer_digest">\'그날의 알림 요약\'이 켜져 있어 다음도 저장됩니다: 알림 텍스트(최대 2일), 거기서 만든 문장(8일), 날짜별 요약(35일), 주별 요약(26주), 월별 요약(2년).</string>
     <string name="proactive_footer_no_text">연 알림 안내를 제외하고 알림 텍스트는 저장하지 않습니다. 처리가 끝날 때까지만 메모리에 있습니다.</string>
     <string name="proactive_app_off">읽지 않음</string>

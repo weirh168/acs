@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="proactive_learn_title">What Mika has gathered</string>
+    <string name="proactive_learn_title">What ACS has gathered</string>
     <string name="proactive_learn_state">Waiting %1$d · in memory %2$d</string>
     <string name="proactive_learn_state_budget">Today’s proactive budget is used up. Learning resumes tomorrow.</string>
     <string name="proactive_learn_state_store">The topic store can’t be opened right now. It will try again later.</string>
@@ -9,7 +9,7 @@
     <string name="proactive_learn_never">nothing learned yet</string>
     <string name="proactive_learn_apps">Apps to learn from</string>
     <string name="proactive_learn_feed">Captured %1$d · learned %2$d · batches %3$d (failed %4$d) · topics kept %5$d, rejected %6$d</string>
-    <string name="proactive_learn_topics">What Mika has noticed</string>
+    <string name="proactive_learn_topics">What ACS has noticed</string>
     <string name="proactive_learn_unsure">Not sure yet</string>
     <string name="proactive_learn_empty">Nothing yet</string>
     <string name="proactive_learn_kind_interest">Interest</string>
@@ -20,8 +20,8 @@
     <string name="proactive_learn_topic_detail">%1$s · %2$s · %3$d days · last seen %4$s</string>
     <string name="proactive_learn_topic_outcomes">%1$d apps · opened %2$d · dismissed %3$d</string>
     <string name="proactive_learn_delete">Delete</string>
-    <string name="proactive_learn_clear_all">Clear everything Mika has gathered</string>
-    <string name="proactive_learn_clear_all_body">Delete every topic, contact and digest Mika has gathered, and the stored notification text? This cannot be undone. Mika will start gathering again from new notifications.</string>
+    <string name="proactive_learn_clear_all">Clear everything ACS has gathered</string>
+    <string name="proactive_learn_clear_all_body">Delete every topic, contact and digest ACS has gathered, and the stored notification text? This cannot be undone. ACS will start gathering again from new notifications.</string>
     <string name="proactive_learn_clear_app">Clear what came from %1$s</string>
     <string name="proactive_learn_clear_app_body">Remove everything gathered from %1$s? Topics only it supported, its contacts, its notification text and the digest lines made from it are all deleted.</string>
     <string name="proactive_learn_sensitive">Sensitive inferences</string>
@@ -34,7 +34,7 @@
     <string name="proactive_learn_sensitive_tag">sensitive</string>
     <string name="proactive_learn_contacts">People and groups</string>
     <string name="proactive_learn_contacts_empty">Nothing yet</string>
-    <string name="proactive_learn_contacts_sub">Names come from the notifications themselves, never from the model. A relationship is only a guess unless you set it: it shows after it has come up on at least two days and in most guesses. A contact is established after three days. Deleting a contact also stops Mika from recording that conversation again. People inside a group chat are not tracked one by one. Sentences written by Daily digest may mention who said something in a group.</string>
+    <string name="proactive_learn_contacts_sub">Names come from the notifications themselves, never from the model. A relationship is only a guess unless you set it: it shows after it has come up on at least two days and in most guesses. A contact is established after three days. Deleting a contact also stops ACS from recording that conversation again. People inside a group chat are not tracked one by one. Sentences written by Daily digest may mention who said something in a group.</string>
     <string name="proactive_learn_contact_detail">%1$s · %2$s · %3$s · %4$d days · last seen %5$s</string>
     <string name="proactive_learn_contact_topics">Topics: %1$s</string>
     <string name="proactive_learn_type_person">Person</string>
@@ -50,14 +50,14 @@
     <string name="proactive_learn_rel_user">%1$s · set by you</string>
     <string name="proactive_learn_relation">Relationship</string>
     <string name="proactive_learn_relation_title">Relationship with %1$s</string>
-    <string name="proactive_learn_relation_reset">Let Mika decide</string>
+    <string name="proactive_learn_relation_reset">Let ACS decide</string>
     <string name="proactive_learn_contacts_allow_again">Allow deleted contacts again</string>
     <string name="proactive_learn_contacts_blocked">%1$d deleted conversations are not recorded</string>
     <string name="proactive_learn_contacts_feed">Contacts %1$d · names %2$d · contact entries kept %3$d, rejected %4$d</string>
     <string name="proactive_learn_digest_switch">Daily digest</string>
-    <string name="proactive_learn_digest_sub">Keeps the day\'s notifications so Mika can sum them up. Off by default.</string>
+    <string name="proactive_learn_digest_sub">Keeps the day\'s notifications so ACS can sum them up. Off by default.</string>
     <string name="proactive_learn_digest_on">On · %1$d notification texts kept on this phone</string>
-    <string name="proactive_learn_digest_body">To sum up your day, Mika needs to keep what the notifications said. With this on, the title and text of notifications from the apps being distilled are stored on this phone, encrypted, for up to two days, and then deleted. They are sent to the model you confirmed to be summed up. The notes made from them are kept 8 days, and each day\'s digest 35 days. Weekly digests are made from the daily ones and kept 26 weeks; monthly digests are made from the weekly ones and kept 2 years.\n\nTurning this off deletes the stored texts; notes and digests already made stay, and you can delete them under “What Mika has gathered”. Setting an app to “Not read” or “Low” deletes its texts and also the notes and digest lines made from it.</string>
+    <string name="proactive_learn_digest_body">To sum up your day, ACS needs to keep what the notifications said. With this on, the title and text of notifications from the apps being distilled are stored on this phone, encrypted, for up to two days, and then deleted. They are sent to the model you confirmed to be summed up. The notes made from them are kept 8 days, and each day\'s digest 35 days. Weekly digests are made from the daily ones and kept 26 weeks; monthly digests are made from the weekly ones and kept 2 years.\n\nTurning this off deletes the stored texts; notes and digests already made stay, and you can delete them under “What ACS has gathered”. Setting an app to “Not read” or “Low” deletes its texts and also the notes and digest lines made from it.</string>
     <string name="proactive_learn_digest_today">Today\'s messages</string>
     <string name="proactive_learn_digest_empty">Nothing summed up yet today. Notes appear after a batch of notifications has come in.</string>
     <string name="proactive_learn_day_today">Today\'s digest</string>
@@ -68,19 +68,19 @@
     <string name="proactive_learn_day_made">Up to %1$s</string>
     <string name="proactive_learn_day_make">Sum up today so far</string>
     <string name="proactive_learn_day_make_action">Sum up</string>
-    <string name="proactive_learn_level">How far Mika goes</string>
+    <string name="proactive_learn_level">How far ACS goes</string>
     <string name="proactive_learn_level_conservative">Cautious</string>
     <string name="proactive_learn_level_balanced">Balanced</string>
     <string name="proactive_learn_level_aggressive">Bold</string>
     <string name="proactive_learn_level_conservative_sub">A topic counts after 2 days. Up to 10 chats a day per app are flagged. Nothing gathered goes into tasks.</string>
     <string name="proactive_learn_level_balanced_sub">A topic counts after 2 days. Up to 20 chats a day per app are flagged. What is gathered from apps set to High goes into tasks.</string>
     <string name="proactive_learn_level_aggressive_sub">A topic counts after 1 day. No limit on flagged chats. What is gathered from apps set to Medium or High goes into tasks.</string>
-    <string name="proactive_learn_level_note">“Goes into tasks” means each task you start on this phone is given today\'s and yesterday\'s digest and what Mika has noticed about you, marked as coming from notifications and not from you. At no level does Mika speak up unasked or reply for you. What is carried is sent to whichever model runs the task, which may not be the one you confirmed for sorting notifications. A task can also read today\'s and yesterday\'s notification text from those apps when it needs to. When there is room, last week\'s and last month\'s digests are attached too, and a task that needs more can read the stored daily, weekly and monthly digests. A task that was given this is not mined for memories afterwards; what you tell Mika to remember in your own words is still saved.</string>
+    <string name="proactive_learn_level_note">“Goes into tasks” means each task you start on this phone is given today\'s and yesterday\'s digest and what ACS has noticed about you, marked as coming from notifications and not from you. At no level does ACS speak up unasked or reply for you. What is carried is sent to whichever model runs the task, which may not be the one you confirmed for sorting notifications. A task can also read today\'s and yesterday\'s notification text from those apps when it needs to. When there is room, last week\'s and last month\'s digests are attached too, and a task that needs more can read the stored daily, weekly and monthly digests. A task that was given this is not mined for memories afterwards; what you tell ACS to remember in your own words is still saved.</string>
     <string name="proactive_learn_tier_title">Source level for %1$s</string>
     <string name="proactive_learn_tier_low">Low</string>
     <string name="proactive_learn_tier_mid">Medium</string>
     <string name="proactive_learn_tier_high">High</string>
-    <string name="proactive_learn_tier_low_sub">Only sorted and flagged; no longer gathered from. Its notifications not yet summed up, its stored texts and the digest lines made from it are deleted. Topics and contacts already gathered stay until you clear them under “What Mika has gathered”.</string>
+    <string name="proactive_learn_tier_low_sub">Only sorted and flagged; no longer gathered from. Its notifications not yet summed up, its stored texts and the digest lines made from it are deleted. Topics and contacts already gathered stay until you clear them under “What ACS has gathered”.</string>
     <string name="proactive_learn_tier_mid_sub">Gathered from; taken into tasks only at Bold.</string>
     <string name="proactive_learn_tier_high_sub">Gathered from, and taken into tasks at Balanced or Bold.</string>
     <string name="proactive_learn_week_this">This week\'s digest</string>

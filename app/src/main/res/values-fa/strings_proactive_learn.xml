@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="proactive_learn_title">آنچه Mika گردآورده</string>
+    <string name="proactive_learn_title">آنچه ACS گردآورده</string>
     <string name="proactive_learn_state">در انتظار %1$d · در حافظه %2$d</string>
     <string name="proactive_learn_state_budget">بودجهٔ امروز قابلیت پیش‌دستانه تمام شد. یادگیری فردا ادامه می‌یابد.</string>
     <string name="proactive_learn_state_store">الان نمی‌توان انبار موضوع‌ها را باز کرد. بعداً دوباره امتحان می‌شود.</string>
@@ -9,7 +9,7 @@
     <string name="proactive_learn_never">هنوز چیزی یاد گرفته نشده</string>
     <string name="proactive_learn_apps">برنامه‌هایی که از آن‌ها یاد گرفته می‌شود</string>
     <string name="proactive_learn_feed">دریافت %1$d · یادگرفته %2$d · دسته %3$d (ناموفق %4$d) · موضوع پذیرفته %5$d، رد شده %6$d</string>
-    <string name="proactive_learn_topics">آنچه Mika فهمیده</string>
+    <string name="proactive_learn_topics">آنچه ACS فهمیده</string>
     <string name="proactive_learn_unsure">هنوز مطمئن نیست</string>
     <string name="proactive_learn_empty">هنوز چیزی نیست</string>
     <string name="proactive_learn_kind_interest">علاقه</string>
@@ -20,8 +20,8 @@
     <string name="proactive_learn_topic_detail">%1$s · %2$s · %3$d روز · آخرین بار %4$s</string>
     <string name="proactive_learn_topic_outcomes">%1$d برنامه · باز شده %2$d · رد شده %3$d</string>
     <string name="proactive_learn_delete">حذف</string>
-    <string name="proactive_learn_clear_all">پاک‌کردن همهٔ آنچه Mika گردآورده</string>
-    <string name="proactive_learn_clear_all_body">همهٔ موضوع‌ها، مخاطبان و خلاصه‌هایی که Mika گردآورده و متن ذخیره‌شدهٔ اعلان‌ها پاک شود؟ این کار برگشت‌پذیر نیست. Mika دوباره از اعلان‌های تازه گردآوری را آغاز می‌کند.</string>
+    <string name="proactive_learn_clear_all">پاک‌کردن همهٔ آنچه ACS گردآورده</string>
+    <string name="proactive_learn_clear_all_body">همهٔ موضوع‌ها، مخاطبان و خلاصه‌هایی که ACS گردآورده و متن ذخیره‌شدهٔ اعلان‌ها پاک شود؟ این کار برگشت‌پذیر نیست. ACS دوباره از اعلان‌های تازه گردآوری را آغاز می‌کند.</string>
     <string name="proactive_learn_clear_app">پاک کردن آنچه از %1$s آمده</string>
     <string name="proactive_learn_clear_app_body">هرچه از %1$s گردآوری شده پاک شود؟ موضوع‌هایی که فقط همین برنامه پشتیبانشان بوده، مخاطبانش، متن اعلان‌هایش و سطرهای خلاصهٔ ساخته‌شده از آن همگی پاک می‌شوند.</string>
     <string name="proactive_learn_sensitive">استنباط‌های حساس</string>
@@ -34,7 +34,7 @@
     <string name="proactive_learn_sensitive_tag">حساس</string>
     <string name="proactive_learn_contacts">افراد و گروه‌ها</string>
     <string name="proactive_learn_contacts_empty">هنوز چیزی نیست</string>
-    <string name="proactive_learn_contacts_sub">نام‌ها از خود اعلان‌ها گرفته می‌شوند، هرگز از مدل. رابطه فقط یک حدس است مگر اینکه خودت تعیینش کنی: وقتی نشان داده می‌شود که دست‌کم در دو روز و در بیشتر حدس‌ها آمده باشد. مخاطب پس از سه روز تثبیت‌شده به حساب می‌آید. حذف یک مخاطب باعث می‌شود Mika آن گفتگو را دیگر ثبت نکند. اعضای داخل یک گروه جداگانه دنبال نمی‌شوند. جمله‌هایی که خلاصهٔ روز می‌نویسد ممکن است بگویند چه کسی در گروه چه گفته است.</string>
+    <string name="proactive_learn_contacts_sub">نام‌ها از خود اعلان‌ها گرفته می‌شوند، هرگز از مدل. رابطه فقط یک حدس است مگر اینکه خودت تعیینش کنی: وقتی نشان داده می‌شود که دست‌کم در دو روز و در بیشتر حدس‌ها آمده باشد. مخاطب پس از سه روز تثبیت‌شده به حساب می‌آید. حذف یک مخاطب باعث می‌شود ACS آن گفتگو را دیگر ثبت نکند. اعضای داخل یک گروه جداگانه دنبال نمی‌شوند. جمله‌هایی که خلاصهٔ روز می‌نویسد ممکن است بگویند چه کسی در گروه چه گفته است.</string>
     <string name="proactive_learn_contact_detail">%1$s · %2$s · %3$s · %4$d روز · آخرین بار %5$s</string>
     <string name="proactive_learn_contact_topics">موضوع‌ها: %1$s</string>
     <string name="proactive_learn_type_person">شخص</string>
@@ -50,14 +50,14 @@
     <string name="proactive_learn_rel_user">%1$s · تعیین‌شده توسط تو</string>
     <string name="proactive_learn_relation">رابطه</string>
     <string name="proactive_learn_relation_title">رابطه با %1$s</string>
-    <string name="proactive_learn_relation_reset">تصمیم با Mika</string>
+    <string name="proactive_learn_relation_reset">تصمیم با ACS</string>
     <string name="proactive_learn_contacts_allow_again">اجازهٔ دوباره به مخاطبان حذف‌شده</string>
     <string name="proactive_learn_contacts_blocked">%1$d گفتگوی حذف‌شده ثبت نمی‌شود</string>
     <string name="proactive_learn_contacts_feed">مخاطبان %1$d · نام‌ها %2$d · دسته‌بندی مخاطب پذیرفته %3$d، ردشده %4$d</string>
     <string name="proactive_learn_digest_switch">خلاصهٔ روز</string>
-    <string name="proactive_learn_digest_sub">اعلان‌های روز را نگه می‌دارد تا Mika بتواند خلاصه‌شان کند. به‌طور پیش‌فرض خاموش است.</string>
+    <string name="proactive_learn_digest_sub">اعلان‌های روز را نگه می‌دارد تا ACS بتواند خلاصه‌شان کند. به‌طور پیش‌فرض خاموش است.</string>
     <string name="proactive_learn_digest_on">روشن · %1$d متن اعلان در این گوشی نگه داشته شده</string>
-    <string name="proactive_learn_digest_body">برای خلاصه‌کردن روز شما، Mika باید متن اعلان‌ها را نگه دارد. با روشن‌کردن این گزینه، عنوان و متن اعلان‌های برنامه‌هایی که خلاصه می‌شوند به‌صورت رمزگذاری‌شده تا دو روز در این گوشی ذخیره و سپس پاک می‌شود. این متن‌ها برای خلاصه‌شدن به مدلی که تأیید کرده‌اید فرستاده می‌شوند. یادداشت‌های ساخته‌شده از آن‌ها ۸ روز و خلاصهٔ هر روز ۳۵ روز نگه داشته می‌شود. خلاصه‌های هفتگی از خلاصه‌های روزانه ساخته و ۲۶ هفته نگه داشته می‌شوند؛ خلاصه‌های ماهانه از خلاصه‌های هفتگی ساخته و ۲ سال نگه داشته می‌شوند.\n\nبا خاموش‌کردن، متن‌های ذخیره‌شده پاک می‌شوند؛ یادداشت‌ها و خلاصه‌های ساخته‌شده می‌مانند و می‌توانید آن‌ها را در «آنچه Mika گردآورده» پاک کنید. اگر برنامه‌ای را روی «خوانده نشود» یا «پایین» بگذارید، متن‌هایش و همچنین یادداشت‌ها و سطرهای خلاصه‌ای که از آن ساخته شده‌اند پاک می‌شوند.</string>
+    <string name="proactive_learn_digest_body">برای خلاصه‌کردن روز شما، ACS باید متن اعلان‌ها را نگه دارد. با روشن‌کردن این گزینه، عنوان و متن اعلان‌های برنامه‌هایی که خلاصه می‌شوند به‌صورت رمزگذاری‌شده تا دو روز در این گوشی ذخیره و سپس پاک می‌شود. این متن‌ها برای خلاصه‌شدن به مدلی که تأیید کرده‌اید فرستاده می‌شوند. یادداشت‌های ساخته‌شده از آن‌ها ۸ روز و خلاصهٔ هر روز ۳۵ روز نگه داشته می‌شود. خلاصه‌های هفتگی از خلاصه‌های روزانه ساخته و ۲۶ هفته نگه داشته می‌شوند؛ خلاصه‌های ماهانه از خلاصه‌های هفتگی ساخته و ۲ سال نگه داشته می‌شوند.\n\nبا خاموش‌کردن، متن‌های ذخیره‌شده پاک می‌شوند؛ یادداشت‌ها و خلاصه‌های ساخته‌شده می‌مانند و می‌توانید آن‌ها را در «آنچه ACS گردآورده» پاک کنید. اگر برنامه‌ای را روی «خوانده نشود» یا «پایین» بگذارید، متن‌هایش و همچنین یادداشت‌ها و سطرهای خلاصه‌ای که از آن ساخته شده‌اند پاک می‌شوند.</string>
     <string name="proactive_learn_digest_today">پیام‌های امروز</string>
     <string name="proactive_learn_digest_empty">امروز هنوز چیزی خلاصه نشده است. یادداشت‌ها پس از رسیدن دسته‌ای از اعلان‌ها نمایش داده می‌شوند.</string>
     <string name="proactive_learn_day_today">خلاصهٔ امروز</string>
@@ -68,19 +68,19 @@
     <string name="proactive_learn_day_made">تا %1$s</string>
     <string name="proactive_learn_day_make">امروز را تا این لحظه خلاصه کن</string>
     <string name="proactive_learn_day_make_action">خلاصه کن</string>
-    <string name="proactive_learn_level">Mika تا کجا پیش برود</string>
+    <string name="proactive_learn_level">ACS تا کجا پیش برود</string>
     <string name="proactive_learn_level_conservative">محتاط</string>
     <string name="proactive_learn_level_balanced">متعادل</string>
     <string name="proactive_learn_level_aggressive">جسور</string>
     <string name="proactive_learn_level_conservative_sub">یک موضوع پس از ۲ روز به حساب می‌آید. برای هر برنامه تا ۱۰ گفت‌وگو در روز نشان‌گذاری می‌شود. چیزی از آنچه گردآوری شده وارد کارها نمی‌شود.</string>
     <string name="proactive_learn_level_balanced_sub">یک موضوع پس از ۲ روز به حساب می‌آید. برای هر برنامه تا ۲۰ گفت‌وگو در روز نشان‌گذاری می‌شود. آنچه از برنامه‌های سطح «بالا» گردآوری شده وارد کارها می‌شود.</string>
     <string name="proactive_learn_level_aggressive_sub">یک موضوع پس از ۱ روز به حساب می‌آید. برای گفت‌وگوهای نشان‌گذاری‌شده حدی نیست. آنچه از برنامه‌های سطح «متوسط» یا «بالا» گردآوری شده وارد کارها می‌شود.</string>
-    <string name="proactive_learn_level_note">«وارد کارها می‌شود» یعنی به هر کاری که در این گوشی شروع می‌کنید، خلاصهٔ امروز و دیروز و آنچه Mika دربارهٔ شما دریافته افزوده می‌شود، با این توضیح که از اعلان‌ها آمده و گفتهٔ شما نیست. در هیچ سطحی Mika بدون درخواست حرف نمی‌زند و به‌جای شما پاسخ نمی‌دهد. آنچه افزوده می‌شود برای مدلی فرستاده می‌شود که کار را اجرا می‌کند و شاید همان مدلی نباشد که برای دسته‌بندی اعلان‌ها تأیید کرده‌اید. هر کار در صورت نیاز می‌تواند متن اعلان‌های امروز و دیروزِ همان برنامه‌ها را هم بخواند. اگر جا باشد خلاصهٔ هفتهٔ گذشته و ماه گذشته هم پیوست می‌شود، و کاری که بیشتر لازم دارد می‌تواند خلاصه‌های روزانه، هفتگی و ماهانهٔ ذخیره‌شده را بخواند. پس از پایان کاری که این محتوا به آن داده شده، از گفته‌های شما به‌طور خودکار حافظه‌ای استخراج نمی‌شود؛ آنچه خودتان به زبان خودتان بگویید که به خاطر سپرده شود مثل همیشه ذخیره می‌شود.</string>
+    <string name="proactive_learn_level_note">«وارد کارها می‌شود» یعنی به هر کاری که در این گوشی شروع می‌کنید، خلاصهٔ امروز و دیروز و آنچه ACS دربارهٔ شما دریافته افزوده می‌شود، با این توضیح که از اعلان‌ها آمده و گفتهٔ شما نیست. در هیچ سطحی ACS بدون درخواست حرف نمی‌زند و به‌جای شما پاسخ نمی‌دهد. آنچه افزوده می‌شود برای مدلی فرستاده می‌شود که کار را اجرا می‌کند و شاید همان مدلی نباشد که برای دسته‌بندی اعلان‌ها تأیید کرده‌اید. هر کار در صورت نیاز می‌تواند متن اعلان‌های امروز و دیروزِ همان برنامه‌ها را هم بخواند. اگر جا باشد خلاصهٔ هفتهٔ گذشته و ماه گذشته هم پیوست می‌شود، و کاری که بیشتر لازم دارد می‌تواند خلاصه‌های روزانه، هفتگی و ماهانهٔ ذخیره‌شده را بخواند. پس از پایان کاری که این محتوا به آن داده شده، از گفته‌های شما به‌طور خودکار حافظه‌ای استخراج نمی‌شود؛ آنچه خودتان به زبان خودتان بگویید که به خاطر سپرده شود مثل همیشه ذخیره می‌شود.</string>
     <string name="proactive_learn_tier_title">سطح منبع برای %1$s</string>
     <string name="proactive_learn_tier_low">پایین</string>
     <string name="proactive_learn_tier_mid">متوسط</string>
     <string name="proactive_learn_tier_high">بالا</string>
-    <string name="proactive_learn_tier_low_sub">فقط دسته‌بندی و نشان‌گذاری می‌شود و دیگر چیزی از آن گردآوری نمی‌شود. اعلان‌های هنوز خلاصه‌نشده، متن‌های ذخیره‌شده و سطرهای خلاصهٔ ساخته‌شده از آن پاک می‌شوند. موضوع‌ها و مخاطبانی که قبلاً گردآوری شده‌اند می‌مانند تا در «آنچه Mika گردآورده» پاکشان کنید.</string>
+    <string name="proactive_learn_tier_low_sub">فقط دسته‌بندی و نشان‌گذاری می‌شود و دیگر چیزی از آن گردآوری نمی‌شود. اعلان‌های هنوز خلاصه‌نشده، متن‌های ذخیره‌شده و سطرهای خلاصهٔ ساخته‌شده از آن پاک می‌شوند. موضوع‌ها و مخاطبانی که قبلاً گردآوری شده‌اند می‌مانند تا در «آنچه ACS گردآورده» پاکشان کنید.</string>
     <string name="proactive_learn_tier_mid_sub">گردآوری می‌شود؛ فقط در «جسور» وارد کارها می‌شود.</string>
     <string name="proactive_learn_tier_high_sub">گردآوری می‌شود و در «متعادل» یا «جسور» وارد کارها می‌شود.</string>
     <string name="proactive_learn_week_this">خلاصهٔ این هفته</string>

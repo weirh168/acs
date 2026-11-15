@@ -13,12 +13,12 @@
     <string name="proactive_inbox_empty">Belum ada</string>
     <string name="proactive_history_more">+%1$d sebelumnya</string>
     <string name="proactive_apps">Aplikasi yang dibaca (%1$d dipilih)</string>
-    <string name="proactive_helper_grant">Izinkan lewat asisten Mika</string>
-    <string name="proactive_helper_grant_body">Asisten ponsel Mika akan menyalakan \"Akses notifikasi\" untuk Mika di setelan sistem.\n\nIni izin sensitif: secara teknis dapat membaca semua notifikasi. Mika hanya membaca aplikasi yang Anda centang di halaman ini. Anda bisa mencabutnya kapan saja di setelan sistem.</string>
+    <string name="proactive_helper_grant">Izinkan lewat asisten ACS</string>
+    <string name="proactive_helper_grant_body">Asisten ponsel ACS akan menyalakan \"Akses notifikasi\" untuk ACS di setelan sistem.\n\nIni izin sensitif: secara teknis dapat membaca semua notifikasi. ACS hanya membaca aplikasi yang Anda centang di halaman ini. Anda bisa mencabutnya kapan saja di setelan sistem.</string>
     <string name="proactive_helper_grant_confirm">Izinkan</string>
     <string name="proactive_helper_unavailable">Kontrol ponsel belum siap. Siapkan dulu, atau gunakan \"Beri akses\" di atas.</string>
     <string name="proactive_helper_failed">Gagal memberi izin dengan cara ini. Coba \"Beri akses\" di atas.</string>
-    <string name="proactive_off_note">Saat sakelar dimatikan, tidak ada lagi yang dibaca atau dikirim, dan notifikasi yang belum diproses serta teks notifikasi yang tersimpan dihapus. Topik, kontak, dan ringkasan yang sudah dikumpulkan tetap ada; hapus di “Yang telah dikumpulkan Mika”. Akses notifikasi tetap diberikan sampai Anda mencabutnya di setelan sistem.</string>
+    <string name="proactive_off_note">Saat sakelar dimatikan, tidak ada lagi yang dibaca atau dikirim, dan notifikasi yang belum diproses serta teks notifikasi yang tersimpan dihapus. Topik, kontak, dan ringkasan yang sudah dikumpulkan tetap ada; hapus di “Yang telah dikumpulkan ACS”. Akses notifikasi tetap diberikan sampai Anda mencabutnya di setelan sistem.</string>
     <string name="proactive_triage_no_model">Belum ada model. Pilih dulu di Setelan › Model.</string>
     <string name="proactive_triage_consent_title">Kirim notifikasi ke model?</string>
     <string name="proactive_triage_reconfirm">Penyedia atau model berubah. Dijeda sampai Anda mengonfirmasi lagi.</string>
@@ -41,7 +41,7 @@
     <string name="proactive_triage_no_verdict">tidak ada keputusan</string>
     <string name="proactive_triage_capped">aplikasi ini mencapai batas peringatan hari ini</string>
     <string name="notice_hint_title">Layak dilihat</string>
-    <string name="notice_hint_capsule_desc">Mika, %1$d notifikasi layak dilihat</string>
+    <string name="notice_hint_capsule_desc">ACS, %1$d notifikasi layak dilihat</string>
     <string name="notice_hint_open">Lihat notifikasi yang layak dilihat</string>
     <string name="notice_hint_entry">Layak dilihat (%1$d)</string>
     <string name="notice_hint_feedback">Dilihat %1$d · ditangani sebelum dilihat %2$d</string>
@@ -60,7 +60,7 @@
     <string name="proactive_known_sub">%1$d topik · %2$d orang dan grup</string>
     <string name="proactive_diag">Diagnostik</string>
     <string name="proactive_footer_send">Yang dikirim ke model: judul, isi, dan pesan terbaru notifikasi dari aplikasi yang Anda pilih, satu aplikasi setiap kali, ke model yang Anda konfirmasi; ditambah nama paket aplikasi, apakah obrolan grup atau pribadi, apakah Anda membuka atau menutup tiap notifikasi, dan nama hingga 30 topik yang sudah ada. Ringkasan harian, mingguan, dan bulanan dibuat hanya dari kalimat yang sudah ditulis, bukan dari teks notifikasi. Ringkasan harian juga diberi nama obrolan.</string>
-    <string name="proactive_footer_store">Yang disimpan terenkripsi di ponsel ini: topik singkat, serta nama dan perkiraan hubungan orang dan grup yang mengobrol dengan Anda. Hasil penilaian hanya ada di memori. Saat Anda membuka pengingat, notifikasi itu ditulis ke sebuah percakapan dan disimpan seperti percakapan lain; jika Anda melanjutkan di sana, teks itu dikirim ke model yang mengerjakan tugas. Mematikan sakelar, atau menghapus maupun mengosongkan isi “Yang telah dikumpulkan Mika”, tidak menghapus percakapan itu.</string>
+    <string name="proactive_footer_store">Yang disimpan terenkripsi di ponsel ini: topik singkat, serta nama dan perkiraan hubungan orang dan grup yang mengobrol dengan Anda. Hasil penilaian hanya ada di memori. Saat Anda membuka pengingat, notifikasi itu ditulis ke sebuah percakapan dan disimpan seperti percakapan lain; jika Anda melanjutkan di sana, teks itu dikirim ke model yang mengerjakan tugas. Mematikan sakelar, atau menghapus maupun mengosongkan isi “Yang telah dikumpulkan ACS”, tidak menghapus percakapan itu.</string>
     <string name="proactive_footer_digest">Ringkasan harian aktif, jadi ini juga disimpan: teks notifikasi (hingga 2 hari), catatan yang dibuat darinya (8 hari), ringkasan tiap hari (35 hari), ringkasan mingguan (26 minggu), dan ringkasan bulanan (2 tahun).</string>
     <string name="proactive_footer_no_text">Selain pengingat yang Anda buka, teks notifikasi tidak disimpan: hanya ada di memori sampai selesai diproses.</string>
     <string name="proactive_app_off">Tidak dibaca</string>
