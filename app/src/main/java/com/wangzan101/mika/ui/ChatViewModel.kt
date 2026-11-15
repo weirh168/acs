@@ -85,6 +85,10 @@ interface TaskActions {
     fun cancel()
     fun resume()
     fun takeOver()
+
+    /** 用户在小窗里亲手操作:让任务在下一个动屏动作前停下(不搬走任务、不关小窗)。 */
+    fun pauseForHuman()
+    fun pauseForHumanIn(conversationId: String) = pauseForHuman()
     fun handBack()
     fun finishedMyself()
     fun skip()
@@ -285,6 +289,8 @@ data class PipUi(
     val mode: PipMode = PipMode.Running,
     val expanded: Boolean = false,
     val closed: Boolean = false,
+    /** 用户自己上手操作过(人工接管):自动操作已停,小窗留着给他看/点。 */
+    val tookOver: Boolean = false,
 )
 
 enum class ComposerMode {
@@ -1492,6 +1498,8 @@ class ChatViewModel(
     }
     fun resume() = act({ actions.resume() }) { actions.resumeIn(it) }
     fun takeOver() = act({ actions.takeOver() }) { actions.takeOverIn(it) }
+    /** 小窗里人工介入:只让任务在下一个动屏动作前停下,不搬走任务、不关小窗。 */
+    fun pauseForHuman() = act({ actions.pauseForHuman() }) { actions.pauseForHumanIn(it) }
     fun handBack() = act({ actions.handBack() }) { actions.handBackIn(it) }
     fun finishedMyself() = act({ actions.finishedMyself() }) { actions.finishedMyselfIn(it) }
     fun skip() = act({ actions.skip() }) { actions.skipIn(it) }
@@ -1512,6 +1520,15 @@ class ChatViewModel(
     fun expandPip() = _ui.update { if (it.pip.visible) it.copy(pip = it.pip.copy(expanded = true)) else it }
     /** 要你处理时点画中画:收起它,由界面滚到要你处理的那张卡片。 */
     fun attendPip() = collapsePip()
+
+    /**
+     * 用户在悬浮小窗里自己动手了:停掉这一轮的自动操作(走系统既有的接管:任务交到用户手上),
+     * 并记下「已接管」——小窗留着,让用户继续看/点,不因为接管而消失。
+     */
+    fun userTakeOverPip() {
+        pauseForHuman()
+        _ui.update { it.copy(pip = it.pip.copy(tookOver = true)) }
+    }
     fun collapsePip() = _ui.update { it.copy(pip = it.pip.copy(expanded = false)) }
 
     /** 用户关掉这个任务的小画面:只留右下角的小按钮,这个任务结束前不再自己浮出来。 */
@@ -2032,12 +2049,7 @@ class ChatViewModel(
             liveIndex = -1
             // 这一轮可能已先一步存进对话、补到了屏上:按运行编号并成一条
             _ui.value.conversationId?.let(::syncSaved)
-            if (s is TaskState.Succeeded) {
-                lingerJob = scope.launch {
-                    delay(DONE_LINGER_MS)
-                    _ui.update { it.copy(pip = it.pip.copy(visible = false, expanded = false)) }
-                }
-            }
+            // 任务结束后不再自动收掉小画面:留着让用户自己关(点小画面上的「关掉小画面」)
         }
     }
 

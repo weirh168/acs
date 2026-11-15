@@ -342,6 +342,15 @@ class TaskRun(
         // 用户在页面上操作的那种暂停:循环可能还没走到关卡(还在想),按它此刻的状态重新显示,不再写着暂停
         if (wasOnPage) loop?.state?.value?.takeIf { it is TaskState.Running }?.let(::publish)
     }
+    /**
+     * 用户在小窗里亲手操作了:不搬走任务、不动虚拟屏,只是让它在下一个会改动屏幕的工具之前停下,
+     * 等用户点「继续」再接着做(和小窗里直接点/滑配合,人机不会抢着操作)。
+     */
+    fun userTookControl() {
+        if (_state.value !is TaskState.Running) return
+        userOnPage()
+    }
+
     fun takeOver(waitKey: Int?) { takeover?.let { t -> scope.launch { t.handOver(waitKey) } } }
     fun handBack(waitKey: Int?) { takeover?.let { t -> scope.launch { t.handBack(waitKey) } } }
     fun finishedMyself(waitKey: Int?) { takeover?.let { t -> scope.launch { t.finishedMyself(waitKey) } } }

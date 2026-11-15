@@ -9,4 +9,7 @@
     <string name="pip_size_smaller">Smaller preview</string>
     <string name="pip_size_larger">Larger preview</string>
     <string name="pip_size_reset">Reset preview size</string>
+    <string name="pip_fullscreen">Full screen</string>
+    <string name="pip_fullscreen_exit">Exit full screen</string>
+    <string name="pip_took_over">You have control</string>
 </resources>

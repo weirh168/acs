@@ -69,6 +69,7 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.wangzan101.mika.ui.PipPhysics.Corner
 import com.wangzan101.mika.cap.phone.display.PipInput
@@ -126,7 +127,17 @@ fun AgentPip(
     onClose: () -> Unit = {},
     onReopen: () -> Unit = {},
     onToggleSound: () -> Unit = {},
+    /** 用户第一次碰小窗里的画面:交给 App 去停掉自动操作(接管),小窗本身不动。 */
+    onHumanTouch: () -> Unit = {},
 ) {
+    // 全屏看/全屏操作:从小窗的「全屏」按钮进,退出来回小窗,不影响任务结束后的留存
+    var fullscreen by rememberSaveable { mutableStateOf(false) }
+    // 任务结束后画面流会断:留一张最后的画面,小窗和全屏都继续显示,不自动消失
+    var lastFrame by remember { mutableStateOf<Bitmap?>(null) }
+    LaunchedEffect(frame) { if (frame != null) lastFrame = frame }
+    val shown = frame ?: lastFrame
+    val operator = pipInput.takeIf { operateEnabled && frame != null }
+    val opScope = rememberCoroutineScope()
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val fade = if (reduceMotion) tween<Float>(150) else tween(300)
         // 关掉了:只留右下角的小按钮(任务做完那几秒不留)
@@ -142,12 +153,41 @@ fun AgentPip(
         }
         AnimatedVisibility(pip.visible && !pip.closed, enter = fadeIn(fade), exit = fadeOut(if (reduceMotion) tween(150) else tween(500))) {
             PipWindow(
-                pip, frame, webContent, pipInput, soundOn, operateEnabled, reduceMotion,
+                pip, shown, webContent, pipInput, soundOn, operateEnabled, reduceMotion,
                 areaWidth = constraints.maxWidth.toFloat(), areaHeight = constraints.maxHeight.toFloat(),
                 topInset = topInset, bottomInset = bottomInset, onExpand = onExpand, onCollapse = onCollapse, onAttention = onAttention,
                 onClose = onClose,
+                fullscreenOn = fullscreen,
+                onFullscreen = { fullscreen = !fullscreen },
                 onToggleSound = onToggleSound,
+                onHumanTouch = onHumanTouch,
             )
+        }
+        // 全屏:铺满整屏显示画面(比小窗大得多),开着「允许我在小窗里直接操作」时点/滑直接作用在虚拟屏上。
+        // 只有点这里的「退出全屏」或系统返回才退出,任务结束不会把它关掉。
+        if (fullscreen && pip.visible && !pip.closed) {
+            val image = shown?.let { remember(it) { it.asImageBitmap() } }
+            Box(
+                Modifier.fillMaxSize().background(MikaTheme.colors.bg.copy(alpha = 0.97f))
+                    .testTag("pip-fullscreen"),
+            ) {
+                Box(
+                    Modifier.fillMaxSize().padding(6.dp).then(
+                        if (operator != null) operateInputModifier(operator, opScope) else Modifier,
+                    ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (image != null) {
+                        Image(image, stringResource(R.string.pip_screen), Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                    }
+                }
+                Row(Modifier.align(Alignment.TopEnd).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (operator != null) {
+                        PipButton(MikaIcons.Back, stringResource(R.string.pip_back), { opScope.launch { operator.back() } }, "pip-fullscreen-back")
+                    }
+                    PipButton(MikaIcons.Close, stringResource(R.string.pip_fullscreen_exit), { fullscreen = false }, "pip-fullscreen-exit")
+                }
+            }
         }
     }
 }
@@ -199,6 +239,10 @@ private fun PipWindow(
     onCollapse: () -> Unit,
     onAttention: () -> Unit,
     onClose: () -> Unit,
+    /** 全屏开着没有(按钮显示反过来)。 */
+    fullscreenOn: Boolean = false,
+    onFullscreen: () -> Unit = {},
+    onHumanTouch: () -> Unit = {},
     onToggleSound: () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -379,8 +423,15 @@ private fun PipWindow(
                 .padding(insetDp),
         ) {
             // 画面按长宽比塞满整个内框;直接操作时把点/滑按内框归一化坐标换算成虚拟屏坐标注入
+            // 人工一碰画面就算介入:通知外面停掉自动操作(不消费事件,拖动/操作照常)
+            val humanGate = Modifier.pointerInput(pip.mode) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    onHumanTouch()
+                }
+            }
             Box(
-                Modifier.fillMaxSize().clip(inner).background(MikaTheme.colors.surface),
+                humanGate.then(Modifier.fillMaxSize()).clip(inner).background(MikaTheme.colors.surface),
                 contentAlignment = Alignment.Center,
             ) {
                 if (frame != null) {
@@ -404,6 +455,11 @@ private fun PipWindow(
                         expandedScale = PipSizing.scale(expandedScale * 1.2f)
                     }
                     PipSizeButton("↺", stringResource(R.string.pip_size_reset), "pip-size-reset") { expandedScale = 1f }
+                    PipSizeButton(
+                        if (fullscreenOn) "⤡" else "⛶",
+                        stringResource(if (fullscreenOn) R.string.pip_fullscreen_exit else R.string.pip_fullscreen),
+                        "pip-fullscreen-toggle",
+                    ) { onFullscreen() }
                 }
                 // 左上角:返回(直接操作时)、声音开关(恢复/再静,方向跟着任务里的真实音频记录)、关掉小画面;不伪造与真实音频无关的开关状态
                 Row(Modifier.align(Alignment.TopStart).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -441,6 +497,17 @@ private fun PipWindow(
             PipMode.Running -> MikaTheme.colors.ok to 2.dp
             PipMode.NeedsYou -> MikaTheme.colors.warnSolid.copy(alpha = breath) to 2.dp
             PipMode.Done -> null
+        }
+        // 人工接管后:左上角标一句,说明自动操作已经停了(小窗本身继续留着)
+        if (pip.tookOver) {
+            Text(
+                stringResource(R.string.pip_took_over),
+                Modifier.align(Alignment.TopStart).padding(6.dp)
+                    .background(MikaTheme.colors.warnSolid.copy(alpha = 0.9f), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                    .testTag("pip-tookover"),
+                fontSize = 10.sp, color = MikaTheme.colors.onAccent,
+            )
         }
         if (glow != null) Box(Modifier.size(w, h).border(glow.second, glow.first, outer))
     }

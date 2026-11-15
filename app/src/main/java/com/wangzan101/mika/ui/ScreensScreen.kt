@@ -182,6 +182,10 @@ fun ScreensContent(
             EmptyNote(ScreensCopy.EMPTY)
             return@PageScaffold
         }
+        if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d(
+            "ACS-Screens",
+            "content rows=${rows.size} sticky=${sticky.size} shown=${shown.size} frames=${lastFrames.size} zoomed=${zoomed != null}",
+        )
         shown.forEach { row ->
             ScreenCard(
                 row, frames(row.key), onOpenConversation,
@@ -261,6 +265,10 @@ private fun ScreenCard(
     LaunchedEffect(row.key, frames) {
         frames?.filterNotNull()?.previewFrames(same = ::sameFrame)?.collect(onCache)
     }
+    if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d(
+        "ACS-Screens",
+        "card ${row.key} open=$open size=$size frames=${frames != null} cached=${cached != null} display=${row.displayId}",
+    )
     GroupCard(Modifier.padding(top = 8.dp)) {
         ListRow(
             MikaIcons.Screens, row.goal.oneLine(), ScreensCopy.place(row),
@@ -345,7 +353,14 @@ private fun FrameZoom(frame: Bitmap, displayId: Int, onDismiss: () -> Unit) {
     val canOperate = a11y != null && displayId >= 0
     var operate by remember { mutableStateOf(false) }
     val doOperate = operate && canOperate
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d(
+        "ACS-Screens",
+        "zoom-dialog composed display=$displayId canOperate=$canOperate",
+    )
+    Dialog(onDismissRequest = {
+        if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Screens", "zoom-dialog onDismissRequest")
+        onDismiss()
+    }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(Modifier.fillMaxSize().background(MikaTheme.colors.bg.copy(alpha = 0.96f)).testTag("screens-zoom-dialog")) {
             Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(8.dp)) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {

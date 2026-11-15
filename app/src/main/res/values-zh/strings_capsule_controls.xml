@@ -9,4 +9,7 @@
     <string name="pip_size_smaller">缩小画面</string>
     <string name="pip_size_larger">放大画面</string>
     <string name="pip_size_reset">恢复默认大小</string>
+    <string name="pip_fullscreen">全屏看/操作</string>
+    <string name="pip_fullscreen_exit">退出全屏</string>
+    <string name="pip_took_over">你已接管 · 自动操作已停</string>
 </resources>

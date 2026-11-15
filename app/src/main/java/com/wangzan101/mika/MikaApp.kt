@@ -337,6 +337,9 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                 override fun cancel() = TaskService.cancel(app)
                 override fun resume() = TaskService.resume(app)
                 override fun takeOver() = TaskService.takeOver(app)
+                // 小窗里的人工介入:只让任务在下一个动屏动作前停下,不搬走任务、不关小窗
+                override fun pauseForHuman() { taskState.runs.value.firstOrNull { it.state.value is com.wangzan101.mika.core.agent.TaskState.Running }?.userTookControl() }
+                override fun pauseForHumanIn(conversationId: String) { taskState.run(conversationId)?.userTookControl() }
                 override fun handBack() = TaskService.handBack(app)
                 override fun finishedMyself() = TaskService.finishedMyself(app)
                 override fun skip() = TaskService.skip(app)

@@ -230,7 +230,7 @@ fun ChatScreen(
             else if (ui.pip.mode != PipMode.Done) lastFrameWasWeb = false
         }
     }
-    val frame = live ?: lastFrame.takeIf { ui.pip.visible && ui.pip.mode == PipMode.Done }
+    val frame = live ?: lastFrame.takeIf { ui.pip.visible }
     val webContent = if (ui.pip.mode == PipMode.Done) lastFrameWasWeb else webLive
     // 注册文字的 Android 状态保存;平时由进程内的 ViewModel 管理完整会话草稿。
     rememberSaveable(vm, saver = androidx.compose.runtime.saveable.listSaver(
@@ -507,6 +507,8 @@ fun ChatScreen(
                 Toast.makeText(context, context.getString(R.string.pip_closed_hint), Toast.LENGTH_SHORT).show()
             },
             onReopen = vm::reopenPip,
+            // 人工一碰小窗画面就接管:停掉这一轮的自动操作,由用户自己点,小窗留着
+            onHumanTouch = { if (ui.pip.mode == PipMode.Running && !ui.pip.tookOver) vm.userTakeOverPip() },
             onToggleSound = vm::togglePipSound,
             // 要你处理时点小窗:收起,滚到要你处理的那张卡片(在最后一问一答里,它后面只可能还有文件卡片和去设置那一行)
             onAttention = {
