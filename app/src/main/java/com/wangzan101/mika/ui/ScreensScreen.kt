@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -150,19 +151,24 @@ fun ScreensContent(
     onOpenConversation: (String) -> Unit,
     frames: (String) -> StateFlow<Bitmap?>? = { null },
 ) {
+    // 放大哪块屏由这一页管:画面流在任务卡片里,状态放这儿才不会因为某一帧为空就被重置
+    var zoomed by remember { mutableStateOf<Pair<Bitmap, Int>?>(null) }
     PageScaffold(ScreensCopy.TITLE, onBack) {
         if (rows.isEmpty()) {
             EmptyNote(ScreensCopy.EMPTY)
             return@PageScaffold
         }
-        rows.forEach { row -> ScreenCard(row, frames(row.key), onOpenConversation) }
+        rows.forEach { row ->
+            ScreenCard(row, frames(row.key), onOpenConversation, onZoom = { bmp -> zoomed = bmp to row.displayId })
+        }
+        zoomed?.let { (bmp, displayId) -> FrameZoom(bmp, displayId) { zoomed = null } }
         FooterNote(ScreensCopy.NOTE)
     }
 }
 
 /** 一个任务:在做什么、正在用哪个 App、状态;点这一行回到它的对话,点「看画面」展开实时画面。 */
 @Composable
-private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConversation: (String) -> Unit) {
+private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConversation: (String) -> Unit, onZoom: (Bitmap) -> Unit = {}) {
     val c = MikaTheme.colors
     var open by rememberSaveable(row.key) { mutableStateOf(false) }
     GroupCard(Modifier.padding(top = 8.dp)) {
@@ -177,29 +183,39 @@ private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConver
                     .clickable { open = !open }.testTag("screens-preview-${row.key}"),
                 fontSize = 13.sp, color = c.accent,
             )
-            if (open && frames != null) LiveFrame(frames, row.displayId)
+            if (open && frames != null) LiveFrame(frames, onZoom)
         }
     }
 }
 
 /**
  * 这块屏的实时画面:每秒最多 5 张,和上一张一样就不换(见 [previewFrames])。收起时不订阅。
- * 点一下放大到整屏:能捏合缩放看细节,也能切成「我来操作」,点按/滑动直接作用在这块屏上。
+ * 点这一块(图 + 下面那行说明)就放大到整屏,放大后可以只看,也可以切「我来操作」自己点。
  */
 @Composable
-private fun LiveFrame(source: StateFlow<Bitmap?>, displayId: Int) {
+private fun LiveFrame(source: StateFlow<Bitmap?>, onZoom: (Bitmap) -> Unit) {
     val frames = remember(source) { source.filterNotNull().previewFrames(same = ::sameFrame) }
     val frame by frames.collectAsState(initial = null)
     val bmp = frame ?: return
-    var zoom by remember { mutableStateOf(false) }
-    Image(
-        bmp.asImageBitmap(), stringResource(R.string.screens_zoom),
+    // 整块(图 + 一行说明)都能点:图按 Fit 画,两侧留白点不到,加一条说明把可点区域补上
+    Column(
         Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-            .height(260.dp).clip(RoundedCornerShape(10.dp))
-            .clickable { zoom = true }.testTag("screens-zoom"),
-        contentScale = ContentScale.Fit,
-    )
-    if (zoom) FrameZoom(bmp, displayId) { zoom = false }
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onZoom(bmp) }
+            .testTag("screens-zoom"),
+    ) {
+        Image(
+            bmp.asImageBitmap(), stringResource(R.string.screens_zoom),
+            Modifier.fillMaxWidth().height(260.dp),
+            contentScale = ContentScale.Fit,
+        )
+        Text(
+            stringResource(R.string.screens_tap_to_zoom),
+            Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            textAlign = TextAlign.Center,
+            fontSize = 12.5.sp, color = MikaTheme.colors.ink3,
+        )
+    }
 }
 
 /**
@@ -221,7 +237,7 @@ private fun FrameZoom(frame: Bitmap, displayId: Int, onDismiss: () -> Unit) {
                     if (doOperate) {
                         InteractiveFrame(frame, displayId, Modifier.fillMaxSize())
                     } else {
-                        Box(Modifier.fillMaxSize().clickable { onDismiss() }, contentAlignment = Alignment.Center) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             ZoomableFrame(frame, stringResource(R.string.screens_zoom), Modifier.fillMaxSize())
                         }
                     }
