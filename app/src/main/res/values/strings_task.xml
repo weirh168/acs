@@ -85,6 +85,7 @@
     <string name="screens_size_small">S</string>
     <string name="screens_size_medium">M</string>
     <string name="screens_size_large">L</string>
+    <string name="screens_size_huge">XL</string>
     <string name="screens_operate">Let me operate</string>
     <string name="screens_view_only">View only</string>
     <string name="screens_operate_hint">Taps and swipes act on this screen directly. To type, go back to the chat and let ACS type.</string>

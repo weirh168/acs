@@ -167,11 +167,12 @@ fun ScreensContent(
     }
 }
 
-/** 小画面三档:小 200dp、中 260dp(原来那样)、大 460dp。 */
+/** 小画面四档:小 200dp、中 260dp(原来那样)、大 460dp、超大 800dp。 */
 private enum class PreviewSize(val height: Dp, val label: Int) {
     Small(200.dp, R.string.screens_size_small),
     Medium(260.dp, R.string.screens_size_medium),
     Large(460.dp, R.string.screens_size_large),
+    Huge(800.dp, R.string.screens_size_huge),
 }
 
 /** 小/中/大三个小按钮:想把画面看大一点就往上切。 */

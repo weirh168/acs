@@ -82,6 +82,7 @@
     <string name="screens_size_small">小</string>
     <string name="screens_size_medium">中</string>
     <string name="screens_size_large">大</string>
+    <string name="screens_size_huge">超大</string>
     <string name="screens_operate">我来操作</string>
     <string name="screens_view_only">只看</string>
     <string name="screens_operate_hint">点按、滑动直接作用在这块屏上。打字请回对话让 ACS 代打。</string>
