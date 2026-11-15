@@ -6,7 +6,7 @@
     <string name="chat_greeting_evening">Добрый вечер</string>
     <string name="chat_greeting_night">Не спится?</string>
     <string name="chat_empty_prompt">Что поручить ACS?</string>
-    <string name="chat_example_github_star">Открой https://github.com/wangzan101/mika и поставь звезду этому проекту.</string>
+    <string name="chat_example_github_star">Открой https://github.com/weirh168/mika-mod и поставь звезду этому проекту.</string>
     <string name="chat_example_follow">Открой X, найди Wang Zan (@wangzan101) и подпишись на этот аккаунт.</string>
     <string name="chat_example_group_summary">Открой WhatsApp и кратко перескажи сегодняшние непрочитанные сообщения, отметив те, на которые нужно ответить.</string>
     <string name="chat_example_alarms">Поставь будильники на завтра на 9:40, 9:50 и 10:00 утра.</string>

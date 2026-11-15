@@ -6,7 +6,7 @@
     <string name="chat_greeting_evening">晚上好</string>
     <string name="chat_greeting_night">夜深了</string>
     <string name="chat_empty_prompt">想讓 ACS 做什麼？</string>
-    <string name="chat_example_github_star">開啟網頁 https://github.com/wangzan101/mika，給這個專案點 star</string>
+    <string name="chat_example_github_star">開啟網頁 https://github.com/weirh168/mika-mod，給這個專案點 star</string>
     <string name="chat_example_follow">開啟小紅書，搜尋博主「王赞不赞」，點擊關注，然後加入群聊</string>
     <string name="chat_example_group_summary">幫我總結微信群聊，ACS內測體驗群今天都聊了些啥</string>
     <string name="chat_example_alarms">幫我訂明天早上9:40、9:50、10:00 的鬧鐘</string>

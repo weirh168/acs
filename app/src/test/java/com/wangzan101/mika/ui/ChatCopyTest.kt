@@ -20,7 +20,7 @@ class ChatCopyTest {
         assertEquals(4, examples.size)
         assertEquals(4, examples.map { it.text }.filter { it.isNotBlank() }.toSet().size)
         assertEquals(ChatCopy.ExampleKind.Web, examples.first().kind)
-        assertTrue(examples.first().text.contains("https://github.com/wangzan101/mika"))
+        assertTrue(examples.first().text.contains("https://github.com/weirh168/mika-mod"))
         assertEquals(ChatCopy.examples.map { it.text }, ChatCopy.recommendationSeeds().map { it.first })
         assertEquals(ChatCopy.examples.map { it.text }, ChatCopy.recommendationSeeds().map { it.second })
     }
@@ -264,7 +264,7 @@ class ChatCopyTest {
     @Test fun placeholderFollowsTheComposer() {
         assertEquals(ChatCopy.EMPTY_PROMPT, ChatCopy.placeholder(ComposerMode.Idle, hasHistory = false))
         assertEquals("继续说点什么…", ChatCopy.placeholder(ComposerMode.Idle, hasHistory = true))
-        assertEquals("回答 Mika 的问题", ChatCopy.placeholder(ComposerMode.Answer, hasHistory = true))
+        assertEquals("回答 ACS 的问题", ChatCopy.placeholder(ComposerMode.Answer, hasHistory = true))
         assertEquals("补充或改要求…", ChatCopy.placeholder(ComposerMode.Busy, hasHistory = true))
         assertEquals("写下下一件事…", ChatCopy.placeholder(ComposerMode.Busy, hasHistory = true, followUp = FollowUpMode.Queue))
     }
