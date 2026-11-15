@@ -25,3 +25,6 @@ __pycache__/
 # 发布签名材料,不进版本库
 keystore.properties
 *.jks
+
+# 本地仓库备份,不进版本库
+*.bundle
