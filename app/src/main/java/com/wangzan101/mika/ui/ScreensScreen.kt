@@ -54,6 +54,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -166,11 +167,47 @@ fun ScreensContent(
     }
 }
 
+/** 小画面三档:小 200dp、中 260dp(原来那样)、大 460dp。 */
+private enum class PreviewSize(val height: Dp, val label: Int) {
+    Small(200.dp, R.string.screens_size_small),
+    Medium(260.dp, R.string.screens_size_medium),
+    Large(460.dp, R.string.screens_size_large),
+}
+
+/** 小/中/大三个小按钮:想把画面看大一点就往上切。 */
+@Composable
+private fun PreviewSizePicker(current: PreviewSize, onPick: (PreviewSize) -> Unit) {
+    Row(
+        Modifier.padding(start = 16.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PreviewSize.entries.forEach { option ->
+            val selected = option == current
+            Text(
+                stringResource(option.label),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(
+                        if (selected) MikaTheme.colors.accent else MikaTheme.colors.fill,
+                        RoundedCornerShape(10.dp),
+                    )
+                    .clickable { onPick(option) }
+                    .padding(horizontal = 10.dp, vertical = 3.dp)
+                    .testTag("screens-size-${option.name}"),
+                fontSize = 12.5.sp,
+                color = if (selected) MikaTheme.colors.onAccent else MikaTheme.colors.ink2,
+            )
+        }
+    }
+}
 /** 一个任务:在做什么、正在用哪个 App、状态;点这一行回到它的对话,点「看画面」展开实时画面。 */
 @Composable
 private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConversation: (String) -> Unit, onZoom: (Bitmap) -> Unit = {}) {
     val c = MikaTheme.colors
     var open by rememberSaveable(row.key) { mutableStateOf(false) }
+    // 小画面能调三个档,记在这个任务上;默认中档(和原来一样高)
+    var size by rememberSaveable(row.key) { mutableStateOf(PreviewSize.Medium) }
     GroupCard(Modifier.padding(top = 8.dp)) {
         ListRow(
             MikaIcons.Screens, row.goal.oneLine(), ScreensCopy.place(row),
@@ -183,7 +220,10 @@ private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConver
                     .clickable { open = !open }.testTag("screens-preview-${row.key}"),
                 fontSize = 13.sp, color = c.accent,
             )
-            if (open && frames != null) LiveFrame(frames, onZoom)
+            if (open) {
+                PreviewSizePicker(size) { size = it }
+                if (frames != null) LiveFrame(frames, onZoom, size.height)
+            }
         }
     }
 }
@@ -193,7 +233,7 @@ private fun ScreenCard(row: ScreenRow, frames: StateFlow<Bitmap?>?, onOpenConver
  * 点这一块(图 + 下面那行说明)就放大到整屏,放大后可以只看,也可以切「我来操作」自己点。
  */
 @Composable
-private fun LiveFrame(source: StateFlow<Bitmap?>, onZoom: (Bitmap) -> Unit) {
+private fun LiveFrame(source: StateFlow<Bitmap?>, onZoom: (Bitmap) -> Unit, height: Dp) {
     val frames = remember(source) { source.filterNotNull().previewFrames(same = ::sameFrame) }
     val frame by frames.collectAsState(initial = null)
     val bmp = frame ?: return
@@ -206,7 +246,7 @@ private fun LiveFrame(source: StateFlow<Bitmap?>, onZoom: (Bitmap) -> Unit) {
     ) {
         Image(
             bmp.asImageBitmap(), stringResource(R.string.screens_zoom),
-            Modifier.fillMaxWidth().height(260.dp),
+            Modifier.fillMaxWidth().height(height),
             contentScale = ContentScale.Fit,
         )
         Text(
@@ -339,7 +379,7 @@ internal fun ZoomableFrame(frame: Bitmap, description: String?, modifier: Modifi
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     val state = rememberTransformableState { zoomChange, panChange, _ ->
-        scale = (scale * zoomChange).coerceIn(1f, 6f)
+        scale = (scale * zoomChange).coerceIn(1f, 10f)
         offset = if (scale <= 1f) Offset.Zero else offset + panChange
     }
     Image(
