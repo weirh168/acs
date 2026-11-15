@@ -127,7 +127,7 @@ class ToolDispatcherInteractTest {
         val (t, sid) = onWeb(web)
         web.result = ActionResult.Failed(DEVTOOLS_UNAVAILABLE)
         val r = t.interact("""{"action":"hover","ref":"@e1","snapshotId":"$sid"}""")
-        assertEquals("devtools_unavailable", r.s("error")); assertTrue(r.s("message"), r.s("message").contains("web_tap"))
+        assertEquals("not_supported_on_touch", r.s("error")); assertTrue(r.s("message"), r.s("message").contains("touch"))
         web.result = ActionResult.Failed("no_such_option", hint = "Options: \"北京\", \"上海\".")
         val o = t.interact("""{"action":"select","ref":"@e2","snapshotId":"$sid","option":"广州"}""")
         assertEquals("no_such_option", o.s("error")); assertTrue(o.s("message"), o.s("message").contains("\"上海\""))

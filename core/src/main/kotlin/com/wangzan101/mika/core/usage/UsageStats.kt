@@ -27,7 +27,6 @@ internal object UsageStats : AgentTool {
     override val label = "看用量"
     override val risk = Risk.Read
     override val concurrency = Concurrency.ParallelSafe
-    override val offScreen = true
 
     override val def = ToolDef("usage_stats", Prompts.tool("usage_stats"), emptyMap(), emptyList())
 

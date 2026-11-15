@@ -6,6 +6,9 @@ import com.wangzan101.mika.core.risk.GateTarget
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.prompt.Prompts
 import com.wangzan101.mika.core.uistate.ActionResult
+import com.wangzan101.mika.core.uistate.lastOrSnapshot
+import com.wangzan101.mika.core.uistate.screen
+import com.wangzan101.mika.core.uistate.toPx
 import com.wangzan101.mika.core.uistate.Resolved
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args
@@ -16,6 +19,7 @@ import com.wangzan101.mika.core.tool.ToolDef
 import com.wangzan101.mika.core.tool.ToolExecution
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.argStr
+import com.wangzan101.mika.core.tool.fail
 import com.wangzan101.mika.core.tool.failCode
 import com.wangzan101.mika.core.tool.int
 import com.wangzan101.mika.core.tool.refExpired
@@ -89,16 +93,37 @@ internal object Interact : WebTool {
                 }
                 // 回车一类的键可能提交、换页:和点击一样先补足这一页的停留
                 try { ctx.dwell?.before(port = w) } catch (e: DwellStop) { return dwellStopped(e) }
-                ctx.action(w.pressCombo(combo))
+                val typed = w.pressCombo(combo)
+                if (typed is ActionResult.Failed && typed.reason == DEVTOOLS_UNAVAILABLE) {
+                    // 没有 DevTools:单键可以走原生按键,组合键不行
+                    if (combo.modifiers.isNotEmpty()) {
+                        return fail("key_modifiers_need_devtools", Feedback.format("web.key_modifiers_need_devtools", "combo" to combo.toString()))
+                    }
+                    return ctx.action(ctx.screen.pressKey(combo.key.androidKeyCode))
+                }
+                ctx.action(typed)
             }
             "select" -> {
                 val ref = a.ref() ?: throw ArgError("ref", "required for action select")
                 val option = a.str("option", max = 200) ?: throw ArgError("option", "required for action select")
-                ctx.withPortRef(ref) { r -> ctx.action(w.selectOption(r!!.first, r.second, option)) }
+                ctx.withPortRef(ref) { r ->
+                    val picked = w.selectOption(r!!.first, r.second, option)
+                    if (picked is ActionResult.Failed && picked.reason == DEVTOOLS_UNAVAILABLE) {
+                        // 没有 DevTools:点开下拉,再从屏幕文字里找这一项点下去
+                        return@withPortRef selectByTouch(ctx, r.first, r.second, option)
+                    }
+                    ctx.action(picked)
+                }
             }
             "hover" -> {
                 val at = point(a, ctx, "ref", "x", "y") ?: throw ArgError("ref", "give ref+snapshotId or x+y")
-                withPortPoint(at, ctx) { p -> ctx.action(w.hover(p)) }
+                withPortPoint(at, ctx) { p ->
+                    val hovered = w.hover(p)
+                    if (hovered is ActionResult.Failed && hovered.reason == DEVTOOLS_UNAVAILABLE) {
+                        return@withPortPoint fail("not_supported_on_touch", Feedback["web.hover_on_touch"])
+                    }
+                    ctx.action(hovered)
+                }
             }
             else -> {
                 val from = point(a, ctx, "ref", "x", "y") ?: throw ArgError("ref", "give ref+snapshotId or x+y for where the drag starts")
@@ -109,6 +134,30 @@ internal object Interact : WebTool {
                 }
             }
         }
+    }
+
+    /**
+     * 没有 DevTools 时选下拉项:先点开这一项,再从屏幕文字里找目标选项并点它。
+     * 找不到就明确说需要 DevTools,并把读到的候选文字带回去(模型可以改用 x/y 点)。
+     */
+    private suspend fun selectByTouch(ctx: ToolContext, ref: String, snapshotId: String, option: String): ToolExecution {
+        val tapped = ctx.screen.tapRef(ref, snapshotId)
+        if (tapped is ActionResult.Failed) return ctx.action(tapped)
+        // 下拉展开需要一点时间
+        repeat(8) {
+            val lines = ctx.screen.readVisibleText()
+            val hit = lines?.firstOrNull { it.text.contains(option, ignoreCase = true) }
+            if (hit != null) {
+                val cx = (hit.bounds[0] + hit.bounds[2]) / 2
+                val cy = (hit.bounds[1] + hit.bounds[3]) / 2
+                val s = ctx.lastOrSnapshot()
+                val picked = ctx.screen.tapXY(toPx(cx, s.width), toPx(cy, s.height))
+                if (picked is ActionResult.Ok) return ctx.action(picked)
+            }
+            kotlinx.coroutines.delay(250)
+        }
+        val seen = ctx.screen.readVisibleText()?.map { it.text }?.take(8)?.joinToString(" / ").orEmpty()
+        return fail("select_needs_devtools", Feedback.format("web.select_needs_devtools", "option" to option, "seen" to seen.ifBlank { "-" }))
     }
 
     /** 一个落点:编号([refKey],snapshotId 共用)或 0–999 坐标;两样都给、坐标只给一半时报错,都没给为 null。 */

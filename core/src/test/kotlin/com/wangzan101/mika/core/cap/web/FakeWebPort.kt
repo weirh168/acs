@@ -22,6 +22,11 @@ class FakeWebPort : WebPort {
         UiElement("@e2", "file", "选择文件", 540, 600, listOf(0, 200, 999, 300), "#pick", true, false, false),
     )
     var result: ActionResult = ActionResult.Ok(changed = true)
+    /** 单独给组合键/下拉框的结果(模拟"只有 DevTools 能做的那两件事失败")。 */
+    var comboResult: ActionResult? = null
+    var selectResult: ActionResult? = null
+    /** 无 DevTools 时下拉框靠读屏文字找选项。 */
+    var visibleText: List<com.wangzan101.mika.core.uistate.VisibleTextLine>? = null
     var externalLink: ExternalLink? = null
     var crash = false
     var page = PageText(url, title, "正文", listOf("下一页" to "https://shop.example.com/2"), emptyList(), false, null)
@@ -68,6 +73,7 @@ class FakeWebPort : WebPort {
     override suspend fun back(): ActionResult { calls += "back"; return result }
     override suspend fun pressKey(keyCode: Int): ActionResult { calls += "key $keyCode"; return result }
     override suspend fun openApp(packageName: String, cold: Boolean): ActionResult { calls += "open $packageName"; return result }
+    override suspend fun readVisibleText(): List<com.wangzan101.mika.core.uistate.VisibleTextLine>? = visibleText
     override suspend fun waitStable(timeoutMs: Long) = true
     override suspend fun listApps(): List<Pair<String, String>> = emptyList()
     override suspend fun checkScreen() = check
@@ -133,8 +139,8 @@ class FakeWebPort : WebPort {
 
     override suspend fun hover(at: WebPoint): ActionResult { calls += "hover $at"; return result }
     override suspend fun drag(from: WebPoint, to: WebPoint, steps: Int): ActionResult { calls += "drag $from $to $steps"; return result }
-    override suspend fun selectOption(ref: String, snapshotId: String, option: String): ActionResult { calls += "select $ref $snapshotId $option"; return result }
-    override suspend fun pressCombo(combo: KeyCombo): ActionResult { calls += "combo $combo"; return result }
+    override suspend fun selectOption(ref: String, snapshotId: String, option: String): ActionResult { calls += "select $ref $snapshotId $option"; return selectResult ?: result }
+    override suspend fun pressCombo(combo: KeyCombo): ActionResult { calls += "combo $combo"; return comboResult ?: result }
     override suspend fun captures(urlContains: String?, method: String?, sinceLastAction: Boolean): List<CapturedResponse> {
         if (!devtools) throw DevtoolsUnavailable()
         calls += "captures $urlContains $method $sinceLastAction"; return captured

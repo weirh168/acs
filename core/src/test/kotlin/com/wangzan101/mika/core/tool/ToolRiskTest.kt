@@ -25,11 +25,13 @@ class ToolRiskTest {
         "phone_launch_app", "phone_share_text", "phone_gesture", "hand_to_user",
         "phone_set_alarm", "phone_set_timer", "phone_show_alarms", "phone_add_calendar_event", "phone_set_wheel",
         "web_navigate", "web_tabs", "web_upload", "web_interact", "web_site_mode", "phone_open_link", "web_keep_open", "phone_app_after_task",
+        "phone_tap_ocr",
     )
     private val oldSandbox = setOf("run_command", "run_bundled_script", "read_file", "write_file", "search_files", "share_file")
     private val oldWeb = setOf(
         "web_navigate", "web_read_page", "web_evaluate_js", "web_run_site_command", "web_tabs", "web_downloads", "web_upload",
         "web_site_mode", "web_script", "web_interact", "web_capture", "web_wait_for", "web_keep_open",
+        "web_read_all", "web_auth",
     ) + both("observe", "list_elements", "screenshot", "describe", "find_visually", "tap", "scroll", "swipe",
         "type_text", "clear_text", "back", "press_key", "diagnose").filter { it.startsWith("web_") }
     private val names = allTools().map { it.name }
@@ -70,7 +72,7 @@ class ToolRiskTest {
     @Test fun externalToolsDeclareHowTheirTargetIsJudged() {
         for (t in allTools()) assertEquals(t.name, t.risk == Risk.External, t.gateTarget != null || t.approvalRisk != null)
         assertEquals(both("tap", "type_text", "press_key", "swipe", "scroll") + setOf("web_interact", "web_upload", "schedule_task",
-            "mika_open_in_browser", "mika_search_in_browser", "mika_login_site"),
+            "mika_open_in_browser", "mika_search_in_browser", "mika_login_site", "phone_tap_ocr"),
             allTools().filter { it.risk == Risk.External }.map { it.name }.toSet())
     }
 
@@ -81,7 +83,7 @@ class ToolRiskTest {
     @Test fun gateTargetsMatchOldNameBranches() {
         val perVerb = mapOf("tap" to GateTarget.Tap, "type_text" to GateTarget.Enter, "press_key" to GateTarget.Key, "swipe" to GateTarget.Swipe, "scroll" to GateTarget.Swipe)
         val old = perVerb.flatMap { (v, g) -> listOf("phone_$v" to g, "web_$v" to g) }.toMap() +
-            mapOf("web_upload" to GateTarget.FileControl, "web_interact" to GateTarget.Interact)
+            mapOf("web_upload" to GateTarget.FileControl, "web_interact" to GateTarget.Interact, "phone_tap_ocr" to GateTarget.Tap)
         for (t in allTools().map { it.name } + "do_steps" + "unknown") assertEquals(t, old[t], gateTargetOf(t))
     }
 

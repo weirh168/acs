@@ -679,10 +679,10 @@ The group was picked automatically; if these items look unrelated, use web_obser
 ## screenshot_save_unavailable
 Saving screenshots is not available for this task. Ask for the image another way, or just describe what is on screen.
 
-## tap_ocr.unavailable
+## ocr.unavailable
 The screen could not be read with on-device OCR right now (no picture, protected content, or the frame kept changing). Try phone_observe first; if the target has an accessibility node, tap it by ref instead.
 
-## tap_ocr.no_match
+## ocr.no_match
 No visible text matched "{{text}}". Nearby text: {{nearby}}. Use phone_observe (includeOcr is on) to see the exact wording, or tap by ref.
 
 ## read_chat.empty
@@ -708,3 +708,12 @@ region must be `left,top,right,bottom` in 0–999 coordinates with left < right 
 
 ## usage.run_unavailable
 This run does not keep a token tally (it is not a normal task), so only the device-wide numbers are available.
+
+## web.key_modifiers_need_devtools
+Combined keys ({{combo}}) need the page's DevTools connection, which this WebView does not have. Single keys like Enter, Tab, Escape and the arrows still work; for a shortcut, use web_tap on the control the shortcut would trigger.
+
+## web.hover_on_touch
+This is a touch screen: there is no pointer to hover with. Tap the element instead, or use web_tap on whatever the hover would reveal.
+
+## web.select_needs_devtools
+Could not pick "{{option}}" from that drop-down without DevTools. Text seen on screen: {{seen}}. Use web_observe to find the option and web_tap it by ref or coordinates.

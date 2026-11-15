@@ -72,10 +72,10 @@ internal object TapOcr : PhoneTool {
         val region = if (regionArg.isNullOrBlank()) null else parseRegion(regionArg)
             ?: return fail("invalid_region", Feedback["ocr.invalid_region"])
         val lines = ctx.screen.readVisibleTextIn(region)
-            ?: return fail("ocr_unavailable", Feedback["tap_ocr.unavailable"])
+            ?: return fail("ocr_unavailable", Feedback["ocr.unavailable"])
         val hit = best(wanted, exact, lines)
             ?: return fail("ocr_no_match",
-                Feedback.format("tap_ocr.no_match", "text" to wanted, "nearby" to nearby(wanted, lines)))
+                Feedback.format("ocr.no_match", "text" to wanted, "nearby" to nearby(wanted, lines)))
         val s = ctx.lastOrSnapshot()
         val cx = (hit.bounds[0] + hit.bounds[2]) / 2
         val cy = (hit.bounds[1] + hit.bounds[3]) / 2
@@ -152,7 +152,7 @@ internal object ReadChat : PhoneTool {
         var total = 0
         var i = 0
         while (i < maxScreens) {
-            val lines = ctx.screen.readVisibleTextIn(region) ?: return fail("ocr_unavailable", Feedback["tap_ocr.unavailable"])
+            val lines = ctx.screen.readVisibleTextIn(region) ?: return fail("ocr_unavailable", Feedback["ocr.unavailable"])
             var added = 0
             for (line in lines) {
                 val t = line.text.trim()
