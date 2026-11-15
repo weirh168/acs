@@ -112,6 +112,12 @@ object StatusCopy {
     val RESULT_CHANNEL: String get() = tr(R.string.channel_result)
     val HEADS_UP_ACTION: String get() = tr(R.string.heads_up_action)
 
+    /** 设置页那张卡片只留一句话:长说明和「怎么改」都放到通知内页去。 */
+    val HEADS_UP_CARD_DETAIL: String get() = tr(R.string.heads_up_card_detail)
+    val HEADS_UP_CARD_ACTION: String get() = tr(R.string.heads_up_card_action)
+    val HEADS_UP_PAGE_TITLE: String get() = tr(R.string.heads_up_page_title)
+    val HEADS_UP_PAGE_INTRO: String get() = tr(R.string.heads_up_page_intro)
+
     /** 被调低的两个频道里先处理「需要你处理」。 */
     fun headsUpFix(p: Problem.AttentionLowered): Fix = if (p.attention) Fix.OpenAttentionChannel else Fix.OpenResultChannel
 
@@ -126,6 +132,9 @@ object StatusCopy {
 
     private fun headsUpPath(p: Problem.AttentionLowered) =
         tr(R.string.heads_up_path, if (p.attention) ATTENTION_CHANNEL else RESULT_CHANNEL)
+
+    /** 内页用的完整说明:为什么重要 + 具体路径。 */
+    fun headsUpExplain(p: Problem.AttentionLowered): String = headsUpBody(p) + "\n\n" + headsUpPath(p)
 
     fun banner(p: Problem): BannerCopy = when (p) {
         Problem.SystemTooOld -> BannerCopy(tr(R.string.banner_too_old), tr(R.string.banner_too_old_detail), tr(R.string.learn_more))
@@ -171,7 +180,8 @@ object StatusCopy {
         }
         Problem.NoModel -> BannerCopy(tr(R.string.banner_no_model), tr(R.string.banner_no_model_detail), tr(R.string.add))
         Problem.NotificationsOff -> BannerCopy(tr(R.string.banner_notif_off), tr(R.string.banner_notif_off_detail), tr(R.string.allow))
-        is Problem.AttentionLowered -> BannerCopy(headsUpTitle(p), headsUpBody(p) + "\n" + headsUpPath(p), HEADS_UP_ACTION)
+        // 卡片上只写一句话,别把整段说明塞进首页;详情和入口都在「通知」内页
+        is Problem.AttentionLowered -> BannerCopy(headsUpTitle(p), HEADS_UP_CARD_DETAIL, HEADS_UP_CARD_ACTION)
         Problem.FocusMayLeak -> BannerCopy(tr(R.string.banner_focus), tr(R.string.banner_focus_detail), tr(R.string.learn_more))
     }
 

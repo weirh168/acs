@@ -177,6 +177,27 @@ fun NotificationsScreen(status: SystemStatus, onFix: (Fix) -> Unit, onBack: () -
         quietHours = hours
     }
     PageScaffold(StatusCopy.NOTIFICATIONS, onBack) {
+        // 有频道被调低时,先把「为什么重要、要改成什么」讲清楚,再去点具体那一行
+        val lowered = when {
+            o.attention.warn -> Problem.AttentionLowered(attention = true, result = o.result.warn)
+            o.result.warn -> Problem.AttentionLowered(attention = false, result = true)
+            else -> null
+        }
+        if (lowered != null) {
+            GroupLabel(StatusCopy.HEADS_UP_PAGE_TITLE)
+            GroupCard {
+                Column(Modifier.padding(16.dp).testTag("notif-heads-up-explain")) {
+                    Text(
+                        StatusCopy.HEADS_UP_PAGE_INTRO,
+                        fontSize = 14.5.sp, lineHeight = 23.sp, color = MikaTheme.colors.ink2,
+                    )
+                    Text(
+                        StatusCopy.headsUpExplain(lowered), Modifier.padding(top = 10.dp),
+                        fontSize = 14.sp, lineHeight = 22.sp, color = MikaTheme.colors.ink2,
+                    )
+                }
+            }
+        }
         GroupCard {
             ListRow(
                 MikaIcons.Bell, stringResource(R.string.settings_notif_master),

@@ -29,6 +29,10 @@
     <string name="notif_footer">每类通知是否弹出、是否响铃，安卓规定只能由你在系统设置里改。点上面任意一项会直接打开它的系统设置页。路径：系统设置 › 应用 › ACS › 通知</string>
     <string name="channel_result">任务结果</string>
     <string name="heads_up_action">去打开</string>
+    <string name="heads_up_card_detail">只进通知栏，不会弹出。</string>
+    <string name="heads_up_card_action">看看怎么改</string>
+    <string name="heads_up_page_title">让这两类通知弹出来</string>
+    <string name="heads_up_page_intro">下面每一行点进去就是那个频道的系统设置。要的效果是「在屏幕上弹出」（有的系统叫「横幅」「悬浮通知」）。</string>
     <string name="heads_up_title">「%1$s」的通知不会弹出</string>
     <string name="heads_up_lead_attention">要你接手或同意时</string>
     <string name="heads_up_lead_result">任务做完时</string>

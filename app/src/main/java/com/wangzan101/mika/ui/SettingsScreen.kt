@@ -390,7 +390,7 @@ fun SettingsContent(
 ) {
     val check = Prerequisites.check(status, hasMainModel = mainModel != null)
     PageScaffold(stringResource(R.string.settings_title), onBack) {
-        StatusSummary(check, onProblem)
+        StatusSummary(check, onProblem, onOpenNotifications = onOpenNotifications)
 
         GroupLabel(stringResource(R.string.settings_basic))
         GroupCard {
@@ -578,18 +578,20 @@ private fun sandboxValue(s: SandboxStatus): String = when (s) {
  * 焦点提醒改不了,只在手机操作页的「系统版本」一行里提示,不占这里。
  */
 @Composable
-private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Unit) {
+private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Unit, onOpenNotifications: () -> Unit) {
     val problem = check.problems.firstOrNull { it != Problem.FocusMayLeak }
     if (problem == null) {
         StateCard(MikaIcons.Check, stringResource(R.string.all_ready), stringResource(R.string.settings_all_ready_detail), TileTone.Ok, Modifier.testTag("settings-status"))
     } else {
         val copy = StatusCopy.banner(problem)
+        // 通知被调低:卡片上只说一句,点开进「通知」内页看完整说明和怎么改
+        val toPage = problem is Problem.AttentionLowered
         StateCard(
             MikaIcons.Exclaim, copy.title, copy.detail,
             if (problem in check.blockers) TileTone.Bad else TileTone.Warn,
             Modifier.testTag("settings-status"),
         ) {
-            MikaButton(copy.link, { onProblem(problem) }, kind = ButtonKind.Tonal, size = ButtonSize.Small)
+            MikaButton(copy.link, { if (toPage) onOpenNotifications() else onProblem(problem) }, kind = ButtonKind.Tonal, size = ButtonSize.Small)
         }
     }
 }
