@@ -343,11 +343,7 @@ class TaskRun(
         if (wasOnPage) loop?.state?.value?.takeIf { it is TaskState.Running }?.let(::publish)
     }
     /**
-     * 用户在小窗里亲手操作了:不搬走任务、不动虚拟屏,只是让它在下一个会改动屏幕的工具之前停下,
-     * 等用户点「继续」再接着做(和小窗里直接点/滑配合,人机不会抢着操作)。
-     */
-    /**
-     * 接管时把那个 App 交到用户自己屏幕上:在**主屏新开一份**同一个 App(新窗口一定是活的、能直接操作),
+     * 接管时把那个 App 交到用户自己屏幕上:在**主屏打开同一个界面**(当前那一页,起不来才退回入口页),
      * 而不是把虚拟屏上的任务挪过去——挪过去的窗口画面还留在虚拟屏上,用户看到黑屏、点了没反应。
      * 有接管句柄且正处于等待接管时,先走 [Takeover.handOver];否则用 shell 在主屏启动;
      * 连包名都拿不到才退回挪任务。任务的虚拟屏那份留着,点「继续」时照常接着跑。
@@ -362,24 +358,35 @@ class TaskRun(
                 val sh = phoneServices.hub.shell.value ?: return@runCatching
                 val task = sh.topTaskId(d)
                 val pkg = if (task >= 0) sh.packageOfTask(task) else null
-                if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser display=$d task=$task pkg=$pkg")
-                // 虚拟屏上的窗口挪到主屏后,画面还留在虚拟屏上:用户看到黑的、点了没反应。
-                // 所以不挪任务,改成在主屏「新开一份」同一个 App —— 新开的窗口一定是活的,能直接操作;
-                // 虚拟屏那份留着,任务点「继续」时照常接着跑。
+                // 当前页的类名:能单独打开的页面直接用它,用户接管后停在和刚才同一页
+                val cls = runCatching { sh.topActivity(d) }.getOrNull()?.takeIf { it.isNotBlank() }
+                if (com.wangzan101.mika.BuildConfig.DEBUG) {
+                    android.util.Log.d("ACS-Pip", "handAppToUser display=$d task=$task pkg=$pkg cls=$cls")
+                }
                 if (pkg != null) {
                     // startApp 只肯在自己的虚拟屏上启动;在主屏要用 `am start --display 0`。
-                    // 直接把该包的入口页拿到主屏:Mika 触发的任务本身就常被系统复用,这里同样会把
-                    // 已经在虚拟屏上的那份交给主屏、并正常重画(实测点得动,不黑屏)。
-                    val start = runCatching {
-                        sh.runCommand(
-                            "am start --display 0 -n \$(cmd package resolve-activity --brief $pkg | tail -n 1)",
-                        )
-                    }.getOrNull()
-                    val code = start?.getInt("exitCode", -1) ?: -1
+                    // 先按**当前页**开(用户接管后停在和刚才同一页),不行再退回入口页。
+                    // -f 0x18000000 = NEW_TASK|MULTIPLE_TASK:不复用虚拟屏上那份(复用的话只会把 intent
+                    // 投给它,主屏什么都不出),而是真在主屏开一个新任务。
+                    // 组件名里的 `$` 是内部类分隔符,命令经 sh -c,必须加单引号否则被当成变量吃掉。
+                    val page = cls?.let { if (it.startsWith(".")) "$pkg$it" else "$pkg/$it" }
+                    val launch = { component: String -> sh.runCommand("am start --display 0 -f 0x18000000 -n '$component'") }
+                    val code = page?.let { runCatching { launch(it).getInt("exitCode", -1) }.getOrDefault(-1) } ?: -1
                     if (com.wangzan101.mika.BuildConfig.DEBUG) {
-                        android.util.Log.d("ACS-Pip", "launchOnMain pkg=$pkg exit=$code out=${start?.getString("output")?.take(80)}")
+                        android.util.Log.d("ACS-Pip", "launchOnMain page=$page exit=$code")
                     }
                     if (code == 0) return@runCatching
+                    // 当前页开不起来(有些页面不能独立启动):退回该包的入口页
+                    val entry = runCatching {
+                        sh.runCommand(
+                            "am start --display 0 -f 0x18000000 -n \$(cmd package resolve-activity --brief $pkg | tail -n 1)",
+                        )
+                    }.getOrNull()
+                    val entryCode = entry?.getInt("exitCode", -1) ?: -1
+                    if (com.wangzan101.mika.BuildConfig.DEBUG) {
+                        android.util.Log.d("ACS-Pip", "launchOnMain entry pkg=$pkg exit=$entryCode out=${entry?.getString("output")?.take(80)}")
+                    }
+                    if (entryCode == 0) return@runCatching
                 }
                 // 拿不到包名或起不来:退回挪任务,至少把那个界面摆到用户眼前
                 if (task >= 0 && sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY)) {
@@ -390,6 +397,10 @@ class TaskRun(
         }
     }
 
+    /**
+     * 用户在小窗里亲手操作了:不搬走任务、不动虚拟屏,只是让它在下一个会改动屏幕的工具之前停下,
+     * 等用户点「继续」再接着做(和小窗里直接点/滑配合,人机不会抢着操作)。
+     */
     fun userTookControl() {
         if (_state.value !is TaskState.Running) return
         userOnPage()

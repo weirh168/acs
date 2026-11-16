@@ -356,3 +356,27 @@ topResumedActivity = com.android.settings/.HWSettings  (主屏 fullscreen)
 
 屏幕上是完整的「设置」页(带 ACS 胶囊),**点「WLAN」正常跳进 WLAN 页**——
 不是黑屏也不是死窗口。任务侧同时是「已暂停 / 你在操作,ACS 已暂停」,点「继续」交回。
+
+## 接管停在「当前那一页」（已验证）（2026-11-16 09:58）
+
+点小窗 → 读虚拟屏最上层页面的类名(`shell.topActivity`) → 在主屏按**那个页面**开:
+
+```
+am start --display 0 -f 0x18000000 -n '<pkg>/<完整类名>'
+```
+
+两个坑(都踩过):
+1. 不加 `-f 0x18000000`(NEW_TASK|MULTIPLE_TASK)时,命令只会把 intent 投给虚拟屏上那份实例,
+   主屏什么都不出 —— 看起来"启动成功但没反应";
+2. 命令经 `sh -c`,类名里的 `$`(内部类)会被当成变量吃掉,必须给组件名加单引号。
+
+实测:
+```
+handAppToUser display=130 task=95343 pkg=com.android.settings cls=com.android.settings.HWSettings
+launchOnMain page=com.android.settings/com.android.settings.HWSettings exit=0
+topResumedActivity = com.android.settings/.HWSettings   (主屏, fullscreen)
+```
+截图:设置页整屏在主屏、ACS 胶囊在角落;任务侧「已暂停 / 你在操作,ACS 已暂停」。
+另外单独验过 `Settings$WifiSettingsActivity` 这种带 `$` 的页面也能按页打开(停在 WLAN 页)。
+
+当前页开不起来时退回入口页;连包名都拿不到才退回挪任务。
