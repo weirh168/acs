@@ -565,6 +565,19 @@ private fun ActionChip(text: String, tag: String, onClick: () -> Unit) {
 internal object ContactsList {
     private const val MAX = 400
 
+    /** 名单里的号码 -> 通讯录名字;查不到就不出现。 */
+    fun namesFor(context: Context, numbers: Set<String>): List<String> = load(context)
+        .filter { (_, number) -> numbers.any { expected ->
+            com.wangzan101.mika.calls.CallPolicy.incomingMatchKey(expected) ==
+                com.wangzan101.mika.calls.CallPolicy.incomingMatchKey(number)
+        } }
+        .map { it.second }.distinct()
+
+    fun nameFor(context: Context, number: String): String? = load(context).firstOrNull { (_, candidate) ->
+        com.wangzan101.mika.calls.CallPolicy.incomingMatchKey(candidate) ==
+            com.wangzan101.mika.calls.CallPolicy.incomingMatchKey(number)
+    }?.second
+
     fun load(context: Context): List<Pair<String, String>> {
         if (context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) !=
             android.content.pm.PackageManager.PERMISSION_GRANTED) return emptyList()
@@ -755,6 +768,7 @@ private fun androidx.compose.foundation.layout.RowScope.Segment(text: String, se
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal)
     }
 }
+
 
 
 

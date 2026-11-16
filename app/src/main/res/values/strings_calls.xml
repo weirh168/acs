@@ -230,7 +230,13 @@
     <string name="calls_notification_open_text">Read text</string>
     <string name="calls_fix_person">I answer this person from now on</string>
     <string name="calls_fix_category">Let the AI answer this kind</string>
+    <string name="calls_caller_contact">Contact</string>
+    <string name="calls_caller_stranger">Unknown number</string>
+    <string name="calls_caller_institution">Institution</string>
+    <string name="calls_caller_international">International</string>
+    <string name="calls_caller_hidden">Hidden number</string>
 </resources>
+
 
 
 

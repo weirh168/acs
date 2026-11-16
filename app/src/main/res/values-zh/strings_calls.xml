@@ -230,7 +230,13 @@
     <string name="calls_notification_open_text">看文字</string>
     <string name="calls_fix_person">以后这个人我自己接</string>
     <string name="calls_fix_category">以后这类都让 AI 接</string>
+    <string name="calls_caller_contact">通讯录</string>
+    <string name="calls_caller_stranger">陌生号码</string>
+    <string name="calls_caller_institution">机构号</string>
+    <string name="calls_caller_international">国际号码</string>
+    <string name="calls_caller_hidden">隐藏号码</string>
 </resources>
+
 
 
 

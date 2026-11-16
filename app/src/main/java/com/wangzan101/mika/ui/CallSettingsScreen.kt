@@ -542,6 +542,10 @@ private fun CallReceivePage(
     if (state.aiActive || state.liveTranscript.isNotEmpty()) {
         GroupCard {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    callerLabel(liveContext, state.number),
+                    fontSize = 13.sp, color = MikaTheme.colors.ink3,
+                )
                 LiveCallTranscript(state.callId, state.liveTranscript)
                 // 一键纠正:只给两个按钮,规则由个案累积,不用进设置页
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -624,16 +628,6 @@ private fun CallReceivePage(
         if (scopeOpen) {
             FooterNote(stringResource(R.string.calls_rule_delay_summary, config.autoAnswerDelaySeconds))
             TextButton(onClick = onRules, modifier = Modifier.fillMaxWidth().testTag("call-edit-rules")) {
-                Text(stringResource(R.string.calls_edit_rule))
-            }
-        }
-        HorizontalDivider()
-        CallFoldRow(MikaIcons.Heart, stringResource(R.string.calls_bypass_title), importantOpen,
-            "call-rules-important", subtitle = if (config.bypassIncomingNumbers.isEmpty()) stringResource(R.string.calls_bypass_empty)
-            else stringResource(R.string.calls_bypass_count, config.bypassIncomingNumbers.size)) { importantOpen = !importantOpen }
-        if (importantOpen) {
-            FooterNote(stringResource(R.string.calls_bypass_note))
-            TextButton(onClick = onBypass, modifier = Modifier.fillMaxWidth().testTag("call-edit-bypass")) {
                 Text(stringResource(R.string.calls_edit_rule))
             }
         }
@@ -1221,7 +1215,26 @@ private fun ExceptionRow(title: String, note: String, tag: String, onClick: () -
     }
 }
 
+/** 例外行副标题:有名字就列名字(最多三个),否则按数量说。 */
+@Composable
+private fun exceptionNote(context: android.content.Context, numbers: Set<String>, countRes: Int): String {
+    val names = remember(numbers) { ContactsList.namesFor(context, numbers).take(3) }
+    return if (names.isEmpty()) stringResource(countRes, numbers.size)
+    else names.joinToString("、") + if (numbers.size > names.size) "…" else ""
+}
 
-
+/** 通话卡上的「这通电话是谁」:通讯录名字 / 机构号 / 隐藏 / 国际 / 陌生。 */
+@Composable
+private fun callerLabel(context: android.content.Context, number: String?): String {
+    if (number == null) return stringResource(R.string.calls_caller_hidden)
+    val name = remember(number) { ContactsList.nameFor(context, number) }
+    val kind = when {
+        CallPolicy.isInstitutionNumber(number) -> stringResource(R.string.calls_caller_institution)
+        number.trim().startsWith("+") -> stringResource(R.string.calls_caller_international)
+        name != null -> stringResource(R.string.calls_caller_contact)
+        else -> stringResource(R.string.calls_caller_stranger)
+    }
+    return if (name != null) "$kind · $name" else "$kind · $number"
+}
 
 
