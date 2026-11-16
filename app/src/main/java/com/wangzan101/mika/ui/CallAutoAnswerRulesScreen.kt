@@ -124,8 +124,8 @@ fun CallAutoAnswerRulesDialog(
     var allowPrefixes by rememberSaveable { mutableStateOf(config.allowedPrefixes) }
     var blockPrefixes by rememberSaveable { mutableStateOf(config.blockedPrefixes) }
     var windowed by rememberSaveable { mutableStateOf(config.activeStartMinute >= 0 && config.activeEndMinute >= 0) }
-    var startText by rememberSaveable { mutableStateOf(CallTimeText.of(config.activeStartMinute)) }
-    var endText by rememberSaveable { mutableStateOf(CallTimeText.of(config.activeEndMinute)) }
+    var startText by rememberSaveable { mutableStateOf<String>(CallTimeText.of(config.activeStartMinute)) }
+    var endText by rememberSaveable { mutableStateOf<String>(CallTimeText.of(config.activeEndMinute)) }
     var fallback by rememberSaveable { mutableStateOf(config.fallback) }
     var delay by rememberSaveable { mutableStateOf(config.autoAnswerDelaySeconds) }
     var listsOpen by remember { mutableStateOf(false) }
@@ -162,6 +162,7 @@ fun CallAutoAnswerRulesDialog(
 
     Dialog(onDismissRequest = { if (!busy) onDismiss() }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(Modifier.fillMaxSize(), color = MikaTheme.colors.bg) {
+            Box(Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize().statusBarsPadding()) {
                 Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -264,18 +265,20 @@ fun CallAutoAnswerRulesDialog(
                         }
                     }
                 }
+                // 名单/通讯录浮层:画在同一个 Dialog 里,不新开窗口
+                if (listsOpen) {
+                    CallNumbersOverlay(
+                        allowed, blocked, allowPrefixes, blockPrefixes,
+                        onDismiss = { listsOpen = false },
+                    ) { a, b, ap, bp ->
+                        allowed = a; blocked = b; allowPrefixes = ap; blockPrefixes = bp
+                        listsOpen = false
+                    }
+                }
             }
         }
     }
-
-    if (listsOpen) {
-        CallNumbersDialog(
-            allowed, blocked, allowPrefixes, blockPrefixes,
-            onDismiss = { listsOpen = false },
-        ) { a, b, ap, bp ->
-            allowed = a; blocked = b; allowPrefixes = ap; blockPrefixes = bp; listsOpen = false
-        }
-    }
+}
 }
 
 private fun keep(preset: CallPreset): CallPreset = preset
@@ -395,9 +398,13 @@ private fun SectionTitle(text: String) {
         modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
 }
 
-/** 号码名单:白名单 / 黑名单,外加两种号段;支持从通讯录多选、粘贴批量。 */
+/**
+ * 号码名单:白名单 / 黑名单,外加号段;支持从通讯录多选、粘贴批量。
+ * 画成页面内的浮层而不是 AlertDialog —— 规则页本身已经是一个全屏 Dialog,
+ * 再往里套系统对话框在部分机型上根本不会显示(之前「从通讯录选」点了没反应就是这个原因)。
+ */
 @Composable
-private fun CallNumbersDialog(
+private fun CallNumbersOverlay(
     allowed: Set<String>, blocked: Set<String>,
     allowPrefixes: Set<String>, blockPrefixes: Set<String>,
     onDismiss: () -> Unit,
@@ -413,10 +420,17 @@ private fun CallNumbersDialog(
     val allowParsed = parseCallNumberList(allowText)
     val blockParsed = parseCallNumberList(blockText)
     val ok = allowParsed != null && blockParsed != null
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.calls_numbers_title)) },
-        text = {
+    OverlayCard(onDismiss = onDismiss) {
+        if (picking) {
+            ContactsPanel(target = allowMode, onDismiss = { picking = false }) { numbers ->
+                val merged = listOf(
+                    if (allowMode) allowText else blockText,
+                    numbers.joinToString("\n"),
+                ).filter { it.isNotBlank() }.joinToString("\n")
+                if (allowMode) allowText = merged else blockText = merged
+                picking = false
+            }
+        } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth().background(MikaTheme.colors.fill, RoundedCornerShape(10.dp)).padding(3.dp)) {
                     Segment(stringResource(R.string.calls_list_allow), allowMode) { allowMode = true }
@@ -452,41 +466,45 @@ private fun CallNumbersDialog(
                 )
                 if (!ok) Text(stringResource(R.string.calls_allowlist_invalid, CallPolicy.MAX_ALLOWED_NUMBERS),
                     color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) }
+                    TextButton(enabled = ok, onClick = {
+                        onApply(
+                            allowParsed.orEmpty(), blockParsed.orEmpty(),
+                            CallPrefixText.parse(allowPrefixText), CallPrefixText.parse(blockPrefixText),
+                        )
+                    }) { Text(stringResource(R.string.calls_save)) }
+                }
             }
-        },
-        confirmButton = {
-            TextButton(enabled = ok, onClick = {
-                onApply(
-                    allowParsed.orEmpty(), blockParsed.orEmpty(),
-                    CallPrefixText.parse(allowPrefixText), CallPrefixText.parse(blockPrefixText),
-                )
-            }) { Text(stringResource(R.string.calls_save)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) } },
-    )
-    if (picking) {
-        CallContactsPickerDialog(target = allowMode, onDismiss = { picking = false }) { numbers ->
-            val merged = if (allowMode) listOf(allowText, numbers.joinToString("\n")) else listOf(blockText, numbers.joinToString("\n"))
-            if (allowMode) allowText = merged.filter { it.isNotBlank() }.joinToString("\n")
-            else blockText = merged.filter { it.isNotBlank() }.joinToString("\n")
-            picking = false
         }
     }
 }
 
+/** 页面内的浮层容器:半透明遮罩 + 卡片,不新开窗口,所以一定能显示出来。 */
 @Composable
-private fun ActionChip(text: String, tag: String, onClick: () -> Unit) {
+private fun OverlayCard(onDismiss: () -> Unit, content: @Composable () -> Unit) {
     Box(
-        Modifier.background(MikaTheme.colors.fill, RoundedCornerShape(10.dp)).clickable(onClick = onClick)
-            .heightIn(min = 44.dp).padding(horizontal = 14.dp, vertical = 10.dp).testTag(tag),
-    ) { Text(text, fontSize = 14.sp, color = MikaTheme.colors.ink) }
+        Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.55f))
+            .clickable(indication = null, interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }) { onDismiss() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            Modifier.fillMaxWidth().padding(16.dp).clickable(
+                indication = null,
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+            ) { },
+            color = MikaTheme.colors.surface, shape = RoundedCornerShape(18.dp), shadowElevation = 12.dp,
+        ) {
+            Column(
+                Modifier.heightIn(max = 620.dp).verticalScroll(rememberScrollState()).padding(16.dp),
+            ) { content() }
+        }
+    }
 }
 
-/** 从通讯录多选:勾中的号码回填到名单里。 */
+/** 通讯录多选(同样是页面内浮层):勾中的号码回填到当前名单。 */
 @Composable
-private fun CallContactsPickerDialog(
-    target: Boolean, onDismiss: () -> Unit, onPicked: (List<String>) -> Unit,
-) {
+private fun ContactsPanel(target: Boolean, onDismiss: () -> Unit, onPicked: (List<String>) -> Unit) {
     val context = LocalContext.current
     val contacts = remember { ContactsList.load(context) }
     var query by rememberSaveable { mutableStateOf("") }
@@ -494,39 +512,47 @@ private fun CallContactsPickerDialog(
     val shown = remember(query, contacts) {
         if (query.isBlank()) contacts else contacts.filter { it.second.contains(query) || it.first.contains(query, true) }
     }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.calls_list_import_contacts)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.calls_list_search)) }, singleLine = true)
-                if (contacts.isEmpty()) {
-                    Text(stringResource(R.string.calls_list_no_contacts), fontSize = 13.sp, color = MikaTheme.colors.ink3)
-                }
-                Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
-                    shown.forEach { (name, number) ->
-                        val on = picked.contains(number)
-                        Row(Modifier.fillMaxWidth().toggleable(on, role = Role.Checkbox) {
-                            if (it) picked.add(number) else picked.remove(number)
-                        }.heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(on, null)
-                            Column {
-                                Text(name, fontSize = 15.sp, color = MikaTheme.colors.ink)
-                                Text(number, fontSize = 13.sp, color = MikaTheme.colors.ink3)
-                            }
-                        }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.calls_list_import_contacts), fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold, color = MikaTheme.colors.ink)
+            Spacer(Modifier.weight(1f))
+            Text(if (target) stringResource(R.string.calls_list_allow) else stringResource(R.string.calls_list_block),
+                fontSize = 13.sp, color = MikaTheme.colors.ink3)
+        }
+        OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(R.string.calls_list_search)) }, singleLine = true)
+        if (contacts.isEmpty()) {
+            Text(stringResource(R.string.calls_list_no_contacts), fontSize = 13.sp, color = MikaTheme.colors.ink3)
+        }
+        Column(Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
+            shown.forEach { (name, number) ->
+                val on = picked.contains(number)
+                Row(Modifier.fillMaxWidth().toggleable(on, role = Role.Checkbox) {
+                    if (it) picked.add(number) else picked.remove(number)
+                }.heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(on, null)
+                    Column {
+                        Text(name, fontSize = 15.sp, color = MikaTheme.colors.ink)
+                        Text(number, fontSize = 13.sp, color = MikaTheme.colors.ink3)
                     }
                 }
             }
-        },
-        confirmButton = {
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) }
             TextButton(enabled = picked.isNotEmpty(), onClick = { onPicked(picked.toList()) }) {
                 Text(stringResource(R.string.calls_list_import_add, picked.size))
             }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) } },
-    )
+        }
+    }
+}
+@Composable
+private fun ActionChip(text: String, tag: String, onClick: () -> Unit) {
+    Box(
+        Modifier.background(MikaTheme.colors.fill, RoundedCornerShape(10.dp)).clickable(onClick = onClick)
+            .heightIn(min = 44.dp).padding(horizontal = 14.dp, vertical = 10.dp).testTag(tag),
+    ) { Text(text, fontSize = 14.sp, color = MikaTheme.colors.ink) }
 }
 
 /** 只在通讯录读取权限在的时候查;读不到就当没有联系人。 */
@@ -723,6 +749,9 @@ private fun androidx.compose.foundation.layout.RowScope.Segment(text: String, se
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal)
     }
 }
+
+
+
 
 
 
