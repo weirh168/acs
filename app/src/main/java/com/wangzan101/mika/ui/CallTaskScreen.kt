@@ -117,6 +117,7 @@ internal fun CallTaskScreen(
     // 谁说话:AI 代拨 / 我自己拨。记住上次选择,但每次进入都在分段控件上明确显示
     var manual by rememberSaveable { mutableStateOf(false) }
     var transcribeAlso by rememberSaveable { mutableStateOf(false) }
+    var pickingContact by remember { mutableStateOf(false) }
     val number = CallPolicy.outgoingNumber(draft.number)
     val goalLength = draft.goal.trim().length
     val maxGoal = CallTaskBrief.MAX_GOAL_CHARS
@@ -133,6 +134,9 @@ internal fun CallTaskScreen(
     }
 
     CallDialModeSwitch(manual) { manual = it }
+    if (pickingContact && !manual) {
+        CallContactPickerDialog(onPick = { draft.number = it; pickingContact = false }, onDismiss = { pickingContact = false })
+    }
     if (manual) {
         CallManualDialBody(
             number = draft.number, onNumber = { draft.number = it }, editable = editable,
@@ -141,6 +145,7 @@ internal fun CallTaskScreen(
             defaultSimId = config.defaultOutgoingSimId, onBeforeDial = onBeforeManualDial,
             onSim = { draft.simOverride = it },
             transcribe = transcribeAlso, onTranscribe = { transcribeAlso = it },
+            pickingContact = pickingContact, onPickContact = { pickingContact = it },
         )
         return
     }
@@ -154,6 +159,11 @@ internal fun CallTaskScreen(
             textStyle = TextStyle(textDirection = TextDirection.Ltr),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             isError = draft.number.isNotBlank() && number == null,
+            trailingIcon = {
+                TextButton(onClick = { pickingContact = true }, modifier = Modifier.testTag("call-pick-contact")) {
+                    Text(stringResource(R.string.calls_pick_contact), fontSize = 13.sp)
+                }
+            },
             supportingText = if (draft.number.isNotBlank() && number == null) ({
                 Text(stringResource(R.string.calls_task_number_hint))
             }) else null,
@@ -401,6 +411,7 @@ private fun CallManualDialBody(
     simLabel: String?, sims: List<CallSim>, chosenSim: String?, defaultSimId: String?,
     onSim: (String?) -> Unit, onBeforeDial: (String) -> Unit = {},
     transcribe: Boolean, onTranscribe: (Boolean) -> Unit,
+    pickingContact: Boolean = false, onPickContact: (Boolean) -> Unit = {},
 ) {
     val context = LocalContext.current
     var pickingSim by remember { mutableStateOf(false) }
@@ -415,6 +426,11 @@ private fun CallManualDialBody(
             textStyle = TextStyle(textDirection = TextDirection.Ltr),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             isError = number.isNotBlank() && manualDigits == null,
+            trailingIcon = {
+                TextButton(onClick = { onPickContact(true) }, modifier = Modifier.testTag("call-pick-contact")) {
+                    Text(stringResource(R.string.calls_pick_contact), fontSize = 13.sp)
+                }
+            },
         )
         GroupCard {
             // 拨出卡:和 AI 代拨共用同一份选择,人工拨号也走这张卡
@@ -430,6 +446,9 @@ private fun CallManualDialBody(
                 Spacer(Modifier.size(6.dp))
                 Icon(MikaIcons.Chevron, null, tint = MikaTheme.colors.ink3, modifier = Modifier.size(18.dp))
             }
+        }
+        if (pickingContact) {
+            CallContactPickerDialog(onPick = { onNumber(it); onPickContact(false) }, onDismiss = { onPickContact(false) })
         }
         if (pickingSim) {
             CallTaskSimDialog(options = sims, preferred = defaultSimId, selectedOverride = chosenSim,
@@ -485,11 +504,43 @@ private fun CallManualDialBody(
     }
 }
 
-
-
-
-
-
-
-
+/** 从通讯录选号码:搜索 + 点一下回填。两个模式共用。 */
+@Composable
+private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val contacts = remember { ContactsList.load(context) }
+    var query by rememberSaveable { mutableStateOf("") }
+    val shown = remember(query, contacts) {
+        if (query.isBlank()) contacts.take(80)
+        else contacts.filter { it.second.contains(query) || it.first.contains(query, true) }.take(80)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.calls_pick_contact)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.calls_list_search)) }, singleLine = true)
+                if (contacts.isEmpty()) {
+                    Text(stringResource(R.string.calls_list_no_contacts), fontSize = 13.sp,
+                        color = MikaTheme.colors.ink3)
+                }
+                Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+                    shown.forEach { (name, number) ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { onPick(number) }.heightIn(min = 48.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text(name, fontSize = 15.sp, color = MikaTheme.colors.ink)
+                                Text(number, fontSize = 13.sp, color = MikaTheme.colors.ink3)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) } },
+    )
+}
 
