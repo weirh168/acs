@@ -1,5 +1,7 @@
 package com.wangzan101.mika.ui
 
+import com.wangzan101.mika.BuildConfig
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 import androidx.compose.foundation.background
@@ -181,6 +183,8 @@ internal fun TraceSettingsRows() {
     var traceLimitMiB by remember { mutableIntStateOf(traces.limitMiB) }
     var confirmOn by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
+    val ctx = LocalContext.current
+    var exportPath by remember { mutableStateOf<String?>(null) }
     fun applyLimit(mib: Int) {
         scope.launch {
             withContext(Dispatchers.IO) { traces.setLimitMiB(mib) }
@@ -249,6 +253,25 @@ internal fun TraceSettingsRows() {
                 style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3)
         }
     }
+    // 导出给售后:先写到 App 外部目录,用户自己发出去(暂不走系统分享)
+    ListRow(null, "导出日志给售后", "带机型与版本号，发给客服", onClick = {
+        scope.launch {
+            val dir = ctx.getExternalFilesDir("exports")
+            val name = "mika-traces-" + android.os.Build.MODEL + "-" + BuildConfig.VERSION_NAME + ".zip"
+            val file = withContext(Dispatchers.IO) {
+                runCatching { traces.store.exportZip(java.io.File(dir, name)) }.getOrNull()
+            }
+            exportPath = file?.absolutePath
+        }
+    }) { RowChevron() }
+    exportPath?.let {
+        Text(
+            "已导出：" + it,
+            style = MaterialTheme.typography.bodySmall,
+            color = MikaTheme.colors.ink3,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        )
+    }
     // 清空:先关闭详细日志再删,避免边写边删
     ListRow(null, "清空全部日志", "只删日志，不影响通话记录", onClick = { confirmClear = true }) {
         Text("清空", fontSize = 14.sp, color = MaterialTheme.colorScheme.error)
@@ -272,4 +295,6 @@ internal fun TraceSettingsRows() {
         )
     }
 }
+
+
 
