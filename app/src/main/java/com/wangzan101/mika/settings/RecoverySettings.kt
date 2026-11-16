@@ -61,7 +61,7 @@ class RecoverySettings(private val prefs: SharedPreferences) : RecoveryConsentSt
     }
 
     fun recordRestore(outcome: RestoreOutcome) {
-        prefs.edit().putString(LAST_RESTORE, outcome.name).commit()
+        prefs.edit().putString(LAST_RESTORE, outcome.name).putLong(LAST_RESTORE_AT, System.currentTimeMillis()).commit()
         _lastRestore.value = outcome
     }
 
@@ -73,6 +73,20 @@ class RecoverySettings(private val prefs: SharedPreferences) : RecoveryConsentSt
     private fun readOutcome(): RestoreOutcome? =
         prefs.getString(LAST_RESTORE, null)?.let { n -> RestoreOutcome.entries.firstOrNull { it.name == n } }
 
+    /**
+     * 助手连上了。开机以后第一次连上,就把这次开机的恢复结果记成 [RestoreOutcome.Restored] ——
+     * 不管它是开机接收器那一路恢复的,还是应用自己重新找到新端口连回来的。
+     * 之前只在开机接收器里记结果,所以正常重连成功时这条诊断会一直停在旧值(比如 PermissionMissing),
+     * 看上去像"上次开机没恢复"。
+     */
+    @Synchronized fun noteConnected(nowMs: Long = System.currentTimeMillis()) {
+        val bootAt = nowMs - android.os.SystemClock.elapsedRealtime()
+        val recordedAt = prefs.getLong(LAST_RESTORE_AT, 0)
+        // 这次开机还没有成功记录(旧的是上一次开机留下的,或记的是失败)→ 记成功
+        if (_lastRestore.value == RestoreOutcome.Restored && recordedAt >= bootAt) return
+        recordRestore(RestoreOutcome.Restored)
+    }
+
     companion object {
         private const val PREFS = "builtin_shell_recovery"
         private val KEYS = mapOf(
@@ -83,6 +97,7 @@ class RecoverySettings(private val prefs: SharedPreferences) : RecoveryConsentSt
         )
         private const val DECLINED = "_declined"
         private const val LAST_RESTORE = "last_restore"
+        private const val LAST_RESTORE_AT = "last_restore_at"
         private const val A11Y_SEEN = "a11y_seen"
         private const val A11Y_LOSS = "a11y_loss"
         private const val A11Y_LOSS_AT = "a11y_loss_at"

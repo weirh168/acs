@@ -511,3 +511,24 @@ WRITE_SECURE_SETTINGS    : granted=false(之前) → 已 pm grant,现在 granted
 端口从 39957 变成 42367 而应用自己跟上了,说明它**重新发现了新端口并连回去**,
 不需要再输配对码。`last_restore` 仍是旧的 `PermissionMissing`(这次是走正常重连恢复的,
 开机接收器没留新记录),下次重启可再核对。
+
+## last_restore 诊断修好（2026-11-16 14:22）
+
+问题:这条诊断只在**开机接收器**那条路上写,应用自己重新发现端口连回来时没人记,
+于是重启后明明连上了,`last_restore` 还停在旧的 `PermissionMissing`,看起来像"上次开机没恢复"。
+
+改法:
+- `RecoverySettings.noteConnected()`:开机之后**第一次连上**就把这次开机的恢复结果记成 `Restored`
+  (带 `last_restore_at` 时间戳;这次开机已经是 Restored 就不重复写)。
+- `BuiltinShellManager` 新增 `onConnected` 回调,在助手每次新连上时叫一次;
+  `PhoneServices` 把它接到 `recoverySettings.noteConnected()`。
+- `recordRestore()` 现在同时写 `last_restore_at`。
+
+实机验证(装好后重启进程,助手连上):
+
+```
+<long name="last_restore_at" value="1794810234909" />
+<string name="last_restore">Restored</string>
+```
+
+从 `PermissionMissing` → `Restored`,助手进程在。以后这条诊断能如实反映"开机后到底恢复了没有"。

@@ -23,7 +23,7 @@ class PhoneServices(context: Context) {
     val hub = HelperHub(app)
 
     /** 配对、经 adbd 起助手、看门狗。 */
-    val shellManager = BuiltinShellManager(app, hub) { recoverySettings.consent.value }
+    val shellManager = BuiltinShellManager(app, hub, { recoverySettings.consent.value }, { recoverySettings.noteConnected() })
 
     /** 内置助手本身(状态、配对、重试、解除配对)。 */
     val shellControl: BuiltinShellControl get() = shellManager.engine

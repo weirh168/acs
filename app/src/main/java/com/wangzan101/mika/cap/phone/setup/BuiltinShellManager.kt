@@ -58,7 +58,13 @@ import java.util.concurrent.atomic.AtomicReference
  * 内置助手的真实现:配对、经本机 adbd 或 su 起助手、看门狗。由 [com.wangzan101.mika.cap.phone.PhoneServices] 建一份,
  * App 启动时由 [start] 开始看着助手;[hub] 是助手交来 Binder 的落点;[consent] 是用户对那几项能力的选择(「自动打开无线调试」看它)。
  */
-class BuiltinShellManager(context: Context, private val hub: HelperHub, private val consent: () -> RecoveryConsent) {
+class BuiltinShellManager(
+    context: Context,
+    private val hub: HelperHub,
+    private val consent: () -> RecoveryConsent,
+    /** 助手连上了(每次新连上都叫一次):用来把这次开机的恢复结果记成成功。 */
+    private val onConnected: () -> Unit = {},
+) {
     private val app = context.applicationContext
     private var started = false
 
@@ -163,6 +169,7 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
             hub.shell.collect { s ->
                 if (s == null || s === last) return@collect
                 last = s
+                runCatching { onConnected() }
                 healSecureSettings()
             }
         }
