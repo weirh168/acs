@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import com.wangzan101.mika.core.agent.SpeedFlags
+import com.wangzan101.mika.core.agent.SpeedPreset
+import com.wangzan101.mika.core.agent.SpeedPresets
 import com.wangzan101.mika.ui.components.FooterNote
 import com.wangzan101.mika.ui.components.GroupCard
 import com.wangzan101.mika.ui.components.GroupLabel
@@ -74,6 +76,23 @@ fun DeveloperOptionsScreen(
         if (onOpenProactive != null) {
             GroupCard {
                 ListRow(null, tr(R.string.proactive_title), tr(R.string.proactive_entry_sub), first = true, onClick = onOpenProactive) { RowChevron() }
+            }
+        }
+        // 三档预设:点一下把九个开关摆成常见取向,手动改过就显示「已自定义」
+        val matched = SpeedPresets.detect(speed)
+        GroupCard {
+            SpeedPreset.entries.forEachIndexed { index, preset ->
+                val title = when (preset) {
+                    SpeedPreset.FAST -> "更快更省"
+                    SpeedPreset.BALANCED -> "平衡（推荐）"
+                    SpeedPreset.ACCURATE -> "更准更稳"
+                }
+                ListRow(null, title, if (matched == preset) "当前" else "", first = index == 0,
+                    onClick = { onSpeed(SpeedPresets.flags(preset)) }) { RowChevron() }
+            }
+            if (matched == null) {
+                FooterNote("已自定义 · 与「平衡」相差 " +
+                    SpeedPresets.diffCount(speed, SpeedPreset.BALANCED) + " 项 · 点「平衡」可改回")
             }
         }
         GroupLabel(tr(R.string.dev_speed))
