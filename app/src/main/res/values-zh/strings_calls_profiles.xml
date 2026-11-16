@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="calls_voice_service">实时语音服务</string>
+    <string name="calls_voice_service">AI 声音</string>
     <string name="calls_voice_profiles_intro">可保存多套实时语音配置。接听和拨打默认使用同一套，单次拨打可另行选择。服务连接测试与手机双向音频实测是两件事。</string>
     <string name="calls_voice_profile_subtitle">%1$s · %2$s</string>
     <string name="calls_voice_audio_verified">手机音频已验证</string>
@@ -33,3 +33,4 @@
     <string name="calls_advanced_note">切换音频通道会重置双向音频验证。重新完成真实测试通话后，再开启自动接听。</string>
     <string name="calls_voice_setup">配置并测试语音服务</string>
 </resources>
+
