@@ -416,7 +416,11 @@ private fun CallManualDialBody(
     val context = LocalContext.current
     var pickingSim by remember { mutableStateOf(false) }
     // 人工拨号允许短号(10086/95588 这类客服号):只要求 3~20 位数字
-    val manualDigits = remember(number) { number.filter { it.isDigit() }.takeIf { it.length in 3..20 } }
+    val manualDigits = remember(number) {
+        // 手动输入/粘贴也归一化:只留开头的 + 和数字,避免带空格的号码拨不出去
+        val normalised = normaliseDialNumber(number)
+        normalised.takeIf { candidate -> candidate.count { it.isDigit() } in 3..20 }
+    }
     Column(Modifier.fillMaxWidth().testTag("call-manual-body"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         OutlinedTextField(
             number, onNumber, enabled = editable,
@@ -512,7 +516,7 @@ private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> U
     var query by rememberSaveable { mutableStateOf("") }
     val shown = remember(query, contacts) {
         if (query.isBlank()) contacts.take(80)
-        else contacts.filter { it.second.contains(query) || it.first.contains(query, true) }.take(80)
+        else contacts.filter { it.second.contains(query) || normaliseDialNumber(it.first).contains(query, true) }.take(80)
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -526,14 +530,15 @@ private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> U
                         color = MikaTheme.colors.ink3)
                 }
                 Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
-                    shown.forEach { (name, number) ->
+                    shown.forEach { (rawNumber, name) ->
+                        val number = normaliseDialNumber(rawNumber)
                         Row(
                             Modifier.fillMaxWidth().clickable { onPick(number) }.heightIn(min = 48.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(Modifier.weight(1f)) {
                                 // 号码放主行并强制 LTR:一眼能确认这是电话号码,不是名字
-                                Text(number, fontSize = 16.sp, color = MikaTheme.colors.ink,
+                                Text(normaliseDialNumber(number), fontSize = 16.sp, color = MikaTheme.colors.ink,
                                     style = TextStyle(textDirection = TextDirection.Ltr))
                                 Text(name, fontSize = 13.sp, color = MikaTheme.colors.ink3)
                             }
@@ -547,5 +552,20 @@ private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> U
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) } },
     )
 }
+
+/** 填入前归一化:只留开头的 + 和数字,再去掉中国区号(+86 / 0086),留下完整号码。 */
+private fun normaliseDialNumber(raw: String): String {
+    val text = raw.trim()
+    val digits = text.filter { it.isDigit() }
+    val stripped = when {
+        digits.startsWith("0086") -> digits.drop(4)
+        digits.startsWith("86") && digits.length >= 13 -> digits.drop(2)
+        else -> null
+    }
+    if (stripped != null) return stripped
+    return if (text.startsWith("+")) "+$digits" else digits
+}
+
+
 
 
