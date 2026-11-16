@@ -1,5 +1,25 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.material3.TextButton
+
+import com.wangzan101.mika.ui.theme.MikaTheme
+
+import androidx.compose.material3.Text
+
+import androidx.compose.material3.MaterialTheme
+
+import androidx.compose.ui.unit.dp
+
+import androidx.compose.foundation.layout.Spacer
+
+import androidx.compose.foundation.layout.Arrangement
+
+import androidx.compose.foundation.layout.padding
+
+import androidx.compose.foundation.layout.fillMaxWidth
+
+import androidx.compose.foundation.layout.Column
+
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import androidx.compose.runtime.Composable
@@ -72,7 +92,14 @@ fun DeveloperOptionsScreen(
     onOpenRunStats: (() -> Unit)? = null,
     onOpenProactive: (() -> Unit)? = null,
 ) {
-    PageScaffold(tr(R.string.settings_developer), onBack) {
+    PageScaffold("进阶设置", onBack) {
+        GroupCard {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("排障用，平时不用动", style = MaterialTheme.typography.bodyMedium)
+                Text("改动从下一次执行开始生效", style = MaterialTheme.typography.bodySmall,
+                    color = MikaTheme.colors.ink3)
+            }
+        }
         if (onOpenProactive != null) {
             GroupCard {
                 ListRow(null, tr(R.string.proactive_title), tr(R.string.proactive_entry_sub), first = true, onClick = onOpenProactive) { RowChevron() }
@@ -100,6 +127,20 @@ fun DeveloperOptionsScreen(
         GroupLabel(tr(R.string.dev_experiments))
         SwitchGroup(DeveloperSwitches.experimental(speed), onSpeed)
         if (grounding != null) {
+        val anyExperimental = speed.replay || speed.parallelTasks || speed.structuredCompaction || speed.tablesAtBirth
+        if (anyExperimental) {
+            TextButton(onClick = {
+                onSpeed(
+                    SpeedFlags(
+                        inlineScreen = speed.inlineScreen, batchSteps = speed.batchSteps,
+                        deepLinks = speed.deepLinks, lightSteps = speed.lightSteps,
+                        adaptiveVision = speed.adaptiveVision,
+                    ),
+                )
+            }, modifier = Modifier.testTag("dev-experiments-off")) {
+                Text("全部关实验")
+            }
+        }
             GroupLabel(GroundingCopy.GROUP)
             GroupCard {
                 ListRow(null, GroundingCopy.TITLE, GroundingCopy.subtitle(grounding.model), first = true, onClick = { onGrounding(!grounding.verified) }) {
@@ -129,3 +170,6 @@ private fun SwitchGroup(switches: List<DevSwitch>, onSpeed: (SpeedFlags) -> Unit
         }
     }
 }
+
+
+
