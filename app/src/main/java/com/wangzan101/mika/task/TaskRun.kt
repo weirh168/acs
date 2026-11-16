@@ -360,7 +360,13 @@ class TaskRun(
                 if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser display=$d")
                 val sh = phoneServices.hub.shell.value ?: return@runCatching
                 val task = sh.topTaskId(d)
-                if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser task=$task move=${if (task >= 0) sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY) else false}")
+                val moved = if (task >= 0) sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY) else false
+                if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser task=$task move=$moved")
+                // 跨屏挪完窗口要重画,否则头一两秒是黑的:在主屏角落补一次无关紧要的触摸,催它重画
+                if (moved) {
+                    delay(350)
+                    runCatching { sh.injectTap(android.view.Display.DEFAULT_DISPLAY, 1, 1) }
+                }
             }
         }
     }
