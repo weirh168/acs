@@ -575,3 +575,34 @@ WRITE_SECURE_SETTINGS    : granted=false(之前) → 已 pm grant,现在 granted
   **识别会话正常结束、只是没有识别到文字**(房间里没人说话),不是鉴权失败或引擎不可用。
 
 结论:语音输入的链路(麦克风 → 火山 ASR → 回字)已经通了;要真说话才有文字。
+
+## 自动接听来电:配好了（2026-11-16 18:52）
+
+现象:来电不会自动接。查下来不是单一 bug,而是四道门全关着:
+
+| 门 | 之前 | 现在 |
+|---|---|---|
+| 实时语音服务 | 未配置(18:38 才配好) | 已配置 · **连接已测试** |
+| 双向音频验证(`audio_verified_build`) | 没确认过 | 已确认(记了本机 ROM 指纹) |
+| 接听范围 | `allow_all=false`、名单为空 | **`allow_all=true`**(接听所有来电) |
+| 自动接听开关 | `auto_answer=false` | **`auto_answer=true`** |
+
+依据 `CallPolicy.callerAllowed` / `CallRuntime.autoAnswerReady`:必须 enabled + autoAnswer +
+凭据已配置 + 音频已验证 + 名单非空(或全部) + 待命通知可用,缺一不接。
+
+操作过程(实机):
+1. 电话助手 › 设置 › 设备与权限 ›「检查并准备」→ 去掉「AI 电话尚未就绪」;
+2. 同一页勾上「已实测本机通话双方均能听到声音」(这是 App 的手动确认,记为
+   `audio_verified_build=HONOR/FNE-AN00/.../8.0.0.224C00E223R6P7`);
+3. 自动接听规则 › 接听范围 › 选「接听所有来电」→ 保存(`allow_all=true`);
+4. 打开「自动接听来电」→ `auto_answer=true`。
+
+结果:
+```
+auto_answer=true, allow_all=true, delay=3s, enabled=true
+dumpsys activity services → CallStandbyService 前台运行
+界面: 「待命中 · 符合规则的来电等待 3 秒后接听」「后台待命已启动」
+```
+
+**还没有真实来电验证**:要真有人打进来才算数(我这侧注入不了来电)。来电时看
+`CallStandbyService` / `CallRuntime` 日志能看到计数与接听动作。
