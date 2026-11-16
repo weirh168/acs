@@ -555,3 +555,23 @@ WRITE_SECURE_SETTINGS    : granted=false(之前) → 已 pm grant,现在 granted
    状态变「连接已测试」——说明这把 Key 被火山实时语音侧接受。
 
 仍未验证的:真实通话里双方能否听到声音(要真打一次电话)。
+
+## 语音输入(语音转文字)修好（2026-11-16 18:45）
+
+现象:输入框不能语音输入(不给转字)。
+
+排查与处理:
+1. 进 设置 › 模型 › 语音转文字 ›「豆包流式语音识别模型 2.0 · 设置」;
+2. 把用户给的 API Key `6911c1ab-…8fdc` 填到「新版控制台 › API Key」,点「**保存并使用**」;
+3. 保存前 App 会先做一次真实握手验证(`probeLiveAsr`:连
+   `wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async` + 发开场帧 + 等服务端回 Started,
+   不发音频、不计费)。**没有报错、直接回到列表** ⇒ 地址/鉴权/模型都被接受;
+4. 偏好文件 `feature_flags.xml` 里的 `speech_doubao_credentials_encrypted` 在 18:43 被重写,
+   `speech_choice` 仍是 `{"type":"doubao","resourceId":"volc.seedasr.sauc.duration"}`。
+
+实机验证(长按输入框 6 秒):
+- 录音真的起来了(`audio_hw_primary: audio-record`、麦克风增益日志);
+- 松手后界面提示「**没听清,再按住说一次**」——这句对应 `why == null`,也就是
+  **识别会话正常结束、只是没有识别到文字**(房间里没人说话),不是鉴权失败或引擎不可用。
+
+结论:语音输入的链路(麦克风 → 火山 ASR → 回字)已经通了;要真说话才有文字。
