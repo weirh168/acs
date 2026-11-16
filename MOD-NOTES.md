@@ -447,3 +447,27 @@ topResumedActivity = com.android.settings/.HWSettings   (主屏)
 `zh_female_vv_jupiter_bigtts`。构建通过。
 
 **没装上去**:USB 变成 offline、无线调试也关了(mDNS 无结果),等设备连上再装并实测连接。
+
+## 配对 / 重启后保持连接的排查（2026-11-16 14:00）
+
+设备上的真实状态:
+
+```
+builtin_shell.xml        : paired=true, port=39957
+builtin_shell_recovery   : restore_after_reboot=true, auto_wireless_debugging=true,
+                           last_restore=PermissionMissing   ← 开机恢复失败的原因
+WRITE_SECURE_SETTINGS    : granted=false(之前) → 已 pm grant,现在 granted=true
+```
+
+也就是说:配对本身是好的(`paired=true`、连接一直在用),**坏的是「重启后自动恢复」这一步**——
+它要写系统设置,但那份授权掉了,开机时 `BuiltinShellRecovery.restoreAfterBoot` 直接停在
+`PermissionMissing`,无线调试不打开、也不重连,用户看到的就是「重启后要重新配对」。
+
+改动:
+1. 已通过 `pm grant ... WRITE_SECURE_SETTINGS` 把授权补上(重启后仍在);
+2. `BuiltinShellManager`:助手一连上,若用户开着「重启后自动恢复 / 自动打开无线调试」而授权又掉了,
+   就用助手的 shell 身份自动 `pm grant` 补回来(幂等),并在日志留一行
+   `MikaShellRestore: re-granted …`,以后重装、系统收回都不再悄悄失效。
+
+构建通过。**安装被手机上的弹窗拒绝了**(`INSTALL_FAILED_ABORTED: User rejected permissions`),
+等用户同意后再装。

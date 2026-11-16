@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.launch
 import java.io.File
 import java.net.Inet4Address
 import java.util.concurrent.ExecutionException
@@ -154,7 +155,32 @@ class BuiltinShellManager(context: Context, private val hub: HelperHub, private 
                 },
             )
         }
+        // 助手一连上就把「改系统设置」的授权补回来:重装、恢复出厂、系统收回之后,
+        // 用户开了「重启后自动恢复」却因为授权没了而在开机时恢复不了(记录会是 PermissionMissing)。
+        // 这里借助手(shell 身份)重新 pm grant,一次配对之后就不用再操心。
+        scope.launch {
+            var last: Any? = null
+            hub.shell.collect { s ->
+                if (s == null || s === last) return@collect
+                last = s
+                healSecureSettings()
+            }
+        }
         e.start()
+    }
+
+    /** 用户开了会写系统设置的那几项、授权却掉了:借助手补回来(幂等)。 */
+    private suspend fun healSecureSettings() {
+        val c = consent()
+        if (!c.wants(RecoveryCapability.RestoreAfterReboot) && !c.wants(RecoveryCapability.AutoWirelessDebugging)) return
+        if (app.checkSelfPermission(PermissionCommands.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) return
+        val cmd = PermissionCommands.grantWriteSecureSettings(app.packageName)
+        try {
+            val out = commandRunner.exec(cmd)
+            Log.i("MikaShellRestore", "re-granted WRITE_SECURE_SETTINGS via helper: ${out.take(80)}")
+        } catch (t: Throwable) {
+            Log.w("MikaShellRestore", "cannot re-grant WRITE_SECURE_SETTINGS", t)
+        }
     }
 
     private class AndroidPlatform(
