@@ -847,15 +847,13 @@ private fun CallPreferencesPage(
             ListRow(MikaIcons.Mic, stringResource(R.string.calls_audio_route),
                 stringResource(if (config.audioMode == CallAudioMode.DIRECT) R.string.calls_audio_direct else R.string.calls_audio_redirect),
                 first = true, onClick = onProfile.takeIf { canConfigure }) { RowChevron() }
+            ListRow(MikaIcons.Bell, stringResource(R.string.calls_connection_test),
+                stringResource(if (ready) R.string.calls_ready else R.string.calls_needs_setup),
+                onClick = onPrepare.takeIf { canConfigure }) { RowChevron() }
             FooterNote(stringResource(R.string.calls_advanced_note))
         }
     }
 
-    GroupLabel(stringResource(R.string.calls_settings_data_group))
-    GroupCard {
-        ListRow(MikaIcons.Clock, stringResource(R.string.calls_tab_history),
-            stringResource(R.string.calls_history_entry_summary), first = true, onClick = onRecords) { RowChevron() }
-    }
 }
 
 @Composable

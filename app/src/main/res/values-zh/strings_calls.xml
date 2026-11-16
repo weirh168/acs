@@ -259,7 +259,9 @@
     <string name="calls_data_summary_off">已关闭</string>
     <string name="calls_data_clear">清空记录</string>
     <string name="calls_history_title">通话记录</string>
+    <string name="calls_connection_test">连接测试</string>
 </resources>
+
 
 
 

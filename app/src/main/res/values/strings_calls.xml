@@ -259,7 +259,9 @@
     <string name="calls_data_summary_off">Off</string>
     <string name="calls_data_clear">Clear records</string>
     <string name="calls_history_title">Call records</string>
+    <string name="calls_connection_test">Connection test</string>
 </resources>
+
 
 
 
