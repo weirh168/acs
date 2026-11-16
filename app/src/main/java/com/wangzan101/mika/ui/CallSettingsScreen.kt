@@ -276,6 +276,7 @@ private fun CallSettingsWorkspace(
                             history = history,
 
                             onHistory = { tab = CallWorkspaceTab.History },
+                            onDelay = { seconds -> scope.launch { save { it.copy(autoAnswerDelaySeconds = seconds) } } },
                         )
                         CallWorkspaceTab.Task -> CallTaskScreen(
                             taskDraft, config, state, ready,
@@ -530,6 +531,7 @@ private fun CallReceivePage(
     onSetup: () -> Unit, onToggle: (Boolean) -> Unit, onRules: () -> Unit, onBypass: () -> Unit,
     onPause: (Int) -> Unit, onResume: () -> Unit, onInstructions: () -> Unit, onStartStandby: () -> Unit,
     history: List<CallRecord> = emptyList(), onHistory: () -> Unit = {},
+    onDelay: (Int) -> Unit = {},
 ) {
     var scopeOpen by rememberSaveable { mutableStateOf(false) }
     var importantOpen by rememberSaveable { mutableStateOf(false) }
@@ -542,6 +544,19 @@ private fun CallReceivePage(
         }
     }
     CallTodayCard(history, onHistory)
+    Spacer(Modifier.size(12.dp))
+    RingDelayChip(config.autoAnswerDelaySeconds, onDelay)
+    Spacer(Modifier.size(12.dp))
+    GroupLabel(stringResource(R.string.calls_exceptions))
+    GroupCard(Modifier.testTag("call-exceptions")) {
+        ExceptionRow(stringResource(R.string.calls_who_i_answer),
+            stringResource(R.string.calls_who_i_answer_note, config.bypassIncomingNumbers.size),
+            "call-exceptions-bypass", onBypass)
+        HorizontalDivider()
+        ExceptionRow(stringResource(R.string.calls_who_ai_answers),
+            stringResource(R.string.calls_who_ai_answers_note, config.allowedIncomingNumbers.size),
+            "call-exceptions-allow", onRules)
+    }
     Spacer(Modifier.size(12.dp))
     val autoLabel = stringResource(R.string.calls_auto_answer)
     val canTurnOn = ready && config.audioVerified && state.phase == CallPhase.IDLE &&
@@ -1142,5 +1157,43 @@ private fun TodayChip(text: String) {
 
 /** 通话记录里标记「这通是 AI 自动接的」的那段文字,统计时按它算。 */
 private const val AUTO_ANSWER_MARK = "自动接听"
+
+/** 「响铃 N 秒 · 改」:点开三档,逐秒微调去规则页的滑杆。 */
+@Composable
+private fun RingDelayChip(seconds: Int, onDelay: (Int) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    val choices = listOf(3 to R.string.calls_ring_chip_now, 5 to R.string.calls_ring_chip_two, 10 to R.string.calls_ring_later2)
+    Box {
+        Box(
+            Modifier.background(MikaTheme.colors.fill, RoundedCornerShape(20.dp))
+                .clickable { open = true }.padding(horizontal = 14.dp, vertical = 8.dp)
+                .testTag("call-ring-chip"),
+        ) { Text(stringResource(R.string.calls_ring_chip, seconds), fontSize = 14.sp, color = MikaTheme.colors.ink) }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            choices.forEach { (value, label) ->
+                DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = {
+                    open = false
+                    if (value != seconds) onDelay(value)
+                })
+            }
+        }
+    }
+}
+
+/** 例外层的一行:这些人我自己接 / 这些人必须 AI 接。 */
+@Composable
+private fun ExceptionRow(title: String, note: String, tag: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 56.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp).testTag(tag),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp, color = MikaTheme.colors.ink)
+            Text(note, fontSize = 13.sp, color = MikaTheme.colors.ink3)
+        }
+        Icon(MikaIcons.Chevron, null, tint = MikaTheme.colors.ink3, modifier = Modifier.size(18.dp))
+    }
+}
 
 

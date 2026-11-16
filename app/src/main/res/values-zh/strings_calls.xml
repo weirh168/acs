@@ -217,7 +217,18 @@
     <string name="calls_today_view">查看记录</string>
     <string name="calls_today_empty_title">今天还没有需要 AI 接的电话</string>
     <string name="calls_today_empty_note">陌生人来电时，AI 会替你接。</string>
+    <string name="calls_exceptions">例外</string>
+    <string name="calls_who_i_answer">这些人我自己接</string>
+    <string name="calls_who_i_answer_note">%1$d 个号码，打来不交给 AI</string>
+    <string name="calls_who_ai_answers">这些人必须 AI 接</string>
+    <string name="calls_who_ai_answers_note">已加进接听范围 · %1$d 个</string>
+    <string name="calls_ring_chip">响铃 %1$d 秒 · 改</string>
+    <string name="calls_ring_chip_now">马上接（3 秒）</string>
+    <string name="calls_ring_chip_two">响两下（5 秒）</string>
+    <string name="calls_ring_later2">多等一会（10 秒）</string>
 </resources>
+
+
 
 
 

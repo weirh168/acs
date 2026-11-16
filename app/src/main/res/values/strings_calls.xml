@@ -217,7 +217,18 @@
     <string name="calls_today_view">View records</string>
     <string name="calls_today_empty_title">No calls needed the AI yet today</string>
     <string name="calls_today_empty_note">When a stranger calls, the AI answers for you.</string>
+    <string name="calls_exceptions">Exceptions</string>
+    <string name="calls_who_i_answer">People I answer myself</string>
+    <string name="calls_who_i_answer_note">%1$d numbers the AI never takes</string>
+    <string name="calls_who_ai_answers">People the AI must answer</string>
+    <string name="calls_who_ai_answers_note">Inside the answer rules · %1$d</string>
+    <string name="calls_ring_chip">Rings %1$d s · change</string>
+    <string name="calls_ring_chip_now">Answer at once (3 s)</string>
+    <string name="calls_ring_chip_two">Two rings (5 s)</string>
+    <string name="calls_ring_later2">Wait longer (10 s)</string>
 </resources>
+
+
 
 
 
