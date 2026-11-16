@@ -378,19 +378,15 @@ class TaskRun(
                     android.util.Log.d("ACS-Pip", "handAppToUser display=$d task=$task pkg=$pkg cls=$cls")
                 }
                 if (sh != null && pkg != null) {
-                    // startApp 只肯在自己的虚拟屏上启动;在主屏要用 `am start --display 0`。
-                    // 先按**当前页**开(用户接管后停在和刚才同一页),不行再退回入口页。
+                    // 交到用户手上就按「正常用这个 App」来:声音恢复成任务前的样子(任务里是静音/独占的),
+                    // 入口页在主屏打开,之后就全是人工操作,所以先按主页(入口页)开,
+                    // 开不起来(或拿不到入口)才退回当前页。
                     // -f 0x18000000 = NEW_TASK|MULTIPLE_TASK:不复用虚拟屏上那份(复用的话只会把 intent
                     // 投给它,主屏什么都不出),而是真在主屏开一个新任务。
                     // 组件名里的 `$` 是内部类分隔符,命令经 sh -c,必须加单引号否则被当成变量吃掉。
-                    val page = cls?.let { if (it.startsWith(".")) "$pkg$it" else "$pkg/$it" }
+                    val user = phone?.screen?.target?.value?.takeIf { it.packageName == pkg }?.let { copyUser(it.userId) }
+                    runCatching { if (phone?.audio?.release(pkg, user) == false) Log.w(TAG, "could not restore sound of $pkg for handover") }
                     val launch = { component: String -> sh.runCommand("am start --display 0 -f 0x18000000 -n '$component'") }
-                    val code = page?.let { runCatching { launch(it).getInt("exitCode", -1) }.getOrDefault(-1) } ?: -1
-                    if (com.wangzan101.mika.BuildConfig.DEBUG) {
-                        android.util.Log.d("ACS-Pip", "launchOnMain page=$page exit=$code")
-                    }
-                    if (code == 0) return@runCatching
-                    // 当前页开不起来(有些页面不能独立启动):退回该包的入口页
                     val entry = runCatching {
                         sh.runCommand(
                             "am start --display 0 -f 0x18000000 -n \$(cmd package resolve-activity --brief $pkg | tail -n 1)",
@@ -401,6 +397,13 @@ class TaskRun(
                         android.util.Log.d("ACS-Pip", "launchOnMain entry pkg=$pkg exit=$entryCode out=${entry?.getString("output")?.take(80)}")
                     }
                     if (entryCode == 0) return@runCatching
+                    // 入口开不起来:退回当前页
+                    val page = cls?.let { if (it.startsWith(".")) "$pkg$it" else "$pkg/$it" }
+                    val code = page?.let { runCatching { launch(it).getInt("exitCode", -1) }.getOrDefault(-1) } ?: -1
+                    if (com.wangzan101.mika.BuildConfig.DEBUG) {
+                        android.util.Log.d("ACS-Pip", "launchOnMain page=$page exit=$code")
+                    }
+                    if (code == 0) return@runCatching
                 }
                 // 拿不到包名或起不来:退回挪任务,至少把那个界面摆到用户眼前
                 if (sh != null && task >= 0 && sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY)) {

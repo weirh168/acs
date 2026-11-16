@@ -359,6 +359,8 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                         if (pkg != null) {
                             CoroutineScope(Dispatchers.IO).launch {
                                 runCatching {
+                                    // 交出去了就按正常用 App 来:声音恢复成任务前的样子
+                                    // (run 已经撤掉:声音在任务收尾时已经恢复,这里只负责把 App 打开)
                                     val r = com.wangzan101.mika.cap.phone.PhoneServices.of(app).hub.shell.value?.runCommand(
                                         "am start --display 0 -f 0x18000000 -n \$(cmd package resolve-activity --brief $pkg | tail -n 1)",
                                     )
