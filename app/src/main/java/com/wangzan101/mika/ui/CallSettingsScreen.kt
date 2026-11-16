@@ -1030,10 +1030,22 @@ private fun canEditCallSpeaker(candidate: String, current: String): Boolean {
 }
 
 internal fun parseCallNumberList(input: String): Set<String>? {
-    val entries = input.split(',', '，', '،', ';', '；', '\n').map(String::trim).filter(String::isNotEmpty)
-    val normalized = entries.map { CallPolicy.incomingNumber(it) ?: return null }.toSet()
-    return normalized.takeIf { it.size <= CallPolicy.MAX_ALLOWED_NUMBERS }
+    val entries = callNumberEntries(input).map { CallPolicy.incomingNumber(it) ?: return null }
+    // 明显不完整的号码(比如通讯录里的 +86181)直接拦下,别让半截号码进名单
+    if (entries.any(CallPolicy::isIncompleteNumber)) return null
+    return entries.toSet().takeIf { it.size <= CallPolicy.MAX_ALLOWED_NUMBERS }
 }
+
+/** 名单里那些「明显不完整」的号码,给弹窗提示用。 */
+internal fun incompleteCallNumbers(input: String): List<String> =
+    callNumberEntries(input).filter { entry ->
+        val number = CallPolicy.incomingNumber(entry)
+        // 解析不出来(半截号码)或位数太少,都算「明显不完整」
+        number == null || CallPolicy.isIncompleteNumber(number)
+    }
+
+private fun callNumberEntries(input: String): List<String> =
+    input.split(',', '，', '،', ';', '；', '\n').map(String::trim).filter(String::isNotEmpty)
 
 @Composable
 private fun CallBypassDialog(existing: Set<String>, onDismiss: () -> Unit, onSave: suspend (Set<String>) -> Boolean) {
@@ -1075,6 +1087,8 @@ private fun CallBypassDialog(existing: Set<String>, onDismiss: () -> Unit, onSav
         dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.calls_cancel)) } },
     )
 }
+
+
 
 
 

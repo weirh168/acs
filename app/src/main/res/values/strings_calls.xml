@@ -208,7 +208,10 @@
     <string name="calls_rules_import">Import</string>
     <string name="calls_rules_import_failed">That is not a rules JSON</string>
     <string name="calls_rules_export">Export</string>
+    <string name="calls_list_incomplete">These numbers look incomplete (at least 7 digits): %1$s</string>
 </resources>
+
+
 
 
 

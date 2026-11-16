@@ -464,8 +464,14 @@ private fun CallNumbersOverlay(
                     supportingText = { Text(stringResource(R.string.calls_list_prefix_hint)) },
                     singleLine = true,
                 )
-                if (!ok) Text(stringResource(R.string.calls_allowlist_invalid, CallPolicy.MAX_ALLOWED_NUMBERS),
-                    color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                if (!ok) {
+                    val bad = incompleteCallNumbers(if (allowMode) allowText else blockText)
+                    Text(
+                        if (bad.isNotEmpty()) stringResource(R.string.calls_list_incomplete, bad.joinToString("、"))
+                        else stringResource(R.string.calls_allowlist_invalid, CallPolicy.MAX_ALLOWED_NUMBERS),
+                        color = MaterialTheme.colorScheme.error, fontSize = 12.sp,
+                    )
+                }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) }
                     TextButton(enabled = ok, onClick = {
@@ -749,6 +755,7 @@ private fun androidx.compose.foundation.layout.RowScope.Segment(text: String, se
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal)
     }
 }
+
 
 
 

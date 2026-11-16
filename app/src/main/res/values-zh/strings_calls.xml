@@ -208,7 +208,10 @@
     <string name="calls_rules_import">导入规则</string>
     <string name="calls_rules_import_failed">剪贴板里不是规则 JSON</string>
     <string name="calls_rules_export">导出规则</string>
+    <string name="calls_list_incomplete">这些号码明显不完整（至少 7 位数字），请改掉再保存：%1$s</string>
 </resources>
+
+
 
 
 

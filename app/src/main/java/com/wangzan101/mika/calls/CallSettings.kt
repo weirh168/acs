@@ -32,6 +32,10 @@ class CallSettings(
         require(config.blockedIncomingNumbers.size <= CallPolicy.MAX_ALLOWED_NUMBERS) { "最多可设置 100 个不接的号码" }
         val allowPrefixes = config.allowedPrefixes.mapNotNull(CallPolicy::normalisePrefix).toSet()
         val blockPrefixes = config.blockedPrefixes.mapNotNull(CallPolicy::normalisePrefix).toSet()
+        require(config.allowedIncomingNumbers.none(CallPolicy::isIncompleteNumber) &&
+            config.blockedIncomingNumbers.none(CallPolicy::isIncompleteNumber)) {
+            "有号码明显不完整（至少 5 位数字）"
+        }
         val blocked = config.blockedIncomingNumbers.map {
             requireNotNull(CallPolicy.incomingNumber(it)) { "不接名单中包含无效号码" }
         }.distinctBy(CallPolicy::incomingMatchKey).toSet()
@@ -228,4 +232,5 @@ class CallSettings(
             CallSettings(context.getSharedPreferences("mika_call_settings", Context.MODE_PRIVATE))
     }
 }
+
 

@@ -147,6 +147,21 @@ internal object CallPolicy {
         return if (start < end) minute in start until end else minute >= start || minute < end
     }
 
+    /**
+     * 号码是不是「明显不完整」:纯数字部分少于 5 位(如 +86181、1234)就当作半截号码。
+     * 只用于名单校验,不影响真实来电的接听判断。
+     */
+    fun isIncompleteNumber(value: String?): Boolean {
+        val normalized = incomingNumber(value) ?: return false
+        return normalized.count { it.isDigit() } < MIN_PLAUSIBLE_DIGITS
+    }
+
+    /**
+     * 名单上能接受的最短号码位数:手机 11 位、带区号座机 10~12 位,
+     * 少于 7 位的基本是半截号码(通讯录脏数据)或短号,不适合交给 AI 接。
+     */
+    const val MIN_PLAUSIBLE_DIGITS = 7
+
     fun isBypassed(config: CallConfig, number: String?): Boolean =
         incomingMatchKey(number)?.let { key -> config.bypassIncomingNumbers.any { incomingMatchKey(it) == key } } == true
 
@@ -336,6 +351,8 @@ internal object CallPolicy {
         append("\n收尾：自行判断本通要说的事是否已经说清，结合上下文和对方的回应，不必等对方说‘再见’。如果内容已经办清而且没有未解的问题，可自然简短收尾，例如最后说‘那就先这样’；这轮不要再问问题。如果对方明确要求挂断或告别，只答‘好的，再见’。单纯停顿、普通道谢但事项还没聊完、或对方还在问事时继续听，不提前收尾。")
     }
 }
+
+
 
 
 
