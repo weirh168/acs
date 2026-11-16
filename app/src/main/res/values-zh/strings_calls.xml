@@ -247,7 +247,9 @@
     <string name="calls_manual_note">这通电话你自己说，AI 不介入也不插话</string>
     <string name="calls_manual_dial">拨打</string>
     <string name="calls_manual_need_number">先填号码或从通讯录选一个</string>
+    <string name="calls_manual_transcribe_blocked">暂不可用：系统不允许第三方录制通话声音，等接入系统通话录音后再开放</string>
 </resources>
+
 
 
 

@@ -136,6 +136,7 @@ internal fun CallTaskScreen(
             number = draft.number, onNumber = { draft.number = it }, editable = editable,
             parsed = number, simLabel = sim?.label ?: preferred?.label,
             sims = state.simOptions, chosenSim = draft.simOverride,
+            defaultSimId = config.defaultOutgoingSimId,
             onSim = { draft.simOverride = it },
             transcribe = transcribeAlso, onTranscribe = { transcribeAlso = it },
         )
@@ -395,7 +396,8 @@ private fun RowScope.ModeHalf(text: String, selected: Boolean, tag: String, onCl
 @Composable
 private fun CallManualDialBody(
     number: String, onNumber: (String) -> Unit, editable: Boolean, parsed: String?,
-    simLabel: String?, sims: List<CallSim>, chosenSim: String?, onSim: (String?) -> Unit,
+    simLabel: String?, sims: List<CallSim>, chosenSim: String?, defaultSimId: String?,
+    onSim: (String?) -> Unit,
     transcribe: Boolean, onTranscribe: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
@@ -421,10 +423,15 @@ private fun CallManualDialBody(
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.calls_manual_transcribe), fontSize = 15.sp, color = MikaTheme.colors.ink)
-                    Text(stringResource(R.string.calls_manual_transcribe_note), fontSize = 13.sp,
-                        color = MikaTheme.colors.ink3)
+                    Text(
+                        stringResource(
+                            if (android.os.Build.VERSION.SDK_INT >= 29) R.string.calls_manual_transcribe_blocked
+                            else R.string.calls_manual_transcribe_note,
+                        ),
+                        fontSize = 13.sp, color = MikaTheme.colors.ink3,
+                    )
                 }
-                Switch(transcribe, { onTranscribe(it) }, modifier = Modifier.testTag("call-manual-transcribe"))
+                Switch(transcribe, { onTranscribe(it) }, enabled = false, modifier = Modifier.testTag("call-manual-transcribe"))
             }
         }
         FooterNote(stringResource(R.string.calls_manual_note))
@@ -432,17 +439,36 @@ private fun CallManualDialBody(
         CallPrimaryButton(stringResource(R.string.calls_manual_dial), parsed != null && editable, {
             val target = parsed
             if (target == null) return@CallPrimaryButton
-            val call = Intent(Intent.ACTION_CALL, Uri.fromParts("tel", target, null))
             val canCall = context.checkSelfPermission(android.Manifest.permission.CALL_PHONE) ==
                 android.content.pm.PackageManager.PERMISSION_GRANTED
-            // 没拨号权限就退回系统拨号盘:号码已填好,用户按一下即可
-            if (!canCall) call.action = Intent.ACTION_DIAL
-            call.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            runCatching { context.startActivity(call) }
+            val uri = Uri.fromParts("tel", target, null)
+            val wantedSim = chosenSim ?: sims.firstOrNull { it.isDefault }?.id ?: defaultSimId
+            val telecom = context.getSystemService(android.telecom.TelecomManager::class.java)
+            // 有拨号权限就自己拨,并**沿用同一张卡**,避免 AI 用卡 1、人工用卡 2 的资费意外
+            val placed = if (canCall && telecom != null) {
+                runCatching {
+                    val handle = telecom.callCapablePhoneAccounts.firstOrNull { wantedSim == null || it.id == wantedSim }
+                    if (handle == null) false else {
+                        val extras = android.os.Bundle().apply {
+                            putParcelable(android.telecom.TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, handle)
+                        }
+                        telecom.placeCall(uri, extras)
+                        true
+                    }
+                }.getOrDefault(false)
+            } else false
+            if (!placed) {
+                // 退回系统:有权限用 ACTION_CALL,没有就用拨号盘(号码已填好,按一下即可)
+                val call = Intent(if (canCall) Intent.ACTION_CALL else Intent.ACTION_DIAL, uri)
+                call.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                runCatching { context.startActivity(call) }
+            }
         }, Modifier.fillMaxWidth().testTag("call-manual-dial"))
         if (parsed == null) FooterNote(stringResource(R.string.calls_manual_need_number))
     }
 }
+
+
 
 
 

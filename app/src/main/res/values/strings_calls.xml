@@ -247,7 +247,9 @@
     <string name="calls_manual_note">You do the talking; the AI stays out of it</string>
     <string name="calls_manual_dial">Dial</string>
     <string name="calls_manual_need_number">Enter a number or pick one from contacts</string>
+    <string name="calls_manual_transcribe_blocked">Not available yet: Android does not let third-party apps record call audio</string>
 </resources>
+
 
 
 
