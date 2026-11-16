@@ -1,4 +1,9 @@
 package com.wangzan101.mika.ui
+import com.wangzan101.mika.ui.theme.MikaTheme
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -160,8 +165,16 @@ internal fun TraceSettingsRows() {
     val scope = LocalLifecycleOwner.current.lifecycleScope
     var traceEnabled by remember { mutableStateOf(traces.enabled) }
     var traceLimitMiB by remember { mutableIntStateOf(traces.limitMiB) }
-    var editingLimit by rememberSaveable { mutableStateOf(false) }
+    var confirmOn by remember { mutableStateOf(false) }
+    fun applyLimit(mib: Int) {
+        scope.launch {
+            withContext(Dispatchers.IO) { traces.setLimitMiB(mib) }
+            traceLimitMiB = traces.limitMiB
+        }
+    }
     fun onTrace(enabled: Boolean) {
+        // 详情日志会存请求正文,打开前先说明清楚再确认
+        if (enabled && !traceEnabled) { confirmOn = true; return }
         traces.setEnabled(enabled)
         traceEnabled = traces.enabled
     }
@@ -169,29 +182,31 @@ internal fun TraceSettingsRows() {
     ListRow(null, stringResource(R.string.trace_switch), stringResource(R.string.trace_switch_detail), first = true, onClick = { onTrace(!traceEnabled) }) {
         MikaSwitch(traceEnabled, ::onTrace, Modifier.testTag("dev-trace"))
     }
-    ListRow(null, stringResource(R.string.trace_storage_limit), stringResource(R.string.trace_storage_hint), onClick = { editingLimit = true }) {
-        RowValue(stringResource(R.string.trace_storage_value, traceLimitMiB))
+    ListRow(null, stringResource(R.string.trace_storage_limit), stringResource(R.string.trace_storage_hint)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+            listOf(50, 100, 500).forEach { mib ->
+                val selected = traceLimitMiB == mib
+                TextButton(onClick = { applyLimit(mib) }, modifier = Modifier.testTag("dev-trace-limit-$mib"),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)) {
+                    Text("${mib} MiB", fontSize = 13.sp,
+                        color = if (selected) MikaTheme.colors.accent else MikaTheme.colors.ink3)
+                }
+            }
+        }
     }
-    if (editingLimit) {
-        var text by rememberSaveable { mutableStateOf(traceLimitMiB.toString()) }
-        val limit = text.toIntOrNull()?.takeIf { it > 0 }
+    if (confirmOn) {
         MikaDialog(
-            onDismissRequest = { editingLimit = false },
-            title = { Text(stringResource(R.string.trace_storage_limit)) },
-            text = {
-                OutlinedTextField(text, { text = it }, singleLine = true, label = { Text("MiB") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-            },
+            onDismissRequest = { confirmOn = false },
+            title = { Text(stringResource(R.string.trace_confirm_title)) },
+            text = { Text(stringResource(R.string.trace_confirm_body)) },
             confirmButton = {
-                TextButton(enabled = limit != null, onClick = {
-                    if (limit != null) scope.launch {
-                        withContext(Dispatchers.IO) { traces.setLimitMiB(limit) }
-                        traceLimitMiB = traces.limitMiB
-                    }
-                    editingLimit = false
-                }) { Text(stringResource(R.string.save)) }
+                TextButton(onClick = {
+                    confirmOn = false
+                    traces.setEnabled(true)
+                    traceEnabled = traces.enabled
+                }, modifier = Modifier.testTag("dev-trace-confirm")) { Text(stringResource(R.string.trace_confirm_ok)) }
             },
-            dismissButton = { TextButton(onClick = { editingLimit = false }) { Text(stringResource(R.string.cancel)) } },
+            dismissButton = { TextButton(onClick = { confirmOn = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }

@@ -269,7 +269,11 @@
     <string name="calls_health_ok">一切正常</string>
     <string name="calls_health_issue">有 %1$d 项需要处理</string>
     <string name="calls_health_fix">一键去处理这 %1$d 项</string>
+    <string name="trace_confirm_title">打开详细日志？</string>
+    <string name="trace_confirm_body">会保存请求正文，可能包含通话内容等隐私信息。日志只留在本机，可随时关闭并清空。</string>
+    <string name="trace_confirm_ok">知道了，打开</string>
 </resources>
+
 
 
 
