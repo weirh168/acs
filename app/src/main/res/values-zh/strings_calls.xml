@@ -28,7 +28,7 @@
     <string name="calls_key_saved">凭据已加密保存，服务权限仍需实际验证</string>
     <string name="calls_key_missing">尚未配置</string>
     <string name="calls_profile">通话质量</string>
-    <string name="calls_model_label">模型 %1$s · 通话音频通道</string>
+    <string name="calls_model_label">版本 %1$s</string>
     <string name="calls_incoming">来电</string>
     <string name="calls_auto_answer">自动接听来电</string>
     <string name="calls_all_incoming">接听所有来电</string>
@@ -250,6 +250,7 @@
     <string name="calls_manual_transcribe_blocked">暂不可用：系统不允许第三方录制通话声音，等接入系统通话录音后再开放</string>
     <string name="calls_pick_contact">从通讯录选</string>
 </resources>
+
 
 
 
