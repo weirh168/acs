@@ -1,5 +1,11 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.foundation.layout.fillMaxWidth
+
+import androidx.compose.material3.LinearProgressIndicator
+
+import androidx.compose.runtime.LaunchedEffect
+
 import androidx.compose.material3.MaterialTheme
 import com.wangzan101.mika.ui.theme.MikaTheme
 import androidx.compose.ui.unit.sp
@@ -211,6 +217,22 @@ internal fun TraceSettingsRows() {
             },
             dismissButton = { TextButton(onClick = { confirmOn = false }) { Text(stringResource(R.string.cancel)) } },
         )
+    }
+    // 占用条:已用 / 上限,用 usedBytes() 实算
+    var usedBytes by remember { mutableStateOf(-1L) }
+    LaunchedEffect(traceLimitMiB, traceEnabled) {
+        usedBytes = withContext(Dispatchers.IO) { traces.store.usedBytes() }
+    }
+    if (usedBytes >= 0) {
+        val cap = (traceLimitMiB.toLong() * 1024 * 1024).coerceAtLeast(1)
+        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+            LinearProgressIndicator(
+                progress = { (usedBytes.toFloat() / cap).coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth().testTag("dev-trace-usage"),
+            )
+            Text("已用 ${usedBytes / (1024 * 1024)} MiB · 上限 $traceLimitMiB MiB",
+                style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3)
+        }
     }
     // 清空:先关闭详细日志再删,避免边写边删
     ListRow(null, "清空全部日志", "只删日志，不影响通话记录", onClick = { confirmClear = true }) {
