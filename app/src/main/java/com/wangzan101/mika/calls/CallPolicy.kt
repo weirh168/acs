@@ -5,6 +5,23 @@ enum class CallPhase { IDLE, DIALING, RINGING, CONNECTING, ACTIVE, HOLDING, DISC
 enum class CallDirection { INCOMING, OUTGOING }
 enum class CallAutoAnswerStage { OFF, BLOCKED, PAUSED, STANDBY, COUNTDOWN, PREPARING, ANSWERING, BUSY }
 
+/** 自动接听的三张预设卡:一键把来源开关摆成常见组合。 */
+enum class CallPreset { SMART, ALL, LIST }
+
+/** 来电的「是什么号码」这一面的已知事实,由调用方查好再交给规则。 */
+data class CallerFacts(
+    /** 号码在通讯录里。 */
+    val inContacts: Boolean = false,
+    /** 没有主叫号码(隐藏号码)。 */
+    val hidden: Boolean = false,
+    /** 以 + 开头的国际号码。 */
+    val international: Boolean = false,
+    /** 10 分钟内这个号码已经打过一次。 */
+    val repeated: Boolean = false,
+    /** 被系统/服务商标成骚扰。目前没有数据来源,恒为 false。 */
+    val spam: Boolean = false,
+)
+
 data class CallSim(val id: String, val label: String, val isDefault: Boolean)
 
 data class CallConfig(
@@ -29,6 +46,17 @@ data class CallConfig(
      * 需要读通讯录的权限;没权限时当作「都不是通讯录里的」并如实提示。
      */
     val contactsHumanIncoming: Boolean = false,
+    /** 预设:智能接听(按来源开关判)/ 全部交给 AI / 只接名单。 */
+    val preset: CallPreset = CallPreset.SMART,
+    /** 这些来源的来电交给 AI:通讯录联系人、陌生号码、隐藏号码、骚扰标记、重复来电、国际号码。 */
+    val answerContacts: Boolean = false,
+    val answerStrangers: Boolean = true,
+    val answerHidden: Boolean = false,
+    val answerSpam: Boolean = false,
+    val answerRepeat: Boolean = true,
+    val answerInternational: Boolean = false,
+    /** 不要接的号码:命中就直接不接,优先于任何来源开关。 */
+    val blockedIncomingNumbers: Set<String> = emptySet(),
     val autoAnswerPausedUntilMs: Long? = null,
     val activeVoiceProfileId: String = CallVoiceProfile.DEFAULT_ID,
     internal val backgroundStandbyAuthorized: Boolean = false,
@@ -97,14 +125,44 @@ internal object CallPolicy {
         nowMs: Long = System.currentTimeMillis(),
         /** 这个号码在通讯录里(由调用方查好;没权限时传 false)。 */
         inContacts: Boolean = false,
+        /** 这条来电的其他已知事实(隐藏/国际/重复/骚扰);只传 inContacts 时按老行为判通讯录。 */
+        facts: CallerFacts? = null,
     ): Boolean {
         if (!config.enabled || !config.autoAnswer || !config.credentialsConfigured || !config.audioVerified) return false
         if (autoAnswerPauseRemainingMs(config, nowMs) > 0L || isBypassed(config, number)) return false
-        // 通讯录里的人留给本人接:用户要的是「熟人我自己接,陌生号码交给 AI」
-        if (config.contactsHumanIncoming && inContacts) return false
-        if (number == null) return config.allowAllIncoming // Explicit all includes unavailable caller ID.
-        val key = incomingMatchKey(number) ?: return false
-        return config.allowAllIncoming || config.allowedIncomingNumbers.any { incomingMatchKey(it) == key }
+        val f = facts ?: CallerFacts(inContacts = inContacts, hidden = number == null)
+        val key = number?.let(::incomingMatchKey)
+        // 认不出来的串(不是电话号)按不接处理:宁可交给系统,也不要拿怪号码去接
+        if (number != null && key == null) return false
+        // 黑名单最优先:名单里说不接,就不接
+        if (key != null && config.blockedIncomingNumbers.any { incomingMatchKey(it) == key }) return false
+        // 白名单其次:说了必须 AI 接,就接(哪怕来源开关关着)
+        if (key != null && config.allowedIncomingNumbers.any { incomingMatchKey(it) == key }) return true
+        return when (config.preset) {
+            CallPreset.ALL -> true
+            // 只接名单:白名单之外一律不接(隐藏号码没有号码可比,也按不接)
+            CallPreset.LIST -> false
+            CallPreset.SMART -> when {
+                f.hidden -> config.answerHidden
+                f.inContacts -> config.answerContacts
+                f.spam -> config.answerSpam
+                f.repeated -> config.answerRepeat
+                f.international -> config.answerInternational
+                else -> config.answerStrangers
+            }
+        }
+    }
+
+    /**
+     * 这套规则还会不会接任何来电:只接名单时看名单有没有号码,智能接听时看有没有开着的来源,
+     * 全部交给 AI 时永远有。设置页用它判断「待命还有没有意义」。
+     */
+    fun answersSomeCallers(config: CallConfig): Boolean = when (config.preset) {
+        CallPreset.ALL -> true
+        CallPreset.LIST -> config.allowedIncomingNumbers.isNotEmpty()
+        CallPreset.SMART -> config.allowedIncomingNumbers.isNotEmpty() || config.answerContacts ||
+            config.answerStrangers || config.answerHidden || config.answerSpam || config.answerRepeat ||
+            config.answerInternational
     }
 
     fun canStartAutoAnswer(
@@ -115,10 +173,11 @@ internal object CallPolicy {
         nowMs: Long = System.currentTimeMillis(),
         ringObservedWallMs: Long = nowMs - ringingForMs,
         inContacts: Boolean = false,
+        facts: CallerFacts? = null,
     ): Boolean =
         ringingForMs in 0L..AUTO_START_WINDOW_MS && initial.audioMode == current.audioMode &&
-            callerAllowed(initial, number, ringObservedWallMs, inContacts) &&
-            callerAllowed(current, number, nowMs, inContacts)
+            callerAllowed(initial, number, ringObservedWallMs, inContacts, facts) &&
+            callerAllowed(current, number, nowMs, inContacts, facts)
 
     fun chooseSim(sims: List<CallSim>, requested: String?): CallSim? = when {
         requested == "default" -> sims.singleOrNull { it.isDefault } ?: sims.singleOrNull()

@@ -175,7 +175,7 @@ class CallRuntime(private val app: MikaApp) {
                 if (active != null && (!config.enabled || !config.credentialsConfigured ||
                         config.audioMode != active.config.audioMode || config.activeVoiceProfileId != active.config.activeVoiceProfileId ||
                         (active.automatic && !active.answerSent &&
-                            !CallPolicy.callerAllowed(config, active.track?.number, inContacts = active.track?.fromContacts == true)))) {
+                            !CallPolicy.callerAllowed(config, active.track?.number, facts = active.track?.facts)))) {
                     cancelWork("AI 电话设置已变更，电话由系统处理")
                 }
                 if (config.audioMode != previousMode || config.enabled != previousEnabled) {
@@ -881,9 +881,10 @@ class CallRuntime(private val app: MikaApp) {
     internal fun onCallChanged(service: MikaInCallService, call: Call) {
         val t = tracked[call]?.takeIf { it.service === service } ?: return
         if (t.phase == CallPhase.RINGING && t.initialRingPolicy == null) {
-            t.initialRingPolicy = settings.state.value
-            // 通讯录内的来电由本人接:查一次留在这通电话上,后面几处规则判断都用它
-            t.fromContacts = settings.state.value.contactsHumanIncoming && ContactsLookup.inContacts(app, t.number)
+            val initial = settings.state.value
+            t.initialRingPolicy = initial
+            // 这通电话「是什么号码」查一次留在这通电话上,后面几处规则判断都用同一份事实
+            t.facts = callerFacts(initial, t.number)
             t.ringObservedAt = SystemClock.elapsedRealtime()
             t.ringObservedWallMs = System.currentTimeMillis()
             if (autoPauseWriting || !canAutomaticallyAnswerHere()) t.autoTried = true
@@ -913,7 +914,7 @@ class CallRuntime(private val app: MikaApp) {
                     (t.direction != CallDirection.INCOMING || !carrierCall(t.call)) ->
                     cancelWork("来电已变化，AI 未接听")
                 target === t && active.automatic && !active.answerSent &&
-                    !CallPolicy.callerAllowed(settings.state.value, t.number, inContacts = t.fromContacts) -> cancelWork("来电已不符合自动接听规则")
+                    !CallPolicy.callerAllowed(settings.state.value, t.number, facts = t.facts) -> cancelWork("来电已不符合自动接听规则")
                 target === t && t.phase != CallPhase.ACTIVE && active.bridging ->
                     cancelWork("通话已切换，AI 音频已停止")
             }
@@ -1497,8 +1498,8 @@ class CallRuntime(private val app: MikaApp) {
                 val config = settings.state.value
                 val initial = t.initialRingPolicy
                 if (autoPauseWriting || initial == null ||
-                    !CallPolicy.callerAllowed(initial, t.number, t.ringObservedWallMs, inContacts = t.fromContacts) ||
-                    !CallPolicy.callerAllowed(config, t.number, inContacts = t.fromContacts) || config.audioMode != w.config.audioMode ||
+                    !CallPolicy.callerAllowed(initial, t.number, t.ringObservedWallMs, facts = t.facts) ||
+                    !CallPolicy.callerAllowed(config, t.number, facts = t.facts) || config.audioMode != w.config.audioMode ||
                     SystemClock.elapsedRealtime() - t.ringObservedAt > CallPolicy.AUTO_ANSWER_WINDOW_MS) {
                     throw CallProblem("来电已超时或不再符合自动接听规则")
                 }
@@ -1518,7 +1519,7 @@ class CallRuntime(private val app: MikaApp) {
 
     private fun autoAnswerBlocker(config: CallConfig, notificationReady: Boolean? = null): String? = when {
         !config.audioVerified -> "请先确认当前模式的双向通话音频"
-        !config.allowAllIncoming && config.allowedIncomingNumbers.isEmpty() -> "自动接听名单为空"
+        !CallPolicy.answersSomeCallers(config) -> "还没有允许 AI 接的号码来源"
         else -> prerequisite(ignoreWork = true, notificationReady = notificationReady)
             ?: if (!audioReady) audioDetail ?: "设备通话音频尚未准备好" else null
     }
@@ -1610,7 +1611,7 @@ class CallRuntime(private val app: MikaApp) {
         val manualReady = deviceReady && serviceReady && prerequisite(ignoreWork = true, notificationReady = notificationReady) == null
         val dialReady = manualReady && sims.isNotEmpty()
         val autoAnswerReady = manualReady && config.audioVerified && CallStandbyService.notificationsAvailable(app) &&
-            (config.allowAllIncoming || config.allowedIncomingNumbers.isNotEmpty())
+            CallPolicy.answersSomeCallers(config)
         mutable.value = CallRuntimeState(
             prepared = enabled && armed && !configuring,
             phase = current?.phase ?: when {
@@ -1758,8 +1759,8 @@ class CallRuntime(private val app: MikaApp) {
         var ringObservedAt: Long = 0L
         var ringObservedWallMs: Long = 0L
         var autoTried = false
-        /** 这个号码在通讯录里(只在「通讯录内本人接」开着时查过;查不到算不在)。 */
-        var fromContacts = false
+        /** 这通电话的主叫事实(通讯录/隐藏/国际/重复/骚扰),在第一次响铃时查一次。 */
+        var facts = CallerFacts()
         var suppressed = false
     }
     private enum class MediaStage { PREFLIGHT, VOLC_CONNECT, TELECOM_CONNECT, MUTE_ACQUIRE, SHELL_OPEN, PCM_BRIDGE, RELEASE }
@@ -1807,8 +1808,33 @@ class CallRuntime(private val app: MikaApp) {
 
     private class CallProblem(message: String) : Exception(message)
 
+    /**
+     * 这通来电「是什么号码」:[hidden] 看有没有主叫号码,[international] 看是不是 + 开头,
+     * [repeated] 看本地通话记录里 10 分钟内这个号码是否已经打过,[inContacts] 查通讯录(只有智能接听需要)。
+     * 查到的结果会在整通电话里复用,避免倒计时阶段和接听前判断不一致。
+     */
+    private fun callerFacts(config: CallConfig, number: String?): CallerFacts {
+        val hidden = number == null
+        val key = number?.let(CallPolicy::incomingMatchKey)
+        val now = System.currentTimeMillis()
+        val repeated = key != null && records.state.value.any { record ->
+            record.direction == CallDirection.INCOMING && record.number != null &&
+                CallPolicy.incomingMatchKey(record.number) == key &&
+                now - record.endedAtMs in 0..REPEAT_WINDOW_MS
+        }
+        val inContacts = !hidden && config.preset == CallPreset.SMART && ContactsLookup.inContacts(app, number)
+        return CallerFacts(
+            inContacts = inContacts,
+            hidden = hidden,
+            international = number?.trim()?.startsWith("+") == true,
+            repeated = repeated,
+        )
+    }
+
     private companion object {
         const val MAX_MEDIA_DIAGNOSTICS = 4
+        /** 10 分钟内同一个号码又打来,算「重复来电」。 */
+        const val REPEAT_WINDOW_MS = 10 * 60_000L
         const val STANDBY_START_MS = 5_000L
         const val MUTE_ACK_MS = 2_000L
         const val CALL_CHANGED = "指定通话已变化或结束，请重新读取电话状态"
@@ -1843,4 +1869,6 @@ internal class CallStopReason {
         if (value == expected) value = reason
     }
 }
+
+
 

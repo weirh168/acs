@@ -12,40 +12,54 @@ class CallPolicyTest {
         assertEquals("+15551234567", CallPolicy.outgoingNumber(" +1 (555) 123-4567 "))
     }
 
-    @Test fun allowlistFailsClosedAndOnlyExplicitAllAllowsHiddenCallers() {
-        val config = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true, audioVerified = true)
-        assertFalse(CallPolicy.callerAllowed(config, "15551234567"))
-        assertFalse(CallPolicy.callerAllowed(config, null))
-        val restricted = config.copy(allowedIncomingNumbers = setOf("+15551234567"))
-        assertTrue(CallPolicy.callerAllowed(restricted, "+1 (555) 123-4567"))
-        assertFalse(CallPolicy.callerAllowed(restricted, "5551234567"))
-        val all = config.copy(allowAllIncoming = true)
+    @Test fun listOnlyFailsClosedAndAllModeAnswersHiddenCallers() {
+        val listOnly = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true,
+            audioVerified = true, preset = CallPreset.LIST)
+        // 只接名单:名单外一律不接,隐藏号码也没有号码可比,不接
+        assertFalse(CallPolicy.callerAllowed(listOnly, "15551234567"))
+        assertFalse(CallPolicy.callerAllowed(listOnly, null))
+        val listed = listOnly.copy(allowedIncomingNumbers = setOf("+15551234567"))
+        assertTrue(CallPolicy.callerAllowed(listed, "+1 (555) 123-4567"))
+        assertFalse(CallPolicy.callerAllowed(listed, "5551234567"))
+        // 全部交给 AI:连隐藏号码也接
+        val all = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true,
+            audioVerified = true, preset = CallPreset.ALL)
         assertTrue(CallPolicy.callerAllowed(all, null))
+        // 四道门缺一不可
         assertFalse(CallPolicy.callerAllowed(all.copy(autoAnswer = false), null))
         assertFalse(CallPolicy.callerAllowed(all.copy(credentialsConfigured = false), null))
         assertFalse(CallPolicy.callerAllowed(all.copy(audioVerified = false), null))
+        assertFalse(CallPolicy.callerAllowed(all.copy(enabled = false), null))
+        // 认不出来的串不接
+        assertFalse(CallPolicy.callerAllowed(all, "*#06#"))
     }
 
-    @Test fun contactsAreLeftToTheOwnerWhenEnabled() {
-        val all = CallConfig(
-            enabled = true, autoAnswer = true, credentialsConfigured = true, audioVerified = true,
-            allowAllIncoming = true, contactsHumanIncoming = true,
-        )
-        // 通讯录里的号码:留给本人,AI 不接
-        assertFalse(CallPolicy.callerAllowed(all, "15551234567", inContacts = true))
-        // 通讯录外的号码:照常自动接
-        assertTrue(CallPolicy.callerAllowed(all, "15551234567", inContacts = false))
-        // 关掉这项后,通讯录内的人也照旧按名单规则走
-        assertTrue(CallPolicy.callerAllowed(all.copy(contactsHumanIncoming = false), "15551234567", inContacts = true))
-        // 没开「接听所有」时,通讯录外也得在名单里才接
-        val listed = all.copy(allowAllIncoming = false, allowedIncomingNumbers = setOf("15551234567"))
-        assertTrue(CallPolicy.callerAllowed(listed, "15551234567", inContacts = false))
-        // 名单里的号码如果同时在通讯录里,也按本人接
-        assertFalse(CallPolicy.callerAllowed(listed, "15551234567", inContacts = true))
-        // 自动开始的判断同样尊重这项
-        assertFalse(CallPolicy.canStartAutoAnswer(all, all, "15551234567", 1_000, inContacts = true))
-        assertTrue(CallPolicy.canStartAutoAnswer(all, all, "15551234567", 1_000, inContacts = false))
+    @Test fun smartPresetFollowsTheSourceSwitches() {
+        val smart = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true,
+            audioVerified = true, preset = CallPreset.SMART)
+        // 默认:通讯录不接、陌生号码接、隐藏/国际不接、重复来电接
+        assertFalse(CallPolicy.callerAllowed(smart, "15551234567", inContacts = true))
+        assertTrue(CallPolicy.callerAllowed(smart, "15551234567", inContacts = false))
+        assertFalse(CallPolicy.callerAllowed(smart, null))
+        assertFalse(CallPolicy.callerAllowed(smart, "+15551234567", facts = CallerFacts(international = true)))
+        assertTrue(CallPolicy.callerAllowed(smart, "15551234567", facts = CallerFacts(repeated = true)))
+        // 把通讯录开关打开后,通讯录里的人改由 AI 接
+        assertTrue(CallPolicy.callerAllowed(smart.copy(answerContacts = true), "15551234567", inContacts = true))
+        // 隐藏 / 国际 各自的开关独立生效
+        assertTrue(CallPolicy.callerAllowed(smart.copy(answerHidden = true), null))
+        assertTrue(CallPolicy.callerAllowed(smart.copy(answerInternational = true), "+15551234567",
+            facts = CallerFacts(international = true)))
+        // 白名单优先:名单里说必须 AI 接,通讯录开关关着也接
+        val listed = smart.copy(allowedIncomingNumbers = setOf("15551234567"))
+        assertTrue(CallPolicy.callerAllowed(listed, "15551234567", inContacts = true))
+        // 黑名单最优先:说不接就不接,哪怕在来源开关里是接的
+        val blocked = smart.copy(blockedIncomingNumbers = setOf("15551234567"))
+        assertFalse(CallPolicy.callerAllowed(blocked, "15551234567", inContacts = false))
+        // 自动开始的判断同样尊重这整套
+        assertFalse(CallPolicy.canStartAutoAnswer(smart, smart, "15551234567", 1_000, inContacts = true))
+        assertTrue(CallPolicy.canStartAutoAnswer(smart, smart, "15551234567", 1_000, inContacts = false))
     }
+
     @Test fun requiresExplicitSelectionOnMultiSimDevices() {
         val sim1 = CallSim("1", "SIM 1", true)
         val sim2 = CallSim("2", "SIM 2", false)
@@ -61,7 +75,7 @@ class CallPolicyTest {
         val local = "13800138000"
         val enabled = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true, audioVerified = true)
         for (allowed in listOf(local, "+8613800138000", "008613800138000")) {
-            val config = enabled.copy(allowedIncomingNumbers = setOf(allowed))
+            val config = enabled.copy(preset = CallPreset.LIST, allowedIncomingNumbers = setOf(allowed))
             assertTrue(CallPolicy.callerAllowed(config, local))
             assertTrue(CallPolicy.callerAllowed(config, "+86 138 0013 8000"))
             assertTrue(CallPolicy.callerAllowed(config, "0086-138-0013-8000"))
@@ -70,7 +84,7 @@ class CallPolicyTest {
             assertFalse(CallPolicy.callerAllowed(config, "+113800138000"))
             assertFalse(CallPolicy.callerAllowed(config, "13800138001"))
         }
-        val all = enabled.copy(allowAllIncoming = true)
+        val all = enabled.copy(preset = CallPreset.ALL)
         assertFalse(CallPolicy.callerAllowed(all, "*#06#"))
         assertFalse(CallPolicy.callerAllowed(all, "13800138000;22"))
     }
@@ -78,7 +92,7 @@ class CallPolicyTest {
     @Test fun delayedStartupCannotAuthorizeAnExistingCallOrBroadenItsPolicy() {
         val number = "13800138000"
         val ready = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true,
-            audioVerified = true, allowedIncomingNumbers = setOf("+8613800138000"))
+            audioVerified = true, preset = CallPreset.LIST, allowedIncomingNumbers = setOf("+8613800138000"))
         assertTrue(CallPolicy.canStartAutoAnswer(ready, ready, number, CallPolicy.AUTO_START_WINDOW_MS))
         assertFalse(CallPolicy.canStartAutoAnswer(ready, ready, number, CallPolicy.AUTO_START_WINDOW_MS + 1))
         assertFalse(CallPolicy.canStartAutoAnswer(ready.copy(autoAnswer = false), ready, number, 100L))
@@ -101,13 +115,13 @@ class CallPolicyTest {
         for (number in listOf(null, "800138000", "81234567", "+113800138000", "13800138001")) {
             assertFalse(CallPolicy.isBypassed(ready, number))
         }
-        assertTrue(CallPolicy.callerAllowed(ready.copy(allowAllIncoming = true), "13800138001"))
+        assertTrue(CallPolicy.callerAllowed(ready.copy(preset = CallPreset.ALL), "13800138001"))
     }
 
     @Test fun pauseExpiresForNewCallsWithoutAnsweringCallsThatArrivedDuringIt() {
         val deadline = 100_000L
         val paused = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true, audioVerified = true,
-            allowAllIncoming = true, autoAnswerPausedUntilMs = deadline)
+            preset = CallPreset.ALL, autoAnswerPausedUntilMs = deadline)
         val resumed = paused.copy(autoAnswerPausedUntilMs = null)
         assertEquals(1L, CallPolicy.autoAnswerPauseRemainingMs(paused, deadline - 1L))
         assertEquals(0L, CallPolicy.autoAnswerPauseRemainingMs(paused, deadline))
@@ -184,4 +198,6 @@ class CallPolicyTest {
         assertNull(CallPolicy.previousAppOpMode("Uid mode: MANAGE_ONGOING_CALLS: deny\nMANAGE_ONGOING_CALLS: allow"))
     }
 }
+
+
 

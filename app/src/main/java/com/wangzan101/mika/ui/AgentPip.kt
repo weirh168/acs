@@ -463,6 +463,13 @@ private fun PipWindow(
                 }
                 // 左上角:返回(直接操作时)、声音开关(恢复/再静,方向跟着任务里的真实音频记录)、关掉小画面;不伪造与真实音频无关的开关状态
                 Row(Modifier.align(Alignment.TopStart).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // 明确的入口:点一下就交给人工(进去后全是你自己操作),不用去猜点小窗是展开还是接管
+                    PipButton(
+                        icon = MikaIcons.External,
+                        label = stringResource(R.string.pip_enter_app),
+                        onClick = onHumanTouch,
+                        tag = "pip-enter-app",
+                    )
                     if (operateInput != null) {
                         PipButton(
                             icon = MikaIcons.Back,

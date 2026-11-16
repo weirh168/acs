@@ -29,6 +29,10 @@ class CallSettings(
         val numbers = config.allowedIncomingNumbers.map {
             requireNotNull(CallPolicy.incomingNumber(it)) { "自动接听名单中包含无效号码" }
         }.distinctBy(CallPolicy::incomingMatchKey).toSet()
+        require(config.blockedIncomingNumbers.size <= CallPolicy.MAX_ALLOWED_NUMBERS) { "最多可设置 100 个不接的号码" }
+        val blocked = config.blockedIncomingNumbers.map {
+            requireNotNull(CallPolicy.incomingNumber(it)) { "不接名单中包含无效号码" }
+        }.distinctBy(CallPolicy::incomingMatchKey).toSet()
         require(config.bypassIncomingNumbers.size <= CallPolicy.MAX_ALLOWED_NUMBERS) { "最多可设置 100 个本人接听号码" }
         val bypass = config.bypassIncomingNumbers.map {
             requireNotNull(CallPolicy.incomingNumber(it)) { "本人接听名单中包含无效号码" }
@@ -44,6 +48,7 @@ class CallSettings(
         val next = config.copy(
             allowedIncomingNumbers = numbers,
             bypassIncomingNumbers = bypass,
+            blockedIncomingNumbers = blocked,
             autoAnswerPausedUntilMs = config.autoAnswerPausedUntilMs?.takeIf { it > System.currentTimeMillis() },
             audioVerified = audioVerified,
             autoAnswer = config.enabled && audioVerified && config.autoAnswer,
@@ -69,6 +74,14 @@ class CallSettings(
             .putStringSet("allowlist", numbers)
             .putStringSet("bypass_incoming", bypass)
             .putBoolean("contacts_human", next.contactsHumanIncoming)
+            .putString("preset", next.preset.name)
+            .putBoolean("answer_contacts", next.answerContacts)
+            .putBoolean("answer_strangers", next.answerStrangers)
+            .putBoolean("answer_hidden", next.answerHidden)
+            .putBoolean("answer_spam", next.answerSpam)
+            .putBoolean("answer_repeat", next.answerRepeat)
+            .putBoolean("answer_international", next.answerInternational)
+            .putStringSet("blocklist", blocked)
             .putLong("auto_answer_paused_until_ms", next.autoAnswerPausedUntilMs ?: 0L)
             .putInt("max_seconds", next.maxCallSeconds)
             .putString("audio_mode", next.audioMode.name)
@@ -157,6 +170,17 @@ class CallSettings(
             defaultOutgoingSimId = prefs.getString("default_outgoing_sim_id", null),
             allowAllIncoming = prefs.getBoolean("allow_all", false),
             contactsHumanIncoming = prefs.getBoolean("contacts_human", false),
+            preset = prefs.getString("preset", null)?.let { n -> CallPreset.entries.firstOrNull { it.name == n } }
+                ?: if (prefs.getBoolean("allow_all", false)) CallPreset.ALL else CallPreset.SMART,
+            answerContacts = prefs.getBoolean("answer_contacts", false),
+            answerStrangers = prefs.getBoolean("answer_strangers", true),
+            answerHidden = prefs.getBoolean("answer_hidden", false),
+            answerSpam = prefs.getBoolean("answer_spam", false),
+            answerRepeat = prefs.getBoolean("answer_repeat", true),
+            answerInternational = prefs.getBoolean("answer_international", false),
+            blockedIncomingNumbers = prefs.getStringSet("blocklist", emptySet()).orEmpty()
+                .mapNotNull(CallPolicy::incomingNumber).distinctBy(CallPolicy::incomingMatchKey)
+                .take(CallPolicy.MAX_ALLOWED_NUMBERS).toSet(),
             allowedIncomingNumbers = prefs.getStringSet("allowlist", emptySet()).orEmpty()
                 .mapNotNull(CallPolicy::incomingNumber).distinctBy(CallPolicy::incomingMatchKey)
                 .take(CallPolicy.MAX_ALLOWED_NUMBERS).toSet(),
