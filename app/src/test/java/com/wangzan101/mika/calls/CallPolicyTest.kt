@@ -88,6 +88,65 @@ class CallPolicyTest {
         // 没设时段就是全天
         assertTrue(CallPolicy.inActiveWindow(all, noon))
     }
+    @Test fun obviouslyIncompleteNumbersAreRejected() {
+        // 兜底:名单里半截号码不许进来;完整号码不受影响
+        assertTrue(CallPolicy.isIncompleteNumber("+86181"))
+        assertTrue(CallPolicy.isIncompleteNumber("1234"))
+        assertTrue(CallPolicy.isIncompleteNumber("+86 181"))
+        assertFalse(CallPolicy.isIncompleteNumber("13800138000"))
+        assertFalse(CallPolicy.isIncompleteNumber("+8613800138000"))
+        assertFalse(CallPolicy.isIncompleteNumber("057188886666"))
+    }
+    @Test fun institutionNumbersGoToTheOwnerByDefault() {
+        val all = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true,
+            audioVerified = true, preset = CallPreset.ALL)
+        // 400/955xx/100xx 这类机构号:默认不交给 AI
+        for (number in listOf("4008001234", "95588", "10086", "12345", "+864008001234")) {
+            assertTrue(CallPolicy.isInstitutionNumber(number))
+            assertFalse(CallPolicy.callerAllowed(all, number))
+        }
+        // 普通手机号不受影响
+        assertFalse(CallPolicy.isInstitutionNumber("13800138000"))
+        assertTrue(CallPolicy.callerAllowed(all, "13800138000"))
+        // 关掉这个策略后,机构号也交给 AI
+        assertTrue(CallPolicy.callerAllowed(all.copy(institutionTransfer = false), "4008001234"))
+        // 白名单显式要求 AI 接的,优先于机构号策略
+        val listed = all.copy(allowedIncomingNumbers = setOf("4008001234"))
+        assertTrue(CallPolicy.callerAllowed(listed, "4008001234"))
+    }
+    @Test fun quickFixTurnsOnTheMatchingSource() {
+        val base = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true,
+            audioVerified = true, preset = CallPreset.SMART, answerContacts = false, answerStrangers = false)
+        // 陌生号码:只打开陌生号码来源
+        val stranger = CallPolicy.quickFixAnswerCategory(base, "15551234567", inContacts = false)
+        assertTrue(stranger.answerStrangers)
+        assertFalse(stranger.answerContacts)
+        // 通讯录里的人:打开通讯录来源
+        val contact = CallPolicy.quickFixAnswerCategory(base, "15551234567", inContacts = true)
+        assertTrue(contact.answerContacts)
+        assertFalse(contact.answerStrangers)
+        // 国际号码:+ 开头走国际开关
+        assertTrue(CallPolicy.quickFixAnswerCategory(base, "+15551234567", inContacts = false).answerInternational)
+        // 隐藏号码:走隐藏开关
+        assertTrue(CallPolicy.quickFixAnswerCategory(base, null, inContacts = false).answerHidden)
+        // 只接名单模式:顺手切回智能接听,否则开关不生效
+        assertEquals(CallPreset.SMART,
+            CallPolicy.quickFixAnswerCategory(base.copy(preset = CallPreset.LIST), "15551234567", false).preset)
+        // 机构号:顺手关掉「机构号转本人」,否则打开了也接不起来
+        assertFalse(CallPolicy.quickFixAnswerCategory(base, "4008001234", false).institutionTransfer)
+    }
+    @Test fun selectedSimsLimitAutoAnswer() {
+        val all = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true,
+            audioVerified = true, preset = CallPreset.ALL)
+        // 没选 SIM:所有卡都接
+        assertTrue(CallPolicy.callerAllowed(all, "13800138000", simKey = "sim-1"))
+        // 只选了 sim-2:sim-1 上的来电不接,sim-2 照常
+        val only2 = all.copy(autoAnswerSimIds = setOf("sim-2"))
+        assertFalse(CallPolicy.callerAllowed(only2, "13800138000", simKey = "sim-1"))
+        assertTrue(CallPolicy.callerAllowed(only2, "13800138000", simKey = "sim-2"))
+        // 不知道走哪张卡时不拦(不能因为查不到就误杀)
+        assertTrue(CallPolicy.callerAllowed(only2, "13800138000", simKey = null))
+    }
     @Test fun requiresExplicitSelectionOnMultiSimDevices() {
         val sim1 = CallSim("1", "SIM 1", true)
         val sim2 = CallSim("2", "SIM 2", false)
@@ -226,6 +285,12 @@ class CallPolicyTest {
         assertNull(CallPolicy.previousAppOpMode("Uid mode: MANAGE_ONGOING_CALLS: deny\nMANAGE_ONGOING_CALLS: allow"))
     }
 }
+
+
+
+
+
+
 
 
 
