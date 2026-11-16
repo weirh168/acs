@@ -347,8 +347,10 @@ class TaskRun(
      * 等用户点「继续」再接着做(和小窗里直接点/滑配合,人机不会抢着操作)。
      */
     /**
-     * 接管时把这个任务在虚拟屏上的 App 挪到用户主屏,让用户直接在大屏上操作。
-     * 不依赖 takeover 句柄(它要求任务正处在运行中):有句柄就先走 handOver,没有就直接搬任务。
+     * 接管时把那个 App 交到用户自己屏幕上:在**主屏新开一份**同一个 App(新窗口一定是活的、能直接操作),
+     * 而不是把虚拟屏上的任务挪过去——挪过去的窗口画面还留在虚拟屏上,用户看到黑屏、点了没反应。
+     * 有接管句柄且正处于等待接管时,先走 [Takeover.handOver];否则用 shell 在主屏启动;
+     * 连包名都拿不到才退回挪任务。任务的虚拟屏那份留着,点「继续」时照常接着跑。
      */
     fun handAppToUser() {
         val t = takeover
@@ -357,13 +359,30 @@ class TaskRun(
             if (t != null && t.handOver(null)) return@launch
             if (d < 0) return@launch
             runCatching {
-                if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser display=$d")
                 val sh = phoneServices.hub.shell.value ?: return@runCatching
                 val task = sh.topTaskId(d)
-                val moved = if (task >= 0) sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY) else false
-                if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser task=$task move=$moved")
-                // 跨屏挪完窗口要重画,否则头一两秒是黑的:在主屏角落补一次无关紧要的触摸,催它重画
-                if (moved) {
+                val pkg = if (task >= 0) sh.packageOfTask(task) else null
+                if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser display=$d task=$task pkg=$pkg")
+                // 虚拟屏上的窗口挪到主屏后,画面还留在虚拟屏上:用户看到黑的、点了没反应。
+                // 所以不挪任务,改成在主屏「新开一份」同一个 App —— 新开的窗口一定是活的,能直接操作;
+                // 虚拟屏那份留着,任务点「继续」时照常接着跑。
+                if (pkg != null) {
+                    // startApp 只肯在自己的虚拟屏上启动;在主屏要用 `am start --display 0`。
+                    // 直接把该包的入口页拿到主屏:Mika 触发的任务本身就常被系统复用,这里同样会把
+                    // 已经在虚拟屏上的那份交给主屏、并正常重画(实测点得动,不黑屏)。
+                    val start = runCatching {
+                        sh.runCommand(
+                            "am start --display 0 -n \$(cmd package resolve-activity --brief $pkg | tail -n 1)",
+                        )
+                    }.getOrNull()
+                    val code = start?.getInt("exitCode", -1) ?: -1
+                    if (com.wangzan101.mika.BuildConfig.DEBUG) {
+                        android.util.Log.d("ACS-Pip", "launchOnMain pkg=$pkg exit=$code out=${start?.getString("output")?.take(80)}")
+                    }
+                    if (code == 0) return@runCatching
+                }
+                // 拿不到包名或起不来:退回挪任务,至少把那个界面摆到用户眼前
+                if (task >= 0 && sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY)) {
                     delay(350)
                     runCatching { sh.injectTap(android.view.Display.DEFAULT_DISPLAY, 1, 1) }
                 }

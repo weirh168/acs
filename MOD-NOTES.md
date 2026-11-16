@@ -337,3 +337,22 @@ topResumedActivity = com.android.settings/.Settings$WifiSettingsActivity  (主�
 
 已构建安装。这一条没再实机确认:模型连着两次只回文字没真的打开 App(没虚拟屏就没小窗可点),
 上一轮的「搬到主屏」(move=true、前台变成 Settings)仍然是已验证的。
+
+## 接管后不再卡死:主屏用 `am start --display 0` 打开（已验证）（2026-11-16 09:44）
+
+之前用 `moveTask` 把虚拟屏上的任务挪到主屏:窗口挪过去了,画面还留在虚拟屏上 —— 用户看到黑屏、点了没反应(「卡死」)。
+`Takeover.handOver` 帮不上:它要求任务正处在「等待接管」阶段,我们这条是用户主动点小窗。
+
+改法:点小窗 → `shell.runCommand("am start --display 0 -n <入口页>")`,把那个包的入口页在主屏打开;
+拿不到包名或起不来才退回 `moveTask` + 补触摸。
+
+实测(`ACS-Pip` 日志 + 截图):
+
+```
+handAppToUser display=128 task=95355 pkg=com.android.settings
+launchOnMain pkg=com.android.settings exit=0 out=Starting: Intent { cmp=com.android.settings/.HWSettings }
+topResumedActivity = com.android.settings/.HWSettings  (主屏 fullscreen)
+```
+
+屏幕上是完整的「设置」页(带 ACS 胶囊),**点「WLAN」正常跳进 WLAN 页**——
+不是黑屏也不是死窗口。任务侧同时是「已暂停 / 你在操作,ACS 已暂停」,点「继续」交回。
