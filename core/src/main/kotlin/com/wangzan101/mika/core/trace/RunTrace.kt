@@ -30,6 +30,17 @@ class TraceStore(private val directory: File, private val byteLimit: Int = 8 * 1
 
     fun setStorageLimit(bytes: Long) = disk.setLimit(bytes)
 
+    /** 清空全部日志:逐个删掉运行目录,保留根目录本身。返回删掉的运行数。 */
+    @Synchronized fun clear(): Int {
+        val runs = directory.listFiles()?.filter { it.isDirectory } ?: emptyList()
+        runs.forEach { runCatching { it.deleteRecursively() } }
+        return runs.size
+    }
+
+    /** 当前占用的字节数(所有运行目录合计)。 */
+    fun usedBytes(): Long = directory.listFiles()?.filter { it.isDirectory }
+        ?.sumOf { dir -> dir.walkTopDown().filter { it.isFile }.sumOf { it.length() } } ?: 0L
+
     @Synchronized fun start(id: String): RunTrace? {
         if (!TraceDisk.RUN_ID.matches(id) || id in active) return null
         val dir = File(directory, id)
