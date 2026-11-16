@@ -249,7 +249,12 @@
     <string name="calls_manual_need_number">Enter a number or pick one from contacts</string>
     <string name="calls_manual_transcribe_blocked">Not available yet: Android does not let third-party apps record call audio</string>
     <string name="calls_pick_contact">From contacts</string>
+    <string name="calls_voice_try">Listen</string>
+    <string name="calls_voice_language">Language</string>
+    <string name="calls_voice_language_value">Mandarin</string>
+    <string name="calls_voice_quality_value">Standard · natural</string>
 </resources>
+
 
 
 

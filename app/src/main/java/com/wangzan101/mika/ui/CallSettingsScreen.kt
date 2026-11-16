@@ -729,15 +729,21 @@ private fun CallPreferencesPage(
 
     GroupLabel(stringResource(R.string.calls_settings_voice_group))
     GroupCard {
+        // AI 声音:右端直接给当前值,点一下换声音 / 试听
         ListRow(MikaIcons.Mic, stringResource(R.string.calls_voice_service),
             "${profile.name} · " + stringResource(when {
                 !profile.credentialsConfigured -> R.string.calls_key_missing
                 !profile.connectionTested -> R.string.calls_voice_status_untested
                 else -> R.string.calls_voice_status_tested
-            }), first = true, onClick = onVoiceProfiles.takeIf { canConfigure }) { RowChevron() }
+            }), first = true, onClick = onVoiceProfiles.takeIf { canConfigure }) {
+            Text(stringResource(R.string.calls_voice_try), fontSize = 13.sp, color = MikaTheme.colors.accent)
+        }
+        ListRow(MikaIcons.Message, stringResource(R.string.calls_voice_language),
+            stringResource(R.string.calls_voice_language_value))
         ListRow(MikaIcons.Message, stringResource(R.string.calls_profile),
-            stringResource(R.string.calls_model_label, profile.model), onClick = onProfile.takeIf { canConfigure }) { RowChevron() }
+            stringResource(R.string.calls_voice_quality_value), onClick = onProfile.takeIf { canConfigure }) { RowChevron() }
     }
+
 
     GroupLabel(stringResource(R.string.calls_settings_device_group))
     GroupCard {
