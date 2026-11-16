@@ -106,6 +106,8 @@ internal fun CallTaskScreen(
     onConfirmLocked: (CallTaskSubmission) -> Unit,
     voiceProfile: com.wangzan101.mika.calls.CallVoiceProfile,
     onVoiceProfiles: () -> Unit,
+    /** 手动拨号前打个标记,好让通话记录标成「你自己拨的」。 */
+    onBeforeManualDial: (String) -> Unit = {},
 ) {
     var questionsOpen by rememberSaveable { mutableStateOf(false) }
     var contextOpen by rememberSaveable { mutableStateOf(false) }
@@ -136,7 +138,7 @@ internal fun CallTaskScreen(
             number = draft.number, onNumber = { draft.number = it }, editable = editable,
             parsed = number, simLabel = sim?.label ?: preferred?.label,
             sims = state.simOptions, chosenSim = draft.simOverride,
-            defaultSimId = config.defaultOutgoingSimId,
+            defaultSimId = config.defaultOutgoingSimId, onBeforeDial = onBeforeManualDial,
             onSim = { draft.simOverride = it },
             transcribe = transcribeAlso, onTranscribe = { transcribeAlso = it },
         )
@@ -397,10 +399,13 @@ private fun RowScope.ModeHalf(text: String, selected: Boolean, tag: String, onCl
 private fun CallManualDialBody(
     number: String, onNumber: (String) -> Unit, editable: Boolean, parsed: String?,
     simLabel: String?, sims: List<CallSim>, chosenSim: String?, defaultSimId: String?,
-    onSim: (String?) -> Unit,
+    onSim: (String?) -> Unit, onBeforeDial: (String) -> Unit = {},
     transcribe: Boolean, onTranscribe: (Boolean) -> Unit,
 ) {
     val context = LocalContext.current
+    var pickingSim by remember { mutableStateOf(false) }
+    // 人工拨号允许短号(10086/95588 这类客服号):只要求 3~20 位数字
+    val manualDigits = remember(number) { number.filter { it.isDigit() }.takeIf { it.length in 3..20 } }
     Column(Modifier.fillMaxWidth().testTag("call-manual-body"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         OutlinedTextField(
             number, onNumber, enabled = editable,
@@ -409,15 +414,26 @@ private fun CallManualDialBody(
             singleLine = true,
             textStyle = TextStyle(textDirection = TextDirection.Ltr),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            isError = number.isNotBlank() && parsed == null,
+            isError = number.isNotBlank() && manualDigits == null,
         )
         GroupCard {
-            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            // 拨出卡:和 AI 代拨共用同一份选择,人工拨号也走这张卡
+            Row(
+                Modifier.fillMaxWidth().clickable { pickingSim = true }.heightIn(min = 52.dp)
+                    .padding(horizontal = 16.dp).testTag("call-manual-sim"),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(stringResource(R.string.calls_outgoing_sim), fontSize = 15.sp, color = MikaTheme.colors.ink)
                 Spacer(Modifier.weight(1f))
                 Text(simLabel ?: stringResource(R.string.calls_task_pick_sim), fontSize = 14.sp,
                     color = MikaTheme.colors.ink3)
+                Spacer(Modifier.size(6.dp))
+                Icon(MikaIcons.Chevron, null, tint = MikaTheme.colors.ink3, modifier = Modifier.size(18.dp))
             }
+        }
+        if (pickingSim) {
+            CallTaskSimDialog(options = sims, preferred = defaultSimId, selectedOverride = chosenSim,
+                onChoose = { pickingSim = false; onSim(it) }, onDismiss = { pickingSim = false })
         }
         GroupCard {
             Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -436,9 +452,10 @@ private fun CallManualDialBody(
         }
         FooterNote(stringResource(R.string.calls_manual_note))
         Spacer(Modifier.size(8.dp))
-        CallPrimaryButton(stringResource(R.string.calls_manual_dial), parsed != null && editable, {
-            val target = parsed
+        CallPrimaryButton(stringResource(R.string.calls_manual_dial), manualDigits != null && editable, {
+            val target = manualDigits
             if (target == null) return@CallPrimaryButton
+            onBeforeDial(target)
             val canCall = context.checkSelfPermission(android.Manifest.permission.CALL_PHONE) ==
                 android.content.pm.PackageManager.PERMISSION_GRANTED
             val uri = Uri.fromParts("tel", target, null)
@@ -464,9 +481,13 @@ private fun CallManualDialBody(
                 runCatching { context.startActivity(call) }
             }
         }, Modifier.fillMaxWidth().testTag("call-manual-dial"))
-        if (parsed == null) FooterNote(stringResource(R.string.calls_manual_need_number))
+        if (manualDigits == null) FooterNote(stringResource(R.string.calls_manual_need_number))
     }
 }
+
+
+
+
 
 
 

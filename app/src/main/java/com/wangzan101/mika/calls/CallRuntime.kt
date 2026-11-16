@@ -941,6 +941,37 @@ class CallRuntime(private val app: MikaApp) {
         startWork(starting)
     }
 
+    /** 手动拨号前登记一次:接下来的拨出通话要记成「你自己拨的」。 */
+    private var selfDial: Pair<String, Long>? = null
+
+    fun markSelfDial(number: String) {
+        val key = CallPolicy.incomingMatchKey(number) ?: return
+        selfDial = key to System.currentTimeMillis()
+        // 人工拨号由系统拨号盘执行,我们不一定看得到通话结束,
+        // 所以在这里就落一条记录:方向拨出、标记「你自己拨的」、时长记 0
+        val now = System.currentTimeMillis()
+        val record = CallRecord(
+            UUID.randomUUID().toString(), CallPolicy.incomingNumber(number), CallDirection.OUTGOING,
+            now, now, "你自己拨的", emptyList(),
+        )
+        scope.launch { records.append(record) }
+    }
+
+    /** 非 AI 的通话在结束时补一条记录(目前只记「你自己拨的」拨出通话)。 */
+    private fun recordSelfDial(track: Tracked) {
+        val marker = selfDial ?: return
+        if (track.phase != CallPhase.DISCONNECTING && track.phase != CallPhase.UNKNOWN) return
+        if (System.currentTimeMillis() - marker.second > SELF_DIAL_WINDOW_MS) { selfDial = null; return }
+        if (CallPolicy.incomingMatchKey(track.number) != marker.first) return
+        selfDial = null
+        val started = track.createdAt
+        val record = CallRecord(
+            UUID.randomUUID().toString(), track.number, CallDirection.OUTGOING, started,
+            System.currentTimeMillis(), "你自己拨的", emptyList(),
+        )
+        scope.launch { records.append(record) }
+    }
+
     internal fun onCallRemoved(service: MikaInCallService, call: Call) {
         val removed = tracked[call]?.takeIf { it.service === service } ?: return
         tracked.remove(call)
@@ -1860,6 +1891,8 @@ class CallRuntime(private val app: MikaApp) {
         const val MAX_MEDIA_DIAGNOSTICS = 4
         /** 10 分钟内同一个号码又打来,算「重复来电」。 */
         const val REPEAT_WINDOW_MS = 10 * 60_000L
+        /** 手动拨号到通话结束的合理窗口:超过就算不上「刚拨的那通」。 */
+        const val SELF_DIAL_WINDOW_MS = 60 * 60_000L
         const val STANDBY_START_MS = 5_000L
         const val MUTE_ACK_MS = 2_000L
         const val CALL_CHANGED = "指定通话已变化或结束，请重新读取电话状态"
@@ -1894,6 +1927,9 @@ internal class CallStopReason {
         if (value == expected) value = reason
     }
 }
+
+
+
 
 
 
