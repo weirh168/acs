@@ -493,3 +493,21 @@ WRITE_SECURE_SETTINGS    : granted=false(之前) → 已 pm grant,现在 granted
 
 唯一仍然发不出来的:配对过程中的通知(`pairing channel importance 3; it won't pop up`)——
 但自动读码这条路是通的,通知只是备用入口。
+
+## 重启后自动连回:已验证（2026-11-16 14:16）
+
+用户重启手机后,不插 USB、不重新配对,直接回来:
+
+| 检查项 | 重启前 | 重启后 |
+|---|---|---|
+| 无线调试 | on | **on**(重新打开) |
+| 缓存端口 | 39957 | **42367**(=mDNS 上公布的新端口) |
+| paired | true | true |
+| 助手进程 | 有 | **有**(`com.wangzan101.mika.mod:helper`,pid 9748) |
+| 无障碍 | 已开启 | **已开启** |
+| WRITE_SECURE_SETTINGS | granted | **granted** |
+| mdns 连接端口 | 39957 | 42367 |
+
+端口从 39957 变成 42367 而应用自己跟上了,说明它**重新发现了新端口并连回去**,
+不需要再输配对码。`last_restore` 仍是旧的 `PermissionMissing`(这次是走正常重连恢复的,
+开机接收器没留新记录),下次重启可再核对。
