@@ -1,5 +1,13 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.runtime.remember
+
+import com.wangzan101.mika.core.record.RunStats
+
+import com.wangzan101.mika.core.record.RunMetricsStore
+
+import androidx.compose.ui.platform.LocalContext
+
 import androidx.compose.material3.TextButton
 
 import com.wangzan101.mika.ui.theme.MikaTheme
@@ -148,6 +156,26 @@ fun DeveloperOptionsScreen(
                 }
             }
         }
+        // 指标栏:直接读本机运行小结,没有数据就不显示
+        val appCtx = LocalContext.current.applicationContext
+        val recent = remember {
+            runCatching {
+                RunMetricsStore(java.io.File(appCtx.filesDir, RunMetricsStore.FILE_NAME)).recent(10)
+            }.getOrDefault(emptyList())
+        }
+        if (recent.isNotEmpty()) {
+            val stats = RunStats.of(recent)
+            val calls = recent.sumOf { it.modelCalls }
+            val perStep = if (calls > 0) stats.totalMs.toDouble() / calls / 1000.0 else 0.0
+            GroupCard {
+                ListRow(
+                    null,
+                    "最近 " + recent.size + " 次",
+                    String.format("平均 %.1f 秒/步 · 成功 %d/%d", perStep, stats.succeeded, stats.runs),
+                    first = true,
+                ) { RowChevron() }
+            }
+        }
         GroupLabel(tr(R.string.dev_run_log))
         GroupCard {
             TraceSettingsRows()
@@ -170,6 +198,8 @@ private fun SwitchGroup(switches: List<DevSwitch>, onSpeed: (SpeedFlags) -> Unit
         }
     }
 }
+
+
 
 
 
