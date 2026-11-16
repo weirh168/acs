@@ -471,3 +471,25 @@ WRITE_SECURE_SETTINGS    : granted=false(之前) → 已 pm grant,现在 granted
 
 构建通过。**安装被手机上的弹窗拒绝了**(`INSTALL_FAILED_ABORTED: User rejected permissions`),
 等用户同意后再装。
+
+## 配对码配对:实机跑通（2026-11-16 14:11）
+
+用户要求「你上去配对试一下」。完整走了一遍:
+
+1. ACS › 设置 › 手机操作 › **重新配对**(日志:`watching for pairing (status Running, accessibility true)`);
+2. 开发者选项 › 无线调试 › **使用配对码配对设备**;
+3. ACS 自己从系统配对窗口读出配对码并完成配对:
+
+```
+14:11:54.063 pairing with port 38563
+14:11:55.128 found the pairing window on port 38563
+14:11:55.328 notice Done (discovery Idle, status Running); done
+```
+
+**1.3 秒配对成功**,状态回到 Running,系统配对窗口自动关掉;`paired=true`,端口 39957,
+助手进程在(`com.wangzan101.mika.mod:helper`),`WRITE_SECURE_SETTINGS=granted`。
+
+顺带把自愈版的 APK 也装上了(`install -r` 这次成功)。
+
+唯一仍然发不出来的:配对过程中的通知(`pairing channel importance 3; it won't pop up`)——
+但自动读码这条路是通的,通知只是备用入口。
