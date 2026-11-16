@@ -1526,12 +1526,9 @@ class ChatViewModel(
      * 并记下「已接管」——小窗留着,让用户继续看/点,不因为接管而消失。
      */
     fun userTakeOverPip() {
-        // 先把这一轮的自动操作停住,再把那个 App / 网页搬到用户自己的屏幕上(接管),
-        // 这样人力可以直接在真实界面上操作;小窗只作为「已交给你」的提示留着。
-        // 顺序要紧:先接管(把 App/网页搬到用户屏幕上),再确认自动操作停止;
-        // 先暂停会让任务不再处于「运行中」,接管那边就不动手了
-        // pauseForHuman 内部已经先把 App 搬到用户主屏、再停自动操作
-        pauseForHuman()
+        // 直接按对话走:这样任务已经结束、run 撤掉了也能凭记下的最后一个 App 打开(见 MikaApp)
+        val conv = _ui.value.conversationId
+        if (conv != null) actions.pauseForHumanIn(conv) else pauseForHuman()
         _ui.update { it.copy(pip = it.pip.copy(tookOver = true)) }
     }
     fun collapsePip() = _ui.update { it.copy(pip = it.pip.copy(expanded = false)) }

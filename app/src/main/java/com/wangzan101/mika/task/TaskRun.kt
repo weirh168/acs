@@ -301,6 +301,12 @@ class TaskRun(
     @Volatile private var gate: TaskGate? = null
     @Volatile var takeover: Takeover? = null
         private set
+    /**
+     * 最后看到的那个 App 和页面。虚拟屏在任务结束后会释放,但小窗还会停在最后一帧:
+     * 用户这时点小窗,也要能把那个 App/页面在主屏打开(见 [handAppToUser])。
+     */
+    @Volatile private var lastPagePackage: String? = null
+    @Volatile private var lastPageClass: String? = null
     @Volatile var muteFailedFor: String? = null
         private set
     @Volatile private var awake: KeepAwake? = null
@@ -353,17 +359,25 @@ class TaskRun(
         val d = displayId.value
         scope.launch {
             if (t != null && t.handOver(null)) return@launch
-            if (d < 0) return@launch
             runCatching {
-                val sh = phoneServices.hub.shell.value ?: return@runCatching
-                val task = sh.topTaskId(d)
-                val pkg = if (task >= 0) sh.packageOfTask(task) else null
-                // 当前页的类名:能单独打开的页面直接用它,用户接管后停在和刚才同一页
-                val cls = runCatching { sh.topActivity(d) }.getOrNull()?.takeIf { it.isNotBlank() }
+                // 虚拟屏还在就直接读当前页面;任务已经结束、屏释放了就用手上记的最后那一页
+                val sh = phoneServices.hub.shell.value
+                val task = if (sh != null && d >= 0) runCatching { sh.topTaskId(d) }.getOrDefault(-1) else -1
+                val pkg = if (sh != null && task >= 0) sh.packageOfTask(task) else lastPagePackage
+                val cls = if (sh != null && d >= 0) {
+                    runCatching { sh.topActivity(d) }.getOrNull()
+                } else {
+                    lastPageClass
+                }?.takeIf { it.isNotBlank() }
+                if (pkg != null) {
+                    lastPagePackage = pkg
+                    lastPageClass = cls
+                    service.taskState.rememberPage(conversationId, pkg)
+                }
                 if (com.wangzan101.mika.BuildConfig.DEBUG) {
                     android.util.Log.d("ACS-Pip", "handAppToUser display=$d task=$task pkg=$pkg cls=$cls")
                 }
-                if (pkg != null) {
+                if (sh != null && pkg != null) {
                     // startApp 只肯在自己的虚拟屏上启动;在主屏要用 `am start --display 0`。
                     // 先按**当前页**开(用户接管后停在和刚才同一页),不行再退回入口页。
                     // -f 0x18000000 = NEW_TASK|MULTIPLE_TASK:不复用虚拟屏上那份(复用的话只会把 intent
@@ -389,7 +403,7 @@ class TaskRun(
                     if (entryCode == 0) return@runCatching
                 }
                 // 拿不到包名或起不来:退回挪任务,至少把那个界面摆到用户眼前
-                if (task >= 0 && sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY)) {
+                if (sh != null && task >= 0 && sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY)) {
                     delay(350)
                     runCatching { sh.injectTap(android.view.Display.DEFAULT_DISPLAY, 1, 1) }
                 }
@@ -1349,6 +1363,10 @@ class TaskRun(
         side.launch(Dispatchers.IO) {
             p.screen.target.filterNotNull().collectLatest { t ->
                 _appShown.value = true
+                // 记下最后在用的 App:任务结束后 run 会撤掉、虚拟屏释放,小窗停在最后一帧,
+                // 用户这时点小窗还能把它打开(见 MikaApp.pauseForHumanIn 的兜底)
+                lastPagePackage = t.packageName
+                service.taskState.rememberPage(conversationId, t.packageName)
                 if (handoverRef?.handedOver != true) p.audio.opened(t.packageName, copyUser(t.userId))
                 // 有目标 App 就说明 launch_app 已经建好了屏
                 val displayId = p.display.current?.displayId

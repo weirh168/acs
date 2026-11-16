@@ -380,3 +380,24 @@ topResumedActivity = com.android.settings/.HWSettings   (主屏, fullscreen)
 另外单独验过 `Settings$WifiSettingsActivity` 这种带 `$` 的页面也能按页打开(停在 WLAN 页)。
 
 当前页开不起来时退回入口页;连包名都拿不到才退回挪任务。
+
+## 任务结束后点小窗也能进去（已验证）（2026-11-16 10:21）
+
+任务结束后 `TaskRun` 会从列表撤掉、虚拟屏也释放了,小窗只剩最后一帧;这时点小窗原来什么都不发生。
+
+改动:
+1. 运行中记住最后在用的包:`TaskRun` 在既有的 `p.screen.target` 收集里写
+   `lastPagePackage` + `TaskCenterState.rememberPage(conversationId, pkg)`(run 撤掉后也留得住);
+2. `ChatViewModel.userTakeOverPip()` 直接走 `actions.pauseForHumanIn(conversationId)`,不再依赖
+   「当前是否有运行中的 run」;
+3. `MikaApp.pauseForHumanIn`:`run` 还在 → 原来的按当前页打开;`run` 没了 → 用记下的包在主屏
+   `am start --display 0 -f 0x18000000 -n $(resolve-activity)` 打开该 App;
+4. 点小窗不再要求 `PipMode.Running`(「等你处理」那一下仍然只去看卡片)。
+
+实测:
+```
+pauseForHumanIn no-run conv=ee758563-... last=com.android.settings
+launchLast pkg=com.android.settings exit=0
+topResumedActivity = com.android.settings/.HWSettings   (主屏)
+```
+截图:任务已结束(做了 1 步 · 17 秒)、小窗仍是最后一帧,点它之后「设置」整屏出现在主屏上。

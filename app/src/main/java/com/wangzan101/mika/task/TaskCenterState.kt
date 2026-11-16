@@ -71,6 +71,14 @@ class TaskCenterState {
     val _shownTask = MutableStateFlow<Pair<String, TaskState>?>(null)
     val shownTask: StateFlow<Pair<String, TaskState>?> = _shownTask.asStateFlow()
     fun run(conversationId: String): TaskRun? = _runs.value.firstOrNull { it.conversationId == conversationId }
+
+    /**
+     * 每个对话最后用过哪个 App/页面。任务结束后 TaskRun 会从 [runs] 里撤掉、虚拟屏也释放了,
+     * 但小窗还会停在最后一帧:用户这时点小窗,要能凭这条记录把那个 App 在他自己屏幕上打开。
+     */
+    private val lastPages = java.util.concurrent.ConcurrentHashMap<String, String>()
+    fun rememberPage(conversationId: String, packageName: String) { lastPages[conversationId] = packageName }
+    fun lastPageOf(conversationId: String): String? = lastPages[conversationId]
     fun show(conversationId: String) { run(conversationId)?.show() }
 
     @Volatile var secondDisplayFailed = false

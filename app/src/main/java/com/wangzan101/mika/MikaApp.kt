@@ -345,7 +345,30 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                 }
                 // 接管 = 把那个 App 搬到用户主屏 + 停掉自动操作,小窗留着当提示
                 override fun pauseForHumanIn(conversationId: String) {
-                    taskState.run(conversationId)?.let { run -> run.handAppToUser(); run.userTookControl() }
+                    val run = taskState.run(conversationId)
+                    if (run != null) {
+                        run.handAppToUser()
+                        run.userTookControl()
+                    } else {
+                        // 任务已经结束(run 撤掉了、虚拟屏也释放了),但小窗还停在最后一帧:
+                        // 按记下的最后一个 App 在主屏打开它
+                        val pkg = taskState.lastPageOf(conversationId)
+                        if (com.wangzan101.mika.BuildConfig.DEBUG) {
+                            android.util.Log.d("ACS-Pip", "pauseForHumanIn no-run conv=$conversationId last=$pkg")
+                        }
+                        if (pkg != null) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                runCatching {
+                                    val r = com.wangzan101.mika.cap.phone.PhoneServices.of(app).hub.shell.value?.runCommand(
+                                        "am start --display 0 -f 0x18000000 -n \$(cmd package resolve-activity --brief $pkg | tail -n 1)",
+                                    )
+                                    if (com.wangzan101.mika.BuildConfig.DEBUG) {
+                                        android.util.Log.d("ACS-Pip", "launchLast pkg=$pkg exit=${r?.getInt("exitCode", -1)}")
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 override fun handBack() = TaskService.handBack(app)
                 override fun finishedMyself() = TaskService.finishedMyself(app)

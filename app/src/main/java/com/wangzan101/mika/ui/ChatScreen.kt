@@ -508,7 +508,9 @@ fun ChatScreen(
             },
             onReopen = vm::reopenPip,
             // 人工一碰小窗画面就接管:停掉这一轮的自动操作,由用户自己点,小窗留着
-            onHumanTouch = { if (ui.pip.mode == PipMode.Running && !ui.pip.tookOver) vm.userTakeOverPip() },
+            // 人工一碰小窗画面就接管:任务在跑就顺手停掉自动操作;任务已结束(小窗停在最后一帧)也照样
+            // 把那个 App 在你自己的屏幕上打开。只有「等你处理」时那一下是去看卡片,不接管。
+            onHumanTouch = { if (ui.pip.mode != PipMode.NeedsYou && !ui.pip.tookOver) vm.userTakeOverPip() },
             onToggleSound = vm::togglePipSound,
             // 要你处理时点小窗:收起,滚到要你处理的那张卡片(在最后一问一答里,它后面只可能还有文件卡片和去设置那一行)
             onAttention = {
