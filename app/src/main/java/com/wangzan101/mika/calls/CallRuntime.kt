@@ -884,6 +884,7 @@ class CallRuntime(private val app: MikaApp) {
             val initial = settings.state.value
             t.initialRingPolicy = initial
             // 这通电话「是什么号码」查一次留在这通电话上,后面几处规则判断都用同一份事实
+            t.simKey = t.call.details?.accountHandle?.id
             t.facts = callerFacts(initial, t.number)
             t.ringObservedAt = SystemClock.elapsedRealtime()
             t.ringObservedWallMs = System.currentTimeMillis()
@@ -914,7 +915,7 @@ class CallRuntime(private val app: MikaApp) {
                     (t.direction != CallDirection.INCOMING || !carrierCall(t.call)) ->
                     cancelWork("来电已变化，AI 未接听")
                 target === t && active.automatic && !active.answerSent &&
-                    !CallPolicy.callerAllowed(settings.state.value, t.number, facts = t.facts) -> cancelWork("来电已不符合自动接听规则")
+                    !CallPolicy.callerAllowed(settings.state.value, t.number, facts = t.facts, simKey = t.simKey) -> cancelWork("来电已不符合自动接听规则")
                 target === t && t.phase != CallPhase.ACTIVE && active.bridging ->
                     cancelWork("通话已切换，AI 音频已停止")
             }
@@ -931,7 +932,7 @@ class CallRuntime(private val app: MikaApp) {
         val config = settings.state.value
         if (!CallPolicy.canStartAutoAnswer(initial, config, t.number,
                 SystemClock.elapsedRealtime() - t.ringObservedAt,
-                ringObservedWallMs = t.ringObservedWallMs)) return
+                ringObservedWallMs = t.ringObservedWallMs, simKey = t.simKey)) return
         if (autoAnswerBlocker(config) != null || !t.service.tracks(t.call) || !carrierCall(t.call)) return
         t.autoTried = true
         val starting = Work(CallDirection.INCOMING, config, track = t, auto = true)
@@ -1514,8 +1515,8 @@ class CallRuntime(private val app: MikaApp) {
                 val config = settings.state.value
                 val initial = t.initialRingPolicy
                 if (autoPauseWriting || initial == null ||
-                    !CallPolicy.callerAllowed(initial, t.number, t.ringObservedWallMs, facts = t.facts) ||
-                    !CallPolicy.callerAllowed(config, t.number, facts = t.facts) || config.audioMode != w.config.audioMode ||
+                    !CallPolicy.callerAllowed(initial, t.number, t.ringObservedWallMs, facts = t.facts, simKey = t.simKey) ||
+                    !CallPolicy.callerAllowed(config, t.number, facts = t.facts, simKey = t.simKey) || config.audioMode != w.config.audioMode ||
                     SystemClock.elapsedRealtime() - t.ringObservedAt > CallPolicy.AUTO_ANSWER_WINDOW_MS) {
                     throw CallProblem("来电已超时或不再符合自动接听规则")
                 }
@@ -1774,6 +1775,8 @@ class CallRuntime(private val app: MikaApp) {
         var initialRingPolicy: CallConfig? = null
         /** 这次自动接听命中的规则(写进通话记录)。 */
         var ruleHit: String? = null
+        /** 这通电话走的是哪张 SIM(平台账号 id);不知道就是 null。 */
+        var simKey: String? = null
         var ringObservedAt: Long = 0L
         var ringObservedWallMs: Long = 0L
         var autoTried = false
@@ -1797,6 +1800,8 @@ class CallRuntime(private val app: MikaApp) {
         val id = UUID.randomUUID().toString()
         /** 这次自动接听命中的规则(写进通话记录);用户手动接管的不记。 */
         var ruleHit: String? = null
+        /** 这通电话走的是哪张 SIM(平台账号 id);不知道就是 null。 */
+        var simKey: String? = null
         val result = CompletableDeferred<CallActionResult>()
         val cleaned = CompletableDeferred<Boolean>()
         val transcript = mutableListOf<CallTranscriptLine>()
@@ -1889,6 +1894,7 @@ internal class CallStopReason {
         if (value == expected) value = reason
     }
 }
+
 
 
 

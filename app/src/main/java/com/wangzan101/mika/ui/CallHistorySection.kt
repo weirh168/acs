@@ -253,7 +253,7 @@ private fun CallHistoryItem(
     Column(Modifier.fillMaxWidth().semantics { stateDescription = expansion }) {
         ListRow(MikaIcons.Clock, record.task?.goal ?: name,
             if (record.task != null) "$name · $direction · $start" else "$direction · $start",
-            first = first, detail = "$status · ${record.result}",
+            first = first, detail = ruleHitOf(record.result)?.let { "自动接听 · $it" } ?: "$status · ${record.result}",
             onClick = onExpand) { CallExpandIcon(expanded) }
         if (expanded) {
             Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 14.dp),
@@ -371,3 +371,8 @@ internal fun CallTranscriptText(line: CallTranscriptLine) {
         Text(line.text, style = MaterialTheme.typography.bodyMedium)
     }
 }
+
+/** 从通话记录的结果文案里取出「命中哪条规则」,没有就返回 null。 */
+internal fun ruleHitOf(result: String): String? =
+    Regex("（自动接听：([^）]+)）").find(result)?.groupValues?.getOrNull(1)
+

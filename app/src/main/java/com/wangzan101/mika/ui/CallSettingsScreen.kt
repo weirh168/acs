@@ -576,6 +576,28 @@ private fun CallReceivePage(
     Spacer(Modifier.size(12.dp))
     RingDelayChip(config.autoAnswerDelaySeconds, onDelay)
     Spacer(Modifier.size(12.dp))
+    if (state.simOptions.size > 1) {
+        GroupLabel(stringResource(R.string.calls_sims_title))
+        GroupCard(Modifier.testTag("call-sims")) {
+            state.simOptions.forEachIndexed { index, sim ->
+                if (index > 0) HorizontalDivider()
+                val on = config.autoAnswerSimIds.isEmpty() || sim.id in config.autoAnswerSimIds
+                Row(
+                    Modifier.fillMaxWidth().toggleable(on, role = Role.Switch) {
+                        val current = if (config.autoAnswerSimIds.isEmpty()) state.simOptions.map { it.id }.toSet()
+                        else config.autoAnswerSimIds
+                        val next = if (on) current - sim.id else current + sim.id
+                        onEditConfig { cfg -> cfg.copy(autoAnswerSimIds = if (next.isEmpty() || next.size == state.simOptions.size) emptySet() else next) }
+                    }.heightIn(min = 52.dp).padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(sim.label, fontSize = 15.sp, color = MikaTheme.colors.ink, modifier = Modifier.weight(1f))
+                    Switch(on, null)
+                }
+            }
+        }
+        Spacer(Modifier.size(12.dp))
+    }
     GroupLabel(stringResource(R.string.calls_exceptions))
     GroupCard(Modifier.testTag("call-exceptions")) {
         ExceptionRow(stringResource(R.string.calls_who_i_answer),
@@ -1236,5 +1258,6 @@ private fun callerLabel(context: android.content.Context, number: String?): Stri
     }
     return if (name != null) "$kind · $name" else "$kind · $number"
 }
+
 
 

@@ -235,7 +235,9 @@
     <string name="calls_caller_institution">Institution</string>
     <string name="calls_caller_international">International</string>
     <string name="calls_caller_hidden">Hidden number</string>
+    <string name="calls_sims_title">SIMs that may auto-answer</string>
 </resources>
+
 
 
 

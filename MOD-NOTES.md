@@ -834,3 +834,14 @@ ACS : 他现在暂时没法接电话，您可以留个言，我帮您转达。
 
 实机:新版本已安装,页面正常;当前「这些人我自己接」只剩 17376188545,它不在通讯录里,
 所以显示退回成「1 个号码,打来不交给 AI」(回退分支生效)。
+
+## 命中日志标签 + 多 SIM 结构（2026-11-17 01:15）
+
+- 通话记录每一行现在直接显示命中的规则:实测两条历史记录都显示「**自动接听 · 通讯录联系人**」
+  (`ruleHitOf` 从结果文案里取出「(自动接听：X)」);
+- 多 SIM:`CallConfig.autoAnswerSimIds`(空=所有 SIM)、`CallSettings` 持久化 `auto_sim_ids`、
+  `callerAllowed(..., simKey)` 在非选中的 SIM 上返回 false、`canStartAutoAnswer` 透传;
+  `CallRuntime` 在响铃时用 `call.details.accountHandle.id` 记 `Tracked.simKey`,四处策略判断都带上;
+  单测 `selectedSimsLimitAutoAnswer`(只选 sim-2 时 sim-1 不接、sim-2 接、simKey 未知不拦);
+- 界面:两张卡以上才显示「在哪些 SIM 上自动接」开关组;本机单卡,该区块按设计隐藏。
+  **多 SIM 真机未验证**(只有一张卡),这是已知限制。

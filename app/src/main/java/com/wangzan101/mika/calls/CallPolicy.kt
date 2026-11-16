@@ -66,6 +66,8 @@ data class CallConfig(
     /** 只在一天里的这段时间自动接;两个都是 -1 表示全天。跨零点用 start > end 表示。 */
     val activeStartMinute: Int = -1,
     val activeEndMinute: Int = -1,
+    /** 只在选中的 SIM 上自动接;空集合表示所有 SIM 都接。 */
+    val autoAnswerSimIds: Set<String> = emptySet(),
     /** 机构号(400/955xx/100xx)直接转给本人,不交给 AI。 */
     val institutionTransfer: Boolean = true,
     /** AI 接不起来时(连不上实时语音、被系统打断):等你接,还是直接挂断。 */
@@ -236,6 +238,8 @@ internal object CallPolicy {
         inContacts: Boolean = false,
         /** 这条来电的其他已知事实(隐藏/国际/重复/骚扰);只传 inContacts 时按老行为判通讯录。 */
         facts: CallerFacts? = null,
+        /** 这通电话走的是哪张 SIM(平台标识);不知道就传 null。 */
+        simKey: String? = null,
     ): Boolean {
         if (!config.enabled || !config.autoAnswer || !config.credentialsConfigured || !config.audioVerified) return false
         if (autoAnswerPauseRemainingMs(config, nowMs) > 0L || isBypassed(config, number)) return false
@@ -245,6 +249,8 @@ internal object CallPolicy {
         if (number != null && key == null) return false
         // 不在自动接听的时段里,一律不接(交给系统响铃)
         if (!inActiveWindow(config, nowMs)) return false
+        // 只接了部分 SIM:不是这些 SIM 上的来电不接
+        if (config.autoAnswerSimIds.isNotEmpty() && simKey != null && simKey !in config.autoAnswerSimIds) return false
         // 黑名单最优先:名单里说不接就,或者号码落在不接的号段里,都不接
         if (key != null && config.blockedIncomingNumbers.any { incomingMatchKey(it) == key }) return false
         if (matchesPrefix(number, config.blockedPrefixes)) return false
@@ -289,10 +295,11 @@ internal object CallPolicy {
         ringObservedWallMs: Long = nowMs - ringingForMs,
         inContacts: Boolean = false,
         facts: CallerFacts? = null,
+        simKey: String? = null,
     ): Boolean =
         ringingForMs in 0L..AUTO_START_WINDOW_MS && initial.audioMode == current.audioMode &&
-            callerAllowed(initial, number, ringObservedWallMs, inContacts, facts) &&
-            callerAllowed(current, number, nowMs, inContacts, facts)
+            callerAllowed(initial, number, ringObservedWallMs, inContacts, facts, simKey) &&
+            callerAllowed(current, number, nowMs, inContacts, facts, simKey)
 
     fun chooseSim(sims: List<CallSim>, requested: String?): CallSim? = when {
         requested == "default" -> sims.singleOrNull { it.isDefault } ?: sims.singleOrNull()
@@ -389,6 +396,8 @@ internal object CallPolicy {
         append("\n收尾：自行判断本通要说的事是否已经说清，结合上下文和对方的回应，不必等对方说‘再见’。如果内容已经办清而且没有未解的问题，可自然简短收尾，例如最后说‘那就先这样’；这轮不要再问问题。如果对方明确要求挂断或告别，只答‘好的，再见’。单纯停顿、普通道谢但事项还没聊完、或对方还在问事时继续听，不提前收尾。")
     }
 }
+
+
 
 
 
