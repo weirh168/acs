@@ -1,4 +1,6 @@
 package com.wangzan101.mika.ui
+
+import androidx.compose.material3.MaterialTheme
 import com.wangzan101.mika.ui.theme.MikaTheme
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.Alignment
@@ -166,6 +168,7 @@ internal fun TraceSettingsRows() {
     var traceEnabled by remember { mutableStateOf(traces.enabled) }
     var traceLimitMiB by remember { mutableIntStateOf(traces.limitMiB) }
     var confirmOn by remember { mutableStateOf(false) }
+    var confirmClear by remember { mutableStateOf(false) }
     fun applyLimit(mib: Int) {
         scope.launch {
             withContext(Dispatchers.IO) { traces.setLimitMiB(mib) }
@@ -207,6 +210,28 @@ internal fun TraceSettingsRows() {
                 }, modifier = Modifier.testTag("dev-trace-confirm")) { Text(stringResource(R.string.trace_confirm_ok)) }
             },
             dismissButton = { TextButton(onClick = { confirmOn = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+    // 清空:先关闭详细日志再删,避免边写边删
+    ListRow(null, "清空全部日志", "只删日志，不影响通话记录", onClick = { confirmClear = true }) {
+        Text("清空", fontSize = 14.sp, color = MaterialTheme.colorScheme.error)
+    }
+    if (confirmClear) {
+        MikaDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("清空全部日志？") },
+            text = { Text("会关闭详细日志并删掉已保存的运行记录，通话记录不受影响。") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClear = false
+                    traces.setEnabled(false)
+                    traceEnabled = false
+                    scope.launch { withContext(Dispatchers.IO) { traces.store.clear() } }
+                }, modifier = Modifier.testTag("dev-trace-clear-confirm")) {
+                    Text("清空", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
