@@ -729,6 +729,39 @@ private fun CallPreferencesPage(
         }
     }
 
+    // 体检卡:只列这四项真实可判定的状态,不写"永远通过"的假检查
+    val checks = listOf(
+        stringResource(R.string.calls_check_phone) to device.readiness.phoneAllowed,
+        stringResource(R.string.calls_check_notifications) to device.readiness.callNotificationsAllowed,
+        stringResource(R.string.calls_check_standby) to device.readiness.standbyNotificationsAllowed,
+        stringResource(R.string.calls_check_audio) to config.audioVerified,
+    )
+    val failed = checks.filterNot { it.second }
+    GroupCard(Modifier.testTag("call-health")) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                stringResource(if (failed.isEmpty()) R.string.calls_health_ok else R.string.calls_health_issue, failed.size),
+                style = MaterialTheme.typography.titleSmall,
+                color = if (failed.isEmpty()) MikaTheme.colors.ok else MikaTheme.colors.warn,
+            )
+            checks.forEach { (label, ok) ->
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(if (ok) R.string.calls_check_ok else R.string.calls_check_todo),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (ok) MikaTheme.colors.ok else MikaTheme.colors.warn,
+                    )
+                }
+            }
+            if (failed.isNotEmpty()) {
+                TextButton(onClick = onHelperSetup, modifier = Modifier.testTag("call-health-fix")) {
+                    Text(stringResource(R.string.calls_health_fix, failed.size))
+                }
+            }
+        }
+    }
+
     GroupLabel(stringResource(R.string.calls_settings_voice_group))
     GroupCard {
         // AI 声音:右端直接给当前值,点一下换声音 / 试听

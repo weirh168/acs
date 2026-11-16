@@ -260,7 +260,17 @@
     <string name="calls_data_clear">Clear records</string>
     <string name="calls_history_title">Call records</string>
     <string name="calls_connection_test">Connection test</string>
+    <string name="calls_check_phone">Call access</string>
+    <string name="calls_check_notifications">Call notifications</string>
+    <string name="calls_check_standby">Standby notifications</string>
+    <string name="calls_check_audio">Call audio</string>
+    <string name="calls_check_ok">Ready</string>
+    <string name="calls_check_todo">Needs work</string>
+    <string name="calls_health_ok">All good</string>
+    <string name="calls_health_issue">%1$d items need attention</string>
+    <string name="calls_health_fix">Fix %1$d items</string>
 </resources>
+
 
 
 

@@ -260,7 +260,17 @@
     <string name="calls_data_clear">清空记录</string>
     <string name="calls_history_title">通话记录</string>
     <string name="calls_connection_test">连接测试</string>
+    <string name="calls_check_phone">通话权限</string>
+    <string name="calls_check_notifications">来电通知</string>
+    <string name="calls_check_standby">后台待命通知</string>
+    <string name="calls_check_audio">通话音频</string>
+    <string name="calls_check_ok">已通过</string>
+    <string name="calls_check_todo">待处理</string>
+    <string name="calls_health_ok">一切正常</string>
+    <string name="calls_health_issue">有 %1$d 项需要处理</string>
+    <string name="calls_health_fix">一键去处理这 %1$d 项</string>
 </resources>
+
 
 
 
