@@ -2,6 +2,10 @@ package com.wangzan101.mika.ui
 
 import com.wangzan101.mika.ui.theme.LocalSkinBackdrop
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -267,7 +271,11 @@ private fun CallSettingsWorkspace(
                             onBypass = { dialog = CallDialog.Bypass },
                             onPause = { minutes -> perform(priority = true) { runtime.pauseAutoAnswer(minutes) } },
                             onResume = { perform(priority = true) { runtime.resumeAutoAnswer() } },
-                            onInstructions = onInstructions,
+                            onInstructions = onInstructions,
+
+                            history = history,
+
+                            onHistory = { tab = CallWorkspaceTab.History },
                         )
                         CallWorkspaceTab.Task -> CallTaskScreen(
                             taskDraft, config, state, ready,
@@ -521,6 +529,7 @@ private fun CallReceivePage(
     canStartStandby: Boolean, standbyNeedsSetup: Boolean,
     onSetup: () -> Unit, onToggle: (Boolean) -> Unit, onRules: () -> Unit, onBypass: () -> Unit,
     onPause: (Int) -> Unit, onResume: () -> Unit, onInstructions: () -> Unit, onStartStandby: () -> Unit,
+    history: List<CallRecord> = emptyList(), onHistory: () -> Unit = {},
 ) {
     var scopeOpen by rememberSaveable { mutableStateOf(false) }
     var importantOpen by rememberSaveable { mutableStateOf(false) }
@@ -532,9 +541,11 @@ private fun CallReceivePage(
             }
         }
     }
+    CallTodayCard(history, onHistory)
+    Spacer(Modifier.size(12.dp))
     val autoLabel = stringResource(R.string.calls_auto_answer)
     val canTurnOn = ready && config.audioVerified && state.phase == CallPhase.IDLE &&
-        (config.allowAllIncoming || config.allowedIncomingNumbers.isNotEmpty())
+        CallPolicy.answersSomeCallers(config)
     GroupCard {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
@@ -1088,7 +1099,48 @@ private fun CallBypassDialog(existing: Set<String>, onDismiss: () -> Unit, onSav
     )
 }
 
+@Composable
+private fun CallTodayCard(history: List<CallRecord>, onHistory: () -> Unit) {
+    val start = remember { java.util.Calendar.getInstance().apply {
+        set(java.util.Calendar.HOUR_OF_DAY, 0); set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0); set(java.util.Calendar.MILLISECOND, 0)
+    }.timeInMillis }
+    val incoming = history.filter { it.direction == CallDirection.INCOMING && it.startedAtMs >= start }
+    val byAi = incoming.count { it.result.contains(AUTO_ANSWER_MARK) }
+    val toYou = incoming.size - byAi
+    val c = MikaTheme.colors
+    Column(Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(16.dp)).padding(16.dp)) {
+        if (byAi == 0 && incoming.isEmpty()) {
+            Text(stringResource(R.string.calls_today_empty_title), fontSize = 16.sp, color = c.ink, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.calls_today_empty_note), fontSize = 13.sp, color = c.ink3,
+                modifier = Modifier.padding(top = 4.dp))
+        } else {
+            Text(stringResource(R.string.calls_today_label), fontSize = 13.sp, color = c.ink3)
+            Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 2.dp)) {
+                Text(byAi.toString(), fontSize = 40.sp, fontWeight = FontWeight.Bold, color = c.ink)
+                Text(stringResource(R.string.calls_today_ai_note), fontSize = 15.sp, color = c.ink,
+                    modifier = Modifier.padding(start = 8.dp, bottom = 6.dp))
+            }
+            Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TodayChip(stringResource(R.string.calls_today_chip_ai, byAi))
+                TodayChip(stringResource(R.string.calls_today_chip_you, toYou))
+                TodayChip(stringResource(R.string.calls_today_chip_total, incoming.size))
+            }
+        }
+        TextButton(onClick = onHistory, modifier = Modifier.align(Alignment.End).testTag("call-today-history")) {
+            Text(stringResource(R.string.calls_today_view), fontSize = 14.sp)
+        }
+    }
+}
 
+@Composable
+private fun TodayChip(text: String) {
+    Box(Modifier.background(MikaTheme.colors.fill, RoundedCornerShape(20.dp)).padding(horizontal = 12.dp, vertical = 6.dp)) {
+        Text(text, fontSize = 13.sp, color = MikaTheme.colors.ink2)
+    }
+}
 
+/** 通话记录里标记「这通是 AI 自动接的」的那段文字,统计时按它算。 */
+private const val AUTO_ANSWER_MARK = "自动接听"
 
 

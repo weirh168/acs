@@ -209,7 +209,16 @@
     <string name="calls_rules_import_failed">剪贴板里不是规则 JSON</string>
     <string name="calls_rules_export">导出规则</string>
     <string name="calls_list_incomplete">这些号码明显不完整（至少 7 位数字），请改掉再保存：%1$s</string>
+    <string name="calls_today_label">今天</string>
+    <string name="calls_today_ai_note">通电话由 AI 替你接了</string>
+    <string name="calls_today_chip_ai">自动接听 %1$d</string>
+    <string name="calls_today_chip_you">转给你 %1$d</string>
+    <string name="calls_today_chip_total">来电 %1$d</string>
+    <string name="calls_today_view">查看记录</string>
+    <string name="calls_today_empty_title">今天还没有需要 AI 接的电话</string>
+    <string name="calls_today_empty_note">陌生人来电时，AI 会替你接。</string>
 </resources>
+
 
 
 

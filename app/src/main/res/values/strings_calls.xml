@@ -209,7 +209,16 @@
     <string name="calls_rules_import_failed">That is not a rules JSON</string>
     <string name="calls_rules_export">Export</string>
     <string name="calls_list_incomplete">These numbers look incomplete (at least 7 digits): %1$s</string>
+    <string name="calls_today_label">Today</string>
+    <string name="calls_today_ai_note">calls answered by the AI for you</string>
+    <string name="calls_today_chip_ai">AI answered %1$d</string>
+    <string name="calls_today_chip_you">Passed to you %1$d</string>
+    <string name="calls_today_chip_total">Incoming %1$d</string>
+    <string name="calls_today_view">View records</string>
+    <string name="calls_today_empty_title">No calls needed the AI yet today</string>
+    <string name="calls_today_empty_note">When a stranger calls, the AI answers for you.</string>
 </resources>
+
 
 
 
