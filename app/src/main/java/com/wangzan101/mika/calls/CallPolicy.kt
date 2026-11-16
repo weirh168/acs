@@ -150,6 +150,30 @@ internal object CallPolicy {
     fun isBypassed(config: CallConfig, number: String?): Boolean =
         incomingMatchKey(number)?.let { key -> config.bypassIncomingNumbers.any { incomingMatchKey(it) == key } } == true
 
+    /**
+     * 这条来电是被哪条规则接起来的,写进通话记录好排查:白名单/号段/全部交给 AI/某一类来源。
+     * 返回 null 表示按规则不该自动接(用于日志时区分)。
+     */
+    fun decisionReason(config: CallConfig, number: String?, facts: CallerFacts): String? {
+        val key = number?.let(::incomingMatchKey)
+        if (key != null && config.blockedIncomingNumbers.any { incomingMatchKey(it) == key }) return null
+        if (matchesPrefix(number, config.blockedPrefixes)) return null
+        if (key != null && config.allowedIncomingNumbers.any { incomingMatchKey(it) == key }) return "白名单号码"
+        if (matchesPrefix(number, config.allowedPrefixes)) return "必接号段"
+        return when (config.preset) {
+            CallPreset.ALL -> "全部交给 AI"
+            CallPreset.LIST -> null
+            CallPreset.SMART -> when {
+                facts.hidden -> if (config.answerHidden) "隐藏号码" else null
+                facts.inContacts -> if (config.answerContacts) "通讯录联系人" else null
+                facts.spam -> if (config.answerSpam) "骚扰标记号码" else null
+                facts.repeated -> if (config.answerRepeat) "重复来电" else null
+                facts.international -> if (config.answerInternational) "国际号码" else null
+                else -> if (config.answerStrangers) "陌生号码" else null
+            }
+        }
+    }
+
     fun autoAnswerPauseRemainingMs(config: CallConfig, nowMs: Long): Long =
         config.autoAnswerPausedUntilMs?.takeIf { it > nowMs }?.minus(nowMs) ?: 0L
 
@@ -312,5 +336,6 @@ internal object CallPolicy {
         append("\n收尾：自行判断本通要说的事是否已经说清，结合上下文和对方的回应，不必等对方说‘再见’。如果内容已经办清而且没有未解的问题，可自然简短收尾，例如最后说‘那就先这样’；这轮不要再问问题。如果对方明确要求挂断或告别，只答‘好的，再见’。单纯停顿、普通道谢但事项还没聊完、或对方还在问事时继续听，不提前收尾。")
     }
 }
+
 
 

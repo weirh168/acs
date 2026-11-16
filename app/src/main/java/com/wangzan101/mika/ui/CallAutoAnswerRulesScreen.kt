@@ -131,6 +131,9 @@ fun CallAutoAnswerRulesDialog(
     var listsOpen by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
+    var notice by remember { mutableStateOf<String?>(null) }
+    val importFailedText = stringResource(R.string.calls_rules_import_failed)
+    val importedText = stringResource(R.string.calls_rules_imported)
     val scope = rememberCoroutineScope()
 
     val flags = listOf(contacts, strangers, hidden, spam, repeat, international)
@@ -204,6 +207,28 @@ fun CallAutoAnswerRulesDialog(
                         }
                     }
                     Spacer(Modifier.size(14.dp))
+                    RulesPortSection(
+                        export = { CallRulesJson.encode(draft) },
+                        onImport = { text ->
+                            val snap = CallRulesJson.decode(text)
+                            if (snap == null) {
+                                notice = importFailedText
+                            } else {
+                                preset = snap.preset; contacts = snap.answerContacts; strangers = snap.answerStrangers
+                                hidden = snap.answerHidden; spam = snap.answerSpam; repeat = snap.answerRepeat
+                                international = snap.answerInternational; blocked = snap.blocked
+                                allowed = snap.allowed; allowPrefixes = snap.allowPrefixes
+                                blockPrefixes = snap.blockPrefixes
+                                windowed = snap.activeStartMinute >= 0 && snap.activeEndMinute >= 0
+                                startText = CallTimeText.of(snap.activeStartMinute)
+                                endText = CallTimeText.of(snap.activeEndMinute)
+                                fallback = snap.fallback; delay = snap.delaySeconds
+                                notice = importedText
+                            }
+                        },
+                        onNotice = { notice = it },
+                    )
+                    Spacer(Modifier.size(14.dp))
                     WindowSection(windowed, startText, endText, windowValid,
                         onToggle = { windowed = it },
                         onStart = { startText = it }, onEnd = { endText = it })
@@ -217,6 +242,7 @@ fun CallAutoAnswerRulesDialog(
                     Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp)) {
                         if (dirty) Text(stringResource(R.string.calls_unsaved), fontSize = 12.sp,
                             color = MikaTheme.colors.warn, modifier = Modifier.padding(bottom = 6.dp))
+                        notice?.let { Text(it, fontSize = 12.sp, color = MikaTheme.colors.ok, modifier = Modifier.padding(bottom = 6.dp)) }
                         if (error) Text(stringResource(R.string.calls_action_failed), fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(bottom = 6.dp))
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -568,6 +594,80 @@ private fun PermissionBanner(text: String, onFix: () -> Unit) {
     }
 }
 
+/** 规则导出/导入:一行 JSON 走剪贴板,方便在两台手机或重装后找回规则。 */
+@Composable
+private fun RulesPortSection(export: () -> String, onImport: (String) -> Unit, onNotice: (String?) -> Unit) {
+    val context = LocalContext.current
+    val copied = stringResource(R.string.calls_rules_exported)
+    val empty = stringResource(R.string.calls_rules_import_empty)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        ActionChip(stringResource(R.string.calls_rules_export), "call-rules-export") {
+            val clip = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+            clip?.setPrimaryClip(android.content.ClipData.newPlainText("mika-call-rules", export()))
+            onNotice(copied)
+        }
+        ActionChip(stringResource(R.string.calls_rules_import), "call-rules-import") {
+            val text = (context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager)
+                ?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
+            if (text.isBlank()) onNotice(empty) else onImport(text)
+        }
+    }
+}
+
+/** 规则的 JSON 快照;只有规则本身,不含凭据、开场白这类别处也在用的设置。 */
+internal data class RulesSnapshot(
+    val preset: CallPreset,
+    val answerContacts: Boolean, val answerStrangers: Boolean, val answerHidden: Boolean,
+    val answerSpam: Boolean, val answerRepeat: Boolean, val answerInternational: Boolean,
+    val allowed: Set<String>, val blocked: Set<String>,
+    val allowPrefixes: Set<String>, val blockPrefixes: Set<String>,
+    val activeStartMinute: Int, val activeEndMinute: Int,
+    val fallback: CallFallback, val delaySeconds: Int,
+)
+
+internal object CallRulesJson {
+    fun encode(draft: CallRulesDraft): String = org.json.JSONObject().apply {
+        put("v", 1)
+        put("preset", draft.preset.name)
+        put("contacts", draft.answerContacts)
+        put("strangers", draft.answerStrangers)
+        put("hidden", draft.answerHidden)
+        put("spam", draft.answerSpam)
+        put("repeat", draft.answerRepeat)
+        put("international", draft.answerInternational)
+        put("allowed", org.json.JSONArray(draft.allowed.sorted()))
+        put("blocked", org.json.JSONArray(draft.blocked.sorted()))
+        put("allowPrefixes", org.json.JSONArray(draft.allowPrefixes.sorted()))
+        put("blockPrefixes", org.json.JSONArray(draft.blockPrefixes.sorted()))
+        put("windowStart", draft.activeStartMinute)
+        put("windowEnd", draft.activeEndMinute)
+        put("fallback", draft.fallback.name)
+        put("delay", draft.delaySeconds)
+    }.toString()
+
+    fun decode(text: String): RulesSnapshot? = runCatching {
+        val o = org.json.JSONObject(text.trim())
+        fun strings(name: String): Set<String> {
+            val a = o.optJSONArray(name) ?: return emptySet()
+            return (0 until a.length()).mapNotNull { a.optString(it).takeIf { s -> s.isNotBlank() } }.toSet()
+        }
+        RulesSnapshot(
+            preset = CallPreset.entries.firstOrNull { it.name == o.optString("preset") } ?: CallPreset.SMART,
+            answerContacts = o.optBoolean("contacts", false),
+            answerStrangers = o.optBoolean("strangers", true),
+            answerHidden = o.optBoolean("hidden", false),
+            answerSpam = o.optBoolean("spam", false),
+            answerRepeat = o.optBoolean("repeat", true),
+            answerInternational = o.optBoolean("international", false),
+            allowed = strings("allowed"), blocked = strings("blocked"),
+            allowPrefixes = strings("allowPrefixes"), blockPrefixes = strings("blockPrefixes"),
+            activeStartMinute = o.optInt("windowStart", -1),
+            activeEndMinute = o.optInt("windowEnd", -1),
+            fallback = CallFallback.entries.firstOrNull { it.name == o.optString("fallback") } ?: CallFallback.WAIT_USER,
+            delaySeconds = o.optInt("delay", CallConfig.MIN_AUTO_ANSWER_DELAY_SECONDS),
+        )
+    }.getOrNull()
+}
 /** 只在某段时间自动接。 */
 @Composable
 private fun WindowSection(
@@ -623,6 +723,9 @@ private fun androidx.compose.foundation.layout.RowScope.Segment(text: String, se
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal)
     }
 }
+
+
+
 
 
 

@@ -934,7 +934,10 @@ class CallRuntime(private val app: MikaApp) {
                 ringObservedWallMs = t.ringObservedWallMs)) return
         if (autoAnswerBlocker(config) != null || !t.service.tracks(t.call) || !carrierCall(t.call)) return
         t.autoTried = true
-        startWork(Work(CallDirection.INCOMING, config, track = t, auto = true))
+        val starting = Work(CallDirection.INCOMING, config, track = t, auto = true)
+        // 记下这次是哪条规则接的,通话记录里能看到
+        starting.ruleHit = CallPolicy.decisionReason(config, t.number, t.facts)
+        startWork(starting)
     }
 
     internal fun onCallRemoved(service: MikaInCallService, call: Call) {
@@ -1116,8 +1119,10 @@ class CallRuntime(private val app: MikaApp) {
                     if (w.telecomActionIssued) {
                         val answeredByAi = w.aiActive && w.direction == CallDirection.INCOMING
                         val summaryRequested = settings.state.value.summaryEnabled && w.transcript.isNotEmpty()
+                        val ruleHit = if (answeredByAi) w.ruleHit else null
+                        val summaryReason = if (ruleHit != null) "$reason（自动接听：$ruleHit）" else reason
                         val record = CallRecord(w.id, it.number, w.direction, w.activeAt ?: it.createdAt,
-                            System.currentTimeMillis(), reason, w.transcript.toList(), task = w.task,
+                            System.currentTimeMillis(), summaryReason, w.transcript.toList(), task = w.task,
                             audioReport = w.mediaCounters.recordReport(),
                             summaryStatus = if (summaryRequested) SummaryStatus.PENDING else SummaryStatus.NOT_REQUESTED)
                         scope.launch {
@@ -1767,6 +1772,8 @@ class CallRuntime(private val app: MikaApp) {
         }
         val createdAt = System.currentTimeMillis()
         var initialRingPolicy: CallConfig? = null
+        /** 这次自动接听命中的规则(写进通话记录)。 */
+        var ruleHit: String? = null
         var ringObservedAt: Long = 0L
         var ringObservedWallMs: Long = 0L
         var autoTried = false
@@ -1788,6 +1795,8 @@ class CallRuntime(private val app: MikaApp) {
         val lockedDialTicket: LockedDialGate.Ticket? = null,
     ) {
         val id = UUID.randomUUID().toString()
+        /** 这次自动接听命中的规则(写进通话记录);用户手动接管的不记。 */
+        var ruleHit: String? = null
         val result = CompletableDeferred<CallActionResult>()
         val cleaned = CompletableDeferred<Boolean>()
         val transcript = mutableListOf<CallTranscriptLine>()
@@ -1880,6 +1889,9 @@ internal class CallStopReason {
         if (value == expected) value = reason
     }
 }
+
+
+
 
 
 

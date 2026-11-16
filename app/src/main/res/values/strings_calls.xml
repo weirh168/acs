@@ -202,6 +202,13 @@
     <string name="calls_list_paste">Paste</string>
     <string name="calls_list_prefix_hint">e.g. 400, 0571; comma separated, matched from the start</string>
     <string name="calls_list_no_contacts">Contacts unavailable (needs permission)</string>
+    <string name="calls_rules_exported">Rules copied to the clipboard</string>
+    <string name="calls_rules_import_empty">The clipboard is empty</string>
+    <string name="calls_rules_imported">Rules imported from the clipboard</string>
+    <string name="calls_rules_import">Import</string>
+    <string name="calls_rules_import_failed">That is not a rules JSON</string>
+    <string name="calls_rules_export">Export</string>
 </resources>
+
 
 

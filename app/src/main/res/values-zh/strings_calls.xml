@@ -202,6 +202,13 @@
     <string name="calls_list_paste">粘贴批量</string>
     <string name="calls_list_prefix_hint">例如 400、0571；逗号分隔，按开头匹配</string>
     <string name="calls_list_no_contacts">读不到通讯录（需要通讯录权限）</string>
+    <string name="calls_rules_exported">已把规则复制到剪贴板</string>
+    <string name="calls_rules_import_empty">剪贴板里没有内容</string>
+    <string name="calls_rules_imported">已从剪贴板导入规则</string>
+    <string name="calls_rules_import">导入规则</string>
+    <string name="calls_rules_import_failed">剪贴板里不是规则 JSON</string>
+    <string name="calls_rules_export">导出规则</string>
 </resources>
+
 
 
