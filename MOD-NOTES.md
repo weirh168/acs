@@ -959,3 +959,12 @@ AI 通话卡 + 一键纠正两按钮、通知三键(人工接管/挂断/看文�
 `语音与模型` 组改成三行:AI 声音(右端「试听」)、听得懂(普通话)、通话质量(标准 · 更自然)。
 做法:先确认上一轮脚本把整组删掉了,再按行号把完整新块插回去;补齐 4 个字符串;图标名 Sparkle 不存在换 Message。
 实机 dump:「语音与模型 | AI 声音 … 试听 | 听得懂 普通话 | 通话质量 标准 · 更自然」。
+
+## 设置页「数据」组落地（2026-11-17 02:45）
+
+- 组标题复用现成的 `calls_settings_data_group`(值「数据」,定义在 strings_calls_profiles.xml),
+  不再新增同名 key(上次就是这里 Duplicate resources 失败);
+- 三行:通话记录(保留 30 天,点进记录页)、AI 总结(开关 + 只发文字/已关闭)、清空记录(调 clearHistory);
+- `clearHistory` 是 suspend,调用点包了 `scope.launch`;
+- 新增 key:`calls_data_retention/summary/summary_on/summary_off/clear`、`calls_history_title`。
+实机 dump 确认三行都在。

@@ -253,7 +253,15 @@
     <string name="calls_voice_language">Language</string>
     <string name="calls_voice_language_value">Mandarin</string>
     <string name="calls_voice_quality_value">Standard · natural</string>
+    <string name="calls_data_retention">Kept 30 days</string>
+    <string name="calls_data_summary">AI summary</string>
+    <string name="calls_data_summary_on">Text only, no recording</string>
+    <string name="calls_data_summary_off">Off</string>
+    <string name="calls_data_clear">Clear records</string>
+    <string name="calls_history_title">Call records</string>
 </resources>
+
+
 
 
 

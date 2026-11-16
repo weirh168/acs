@@ -326,6 +326,7 @@ private fun CallSettingsWorkspace(
                             onVerifyAudio = { verified -> perform { runtime.setAudioVerified(verified) } },
                             onDefaultSim = { id -> scope.launch { save { it.copy(defaultOutgoingSimId = id) } } },
                             onSummaryEnabled = { enabled -> scope.launch { save { it.copy(summaryEnabled = enabled) } } },
+                        onClearHistory = { scope.launch { runtime.clearHistory() } },
                         )
                     }
                 }
@@ -713,6 +714,7 @@ private fun CallPreferencesPage(
     onVoiceProfiles: () -> Unit, onRecords: () -> Unit,
     onVerifyAudio: (Boolean) -> Unit, onDefaultSim: (String?) -> Unit,
     onSummaryEnabled: (Boolean) -> Unit,
+    onClearHistory: () -> Unit = {},
     onHelperSetup: () -> Unit, onStartStandby: () -> Unit,
 ) {
     var deviceOpen by rememberSaveable { mutableStateOf(!ready || !config.audioVerified) }
@@ -745,6 +747,17 @@ private fun CallPreferencesPage(
     }
 
 
+    GroupLabel(stringResource(R.string.calls_settings_data_group))
+    GroupCard {
+        ListRow(MikaIcons.Doc, stringResource(R.string.calls_history_title), stringResource(R.string.calls_data_retention),
+            onClick = onRecords)
+        ListRow(MikaIcons.Shield, stringResource(R.string.calls_data_summary),
+            stringResource(if (config.summaryEnabled) R.string.calls_data_summary_on else R.string.calls_data_summary_off)) {
+            MikaSwitch(config.summaryEnabled, onSummaryEnabled, enabled = canConfigure,
+                modifier = Modifier.testTag("call-summary-toggle"))
+        }
+        ListRow(MikaIcons.Trash, stringResource(R.string.calls_data_clear), null, onClick = onClearHistory)
+    }
     GroupLabel(stringResource(R.string.calls_settings_device_group))
     GroupCard {
         CallFoldRow(MikaIcons.Gear, stringResource(R.string.calls_device_and_permissions), deviceOpen, "call-settings-device",
@@ -1292,6 +1305,8 @@ private fun ObserveBanner(daysLeft: Int, onSkip: () -> Unit) {
     }
     Spacer(Modifier.size(12.dp))
 }
+
+
 
 
 

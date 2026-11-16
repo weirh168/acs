@@ -253,7 +253,15 @@
     <string name="calls_voice_language">听得懂</string>
     <string name="calls_voice_language_value">普通话</string>
     <string name="calls_voice_quality_value">标准 · 更自然</string>
+    <string name="calls_data_retention">保留 30 天</string>
+    <string name="calls_data_summary">AI 总结</string>
+    <string name="calls_data_summary_on">只发文字，不发录音</string>
+    <string name="calls_data_summary_off">已关闭</string>
+    <string name="calls_data_clear">清空记录</string>
+    <string name="calls_history_title">通话记录</string>
 </resources>
+
+
 
 
 
