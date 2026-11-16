@@ -97,6 +97,7 @@ class CallSettings(
             .putString("fallback", next.fallback.name)
             .putBoolean("institution_transfer", next.institutionTransfer)
             .putStringSet("auto_sim_ids", next.autoAnswerSimIds)
+            .putLong("observe_until_ms", next.observeUntilMs)
             .putLong("auto_answer_paused_until_ms", next.autoAnswerPausedUntilMs ?: 0L)
             .putInt("max_seconds", next.maxCallSeconds)
             .putString("audio_mode", next.audioMode.name)
@@ -203,6 +204,7 @@ class CallSettings(
                 ?: CallFallback.WAIT_USER,
             institutionTransfer = prefs.getBoolean("institution_transfer", true),
             autoAnswerSimIds = prefs.getStringSet("auto_sim_ids", emptySet()).orEmpty(),
+            observeUntilMs = prefs.getLong("observe_until_ms", 0L),
             blockedIncomingNumbers = prefs.getStringSet("blocklist", emptySet()).orEmpty()
                 .mapNotNull(CallPolicy::incomingNumber).distinctBy(CallPolicy::incomingMatchKey)
                 .take(CallPolicy.MAX_ALLOWED_NUMBERS).toSet(),
@@ -236,6 +238,7 @@ class CallSettings(
             CallSettings(context.getSharedPreferences("mika_call_settings", Context.MODE_PRIVATE))
     }
 }
+
 
 
 

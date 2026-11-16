@@ -66,6 +66,10 @@ data class CallConfig(
     /** 只在一天里的这段时间自动接;两个都是 -1 表示全天。跨零点用 start > end 表示。 */
     val activeStartMinute: Int = -1,
     val activeEndMinute: Int = -1,
+    /** 观察期到期时间:在此之前 AI 只记录不接听。0 表示不在观察期。 */
+    val observeUntilMs: Long = 0L,
+    /** 新开自动接听时给的观察天数。 */
+    val observeDays: Int = 3,
     /** 只在选中的 SIM 上自动接;空集合表示所有 SIM 都接。 */
     val autoAnswerSimIds: Set<String> = emptySet(),
     /** 机构号(400/955xx/100xx)直接转给本人,不交给 AI。 */
@@ -200,6 +204,15 @@ internal object CallPolicy {
         )
     }
 
+    fun observing(config: CallConfig, nowMs: Long = System.currentTimeMillis()): Boolean =
+        nowMs < config.observeUntilMs
+
+    /** 观察期还剩几天(向上取整),没过期返回 0。 */
+    fun observeDaysLeft(config: CallConfig, nowMs: Long = System.currentTimeMillis()): Int {
+        val left = config.observeUntilMs - nowMs
+        return if (left <= 0L) 0 else ((left + 86_399_999L) / 86_400_000L).toInt()
+    }
+
     fun isBypassed(config: CallConfig, number: String?): Boolean =
         incomingMatchKey(number)?.let { key -> config.bypassIncomingNumbers.any { incomingMatchKey(it) == key } } == true
 
@@ -249,6 +262,8 @@ internal object CallPolicy {
         if (number != null && key == null) return false
         // 不在自动接听的时段里,一律不接(交给系统响铃)
         if (!inActiveWindow(config, nowMs)) return false
+        // 观察期:只记录,不真的接
+        if (nowMs < config.observeUntilMs) return false
         // 只接了部分 SIM:不是这些 SIM 上的来电不接
         if (config.autoAnswerSimIds.isNotEmpty() && simKey != null && simKey !in config.autoAnswerSimIds) return false
         // 黑名单最优先:名单里说不接就,或者号码落在不接的号段里,都不接
@@ -396,6 +411,7 @@ internal object CallPolicy {
         append("\n收尾：自行判断本通要说的事是否已经说清，结合上下文和对方的回应，不必等对方说‘再见’。如果内容已经办清而且没有未解的问题，可自然简短收尾，例如最后说‘那就先这样’；这轮不要再问问题。如果对方明确要求挂断或告别，只答‘好的，再见’。单纯停顿、普通道谢但事项还没聊完、或对方还在问事时继续听，不提前收尾。")
     }
 }
+
 
 
 

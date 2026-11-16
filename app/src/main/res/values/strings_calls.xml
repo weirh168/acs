@@ -236,7 +236,11 @@
     <string name="calls_caller_international">International</string>
     <string name="calls_caller_hidden">Hidden number</string>
     <string name="calls_sims_title">SIMs that may auto-answer</string>
+    <string name="calls_observe_title">Observation period · %1$d days left</string>
+    <string name="calls_observe_note">The AI only records during this time, so you can check the rules for false positives. It starts answering when the period ends.</string>
+    <string name="calls_observe_skip">Start answering now</string>
 </resources>
+
 
 
 
