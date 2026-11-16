@@ -338,7 +338,11 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
                 override fun resume() = TaskService.resume(app)
                 override fun takeOver() = TaskService.takeOver(app)
                 // 小窗里的人工介入:只让任务在下一个动屏动作前停下,不搬走任务、不关小窗
-                override fun pauseForHuman() { taskState.runs.value.firstOrNull { it.state.value is com.wangzan101.mika.core.agent.TaskState.Running }?.userTookControl() }
+                // 无人参与的兜底路径也要搬家:先搬 App 到主屏,再停自动操作
+                override fun pauseForHuman() {
+                    taskState.runs.value.firstOrNull { it.state.value is com.wangzan101.mika.core.agent.TaskState.Running }
+                        ?.let { run -> run.handAppToUser(); run.userTookControl() }
+                }
                 // 接管 = 把那个 App 搬到用户主屏 + 停掉自动操作,小窗留着当提示
                 override fun pauseForHumanIn(conversationId: String) {
                     taskState.run(conversationId)?.let { run -> run.handAppToUser(); run.userTookControl() }

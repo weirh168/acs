@@ -357,9 +357,10 @@ class TaskRun(
             if (t != null && t.handOver(null)) return@launch
             if (d < 0) return@launch
             runCatching {
+                if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser display=$d")
                 val sh = phoneServices.hub.shell.value ?: return@runCatching
                 val task = sh.topTaskId(d)
-                if (task >= 0) sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY)
+                if (com.wangzan101.mika.BuildConfig.DEBUG) android.util.Log.d("ACS-Pip", "handAppToUser task=$task move=${if (task >= 0) sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY) else false}")
             }
         }
     }

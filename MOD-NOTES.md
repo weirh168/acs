@@ -313,3 +313,19 @@ git rebase upstream/main        # 或 git merge upstream/main
 已构建、已装。**但今天手机控制反复掉线**（连着跑任务都报 “phone control isn't ready”，
 助手进程在但 App 不认），所以这轮没抓到「点小窗 → 设置出现在主屏」的实机画面。
 用户侧要做一次「设置 › 手机操作 › 去处理 / 重新配对」把控制恢复，之后即可验证。
+
+## 接管后真的把 App 搬到主屏（已验证）（2026-11-16 09:10）
+
+补齐最后一块漏网:无参的 `pauseForHuman()`（走「当前对话没有 run」的分支）原来只暂停、不搬家,
+现在也调 `handAppToUser()`。
+
+**实机验证（USB）**:
+
+```
+D ACS-Pip: handAppToUser display=121
+D ACS-Pip: handAppToUser task=95344 move=true
+topResumedActivity = com.android.settings/.Settings$WifiSettingsActivity  (主屏, fullscreen)
+```
+
+截图:WLAN 设置页整屏铺在用户屏幕上,右下角 ACS 胶囊仍在;切过去的头两秒是黑屏(任务窗口跨屏挪动后要重画),
+点一下就好。任务侧同时是「已暂停 / 你在操作,ACS 已暂停」,点「继续」交回给 ACS。
