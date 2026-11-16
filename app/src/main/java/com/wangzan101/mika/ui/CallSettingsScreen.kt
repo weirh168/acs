@@ -280,6 +280,7 @@ private fun CallSettingsWorkspace(
                             onHistory = { tab = CallWorkspaceTab.History },
                             onDelay = { seconds -> scope.launch { save { it.copy(autoAnswerDelaySeconds = seconds) } } },
                             onEditConfig = { change -> scope.launch { save(change) } },
+                            onToggleEnabled = { on -> scope.launch { if (on) prepare() else runtime.stop() } },
                         )
                         CallWorkspaceTab.Task -> CallTaskScreen(
                             taskDraft, config, state, ready,
@@ -536,11 +537,22 @@ private fun CallReceivePage(
     history: List<CallRecord> = emptyList(), onHistory: () -> Unit = {},
     onDelay: (Int) -> Unit = {},
     onEditConfig: ((CallConfig) -> CallConfig) -> Unit = {},
+    onToggleEnabled: (Boolean) -> Unit = {},
 ) {
     var scopeOpen by rememberSaveable { mutableStateOf(false) }
     var importantOpen by rememberSaveable { mutableStateOf(false) }
     var pauseOpen by rememberSaveable { mutableStateOf(false) }
     val liveContext = LocalContext.current
+    // 总开关(AI 电话)在接听页;设置页只负责它能不能正常工作
+    GroupCard {
+        ListRow(MikaIcons.Phone, stringResource(R.string.calls_enable),
+            stringResource(if (config.enabled) R.string.calls_enabled_summary else R.string.calls_system_default),
+            first = true) {
+            MikaSwitch(config.enabled, onToggleEnabled, enabled = controlsEnabled || config.enabled,
+                modifier = Modifier.testTag("call-enabled"))
+        }
+    }
+    Spacer(Modifier.size(12.dp))
     if (state.aiActive || state.liveTranscript.isNotEmpty()) {
         GroupCard {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -712,13 +724,6 @@ private fun CallPreferencesPage(
         if (openDeviceRequest != lastDeviceRequest) {
             deviceOpen = true
             lastDeviceRequest = openDeviceRequest
-        }
-    }
-    GroupCard {
-        ListRow(MikaIcons.Phone, stringResource(R.string.calls_enable),
-            stringResource(if (config.enabled) R.string.calls_enabled_summary else R.string.calls_system_default), first = true) {
-            MikaSwitch(config.enabled, { checked -> if (checked) onPrepare() else onStop() },
-                enabled = canConfigure || config.enabled, modifier = Modifier.testTag("call-enabled"))
         }
     }
 
@@ -1281,5 +1286,6 @@ private fun ObserveBanner(daysLeft: Int, onSkip: () -> Unit) {
     }
     Spacer(Modifier.size(12.dp))
 }
+
 
 
