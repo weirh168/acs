@@ -1,5 +1,11 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+
+import androidx.compose.foundation.background
+
+import androidx.compose.ui.graphics.Color
+
 import androidx.compose.foundation.layout.fillMaxWidth
 
 import androidx.compose.material3.LinearProgressIndicator
@@ -189,7 +195,16 @@ internal fun TraceSettingsRows() {
     }
 
     ListRow(null, stringResource(R.string.trace_switch), stringResource(R.string.trace_switch_detail), first = true, onClick = { onTrace(!traceEnabled) }) {
-        MikaSwitch(traceEnabled, ::onTrace, Modifier.testTag("dev-trace"))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                "注意",
+                fontSize = 11.sp,
+                color = Color(0xFF7A5B00),
+                modifier = Modifier.background(Color(0xFFFFE9A8), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+            MikaSwitch(traceEnabled, ::onTrace, Modifier.testTag("dev-trace"))
+        }
     }
     ListRow(null, stringResource(R.string.trace_storage_limit), stringResource(R.string.trace_storage_hint)) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -257,3 +272,4 @@ internal fun TraceSettingsRows() {
         )
     }
 }
+
