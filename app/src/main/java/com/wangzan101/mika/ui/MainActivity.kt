@@ -535,6 +535,7 @@ private fun MikaRoot(
                 conversationChanges = ConversationStore.shared(context).changes,
                 conversationTitle = { ConversationStore.shared(context).title(it) },
                 search = ConversationStore.shared(context).search,
+                onCalls = { nav.pushFromDrawer(Route.Calls) },
                 onPlans = { nav.pushFromDrawer(Route.Plans) },
                 onMemory = { nav.pushFromDrawer(Route.Memory) },
                 onSettings = { nav.pushFromDrawer(Route.Settings) },
@@ -749,3 +750,4 @@ private fun com.wangzan101.mika.core.self.SelfScreen.route(): Route = when (this
     com.wangzan101.mika.core.self.SelfScreen.Screens -> Route.Screens
     com.wangzan101.mika.core.self.SelfScreen.About -> Route.About
 }
+

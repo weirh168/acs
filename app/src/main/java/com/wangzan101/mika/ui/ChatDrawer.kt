@@ -354,6 +354,8 @@ fun ChatDrawer(
     searchFilter: SearchArchiveFilter = SearchArchiveFilter.All,
     onSearchFilterChange: (SearchArchiveFilter) -> Unit = {},
     onNew: () -> Unit,
+    /** AI 接打电话(接听规则、拨打、实时语音):侧栏里紧跟在「新对话」后面。 */
+    onCalls: () -> Unit = {},
     onPlans: () -> Unit,
     onMemory: () -> Unit,
     onBrowser: () -> Unit,
@@ -442,6 +444,7 @@ fun ChatDrawer(
         if (!searchActive && !selecting && !archivedView) Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
             if (showPersonal) NavEntry(MikaIcons.Message, stringResource(R.string.drawer_personal), onClick = onPersonal)
             NavEntry(MikaIcons.New, stringResource(R.string.chat_new), enabled = canSwitch, onClick = onNew)
+            NavEntry(MikaIcons.Phone, stringResource(R.string.drawer_calls), onClick = onCalls)
             NavEntry(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onPlans)
             NavEntry(MikaIcons.Heart, stringResource(R.string.memory_and_skills), onClick = onMemory)
             NavEntry(MikaIcons.Globe, stringResource(R.string.drawer_browser), onClick = onBrowser)
@@ -1032,6 +1035,8 @@ fun ChatWithDrawer(
     conversationTitle: (String) -> String? = { null },
     /** 侧栏搜索用的索引;没有时侧栏不显示搜索框。 */
     search: ConversationSearch? = null,
+    /** AI 接打电话(接听规则、拨打、实时语音):侧栏里紧跟在「新对话」后面。 */
+    onCalls: () -> Unit = {},
     onPlans: () -> Unit,
     onMemory: () -> Unit,
     onBrowser: () -> Unit,
@@ -1295,6 +1300,7 @@ fun ChatWithDrawer(
                     onNew = { close { vm.newConversation(); onRegularChat() } },
                     onPersonal = { leave(onPersonal) },
                     showPersonal = showPersonal,
+                    onCalls = { leave(onCalls) },
                     onPlans = { leave(onPlans) },
                     onMemory = { leave(onMemory) },
                     onSettings = { leave(onSettings) },

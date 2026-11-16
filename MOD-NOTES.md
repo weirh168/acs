@@ -650,3 +650,18 @@ ACS : 他现在暂时没法接电话，您可以留个言，我帮您转达。
 
 设备侧:新版已安装,`READ_CONTACTS` 已授权。**尚未在设备上点开这个新开关**(用户当时在微信里,
 不去打断),等空闲再点开并观察一通通讯录内/外的来电。
+
+## 侧栏新增「AI 接打电话」入口（2026-11-16 19:40）
+
+按用户要求:侧栏里在「新对话」下面、「定时任务」上面加一项 **AI 接打电话**,
+打开的就是原来那个 AI 电话页(`Route.Calls`,接听/拨打/设置三个页签),
+设置里原有的「AI 接打电话」入口保持不变。
+
+改动:
+- `ChatDrawer`:新增 `onCalls` 回调,清单里 `NavEntry(MikaIcons.Phone, drawer_calls)` 插在
+  `onNew` 与 `onPlans` 之间;
+- `MainActivity`:`onCalls = { nav.pushFromDrawer(Route.Calls) }`(和定时任务同样从侧栏推进栈);
+- 文案 `drawer_calls`:中文「AI 接打电话」、英文「AI calls」。
+
+构建通过;`aapt2 dump resources` 能在 APK 里查到 `string/drawer_calls`,已装到手机。
+设备侧没截图核对:安装时用户正在微信聊天,不去抢前台。
