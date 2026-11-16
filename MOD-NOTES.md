@@ -943,3 +943,13 @@ AI 通话卡 + 一键纠正两按钮、通知三键(人工接管/挂断/看文�
 
 `calls_model_label` 真正用的是 `values-zh/strings_calls.xml`(第 31 行),上次改的是 `strings_calls_profiles.xml`,
 所以界面还显示「模型 1.2.6.1 · 通话音频通道」。这次改对文件:→「版本 %1$s」,已安装。
+
+## 设置页声音组改造:没成功（2026-11-17 02:30）
+
+- 底部两行说明**已换**:「ACS 只在 AI 接管时联网:接听用实时语音,总结只发文字。录音不离开手机。」(已安装);
+- 「声音与 AI 三行」**没改成**:脚本里先 `continue` 后插值的顺序写错,插入分支永远不触发,
+  所以文件里 `calls_settings_voice_group` 那句原样保留,界面仍是两行 + chevron。
+  新增的几个字符串(calls_voice_try / calls_voice_language / calls_voice_language_value /
+  calls_voice_quality_value)已进资源,但还没被界面使用。
+
+下一轮重做这块时,直接用行号区间替换(读 730..740 -> 写回新块),不再在循环里判断。
