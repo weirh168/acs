@@ -56,6 +56,7 @@ class CallSettings(
             systemPrompt = config.systemPrompt.trim(),
             speaker = speaker,
             credentialsConfigured = config.credentialsConfigured,
+            contactsHumanIncoming = config.contactsHumanIncoming,
         )
         val committed = prefs.edit()
             .putBoolean("enabled", next.enabled)
@@ -67,6 +68,7 @@ class CallSettings(
             .putBoolean("allow_all", next.allowAllIncoming)
             .putStringSet("allowlist", numbers)
             .putStringSet("bypass_incoming", bypass)
+            .putBoolean("contacts_human", next.contactsHumanIncoming)
             .putLong("auto_answer_paused_until_ms", next.autoAnswerPausedUntilMs ?: 0L)
             .putInt("max_seconds", next.maxCallSeconds)
             .putString("audio_mode", next.audioMode.name)
@@ -154,6 +156,7 @@ class CallSettings(
                 .coerceIn(CallConfig.MIN_AUTO_ANSWER_DELAY_SECONDS, CallConfig.MAX_AUTO_ANSWER_DELAY_SECONDS),
             defaultOutgoingSimId = prefs.getString("default_outgoing_sim_id", null),
             allowAllIncoming = prefs.getBoolean("allow_all", false),
+            contactsHumanIncoming = prefs.getBoolean("contacts_human", false),
             allowedIncomingNumbers = prefs.getStringSet("allowlist", emptySet()).orEmpty()
                 .mapNotNull(CallPolicy::incomingNumber).distinctBy(CallPolicy::incomingMatchKey)
                 .take(CallPolicy.MAX_ALLOWED_NUMBERS).toSet(),

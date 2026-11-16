@@ -89,6 +89,9 @@
     <string name="calls_original_transcript">通话文字原文</string>
     <string name="calls_outgoing_title">拨打电话</string>
     <string name="calls_rules">自动接听规则</string>
+    <string name="calls_contacts_human">通讯录内的人由我接听</string>
+    <string name="calls_contacts_human_note">通讯录里的来电不自动接，通讯录外的照常由 AI 接听</string>
+    <string name="calls_contacts_no_permission">还没给 ACS 读通讯录的权限：现在所有来电都按「通讯录外」处理</string>
     <string name="calls_setup_credentials">请配置火山实时语音凭据。</string>
     <string name="calls_setup_shell">请先连接 ACS 内置助手。</string>
     <string name="calls_sim_clear_preferred">取消默认 SIM</string>

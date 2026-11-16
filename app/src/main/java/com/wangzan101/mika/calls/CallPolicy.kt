@@ -24,6 +24,11 @@ data class CallConfig(
     val autoAnswerDelaySeconds: Int = MIN_AUTO_ANSWER_DELAY_SECONDS,
     val defaultOutgoingSimId: String? = null,
     val bypassIncomingNumbers: Set<String> = emptySet(),
+    /**
+     * 通讯录里的号码由本人接听:开着时,通讯录内的来电不自动接,通讯录外的照常自动接。
+     * 需要读通讯录的权限;没权限时当作「都不是通讯录里的」并如实提示。
+     */
+    val contactsHumanIncoming: Boolean = false,
     val autoAnswerPausedUntilMs: Long? = null,
     val activeVoiceProfileId: String = CallVoiceProfile.DEFAULT_ID,
     internal val backgroundStandbyAuthorized: Boolean = false,
@@ -86,9 +91,17 @@ internal object CallPolicy {
     fun autoAnswerPauseRemainingMs(config: CallConfig, nowMs: Long): Long =
         config.autoAnswerPausedUntilMs?.takeIf { it > nowMs }?.minus(nowMs) ?: 0L
 
-    fun callerAllowed(config: CallConfig, number: String?, nowMs: Long = System.currentTimeMillis()): Boolean {
+    fun callerAllowed(
+        config: CallConfig,
+        number: String?,
+        nowMs: Long = System.currentTimeMillis(),
+        /** 这个号码在通讯录里(由调用方查好;没权限时传 false)。 */
+        inContacts: Boolean = false,
+    ): Boolean {
         if (!config.enabled || !config.autoAnswer || !config.credentialsConfigured || !config.audioVerified) return false
         if (autoAnswerPauseRemainingMs(config, nowMs) > 0L || isBypassed(config, number)) return false
+        // 通讯录里的人留给本人接:用户要的是「熟人我自己接,陌生号码交给 AI」
+        if (config.contactsHumanIncoming && inContacts) return false
         if (number == null) return config.allowAllIncoming // Explicit all includes unavailable caller ID.
         val key = incomingMatchKey(number) ?: return false
         return config.allowAllIncoming || config.allowedIncomingNumbers.any { incomingMatchKey(it) == key }
@@ -101,9 +114,11 @@ internal object CallPolicy {
         ringingForMs: Long,
         nowMs: Long = System.currentTimeMillis(),
         ringObservedWallMs: Long = nowMs - ringingForMs,
+        inContacts: Boolean = false,
     ): Boolean =
         ringingForMs in 0L..AUTO_START_WINDOW_MS && initial.audioMode == current.audioMode &&
-            callerAllowed(initial, number, ringObservedWallMs) && callerAllowed(current, number, nowMs)
+            callerAllowed(initial, number, ringObservedWallMs, inContacts) &&
+            callerAllowed(current, number, nowMs, inContacts)
 
     fun chooseSim(sims: List<CallSim>, requested: String?): CallSim? = when {
         requested == "default" -> sims.singleOrNull { it.isDefault } ?: sims.singleOrNull()

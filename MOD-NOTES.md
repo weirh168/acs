@@ -626,3 +626,27 @@ ACS : 他现在暂时没法接电话，您可以留个言，我帮您转达。
 | 通话结束后 | ✅ 回到「待命中 · 符合规则的来电等待…秒后接听」,`CallStandbyService` 仍在运行 |
 
 到这一步四道门全部打通,自动接听可用。注意「接听等待」现在是 5 秒(操作过程中被改过一次,原值 3 秒)。
+
+## 自动接听规则新增:通讯录内本人接、通讯录外交给 AI（2026-11-16 19:20）
+
+需求:自动接听规则里加一项 —— **通讯录里的来电由本人接听,通讯录外的自动由 AI 接**。
+
+实现:
+- `CallConfig.contactsHumanIncoming`(+ `CallSettings` 持久化键 `contacts_human`);
+- `CallPolicy.callerAllowed(...)` 新增 `inContacts` 参数:开着这项且号码在通讯录里 → 不自动接;
+  `canStartAutoAnswer(...)` 同样透传;
+- 新增 `ContactsLookup`(PhoneLookup 查单个号码;没给 READ_CONTACTS 权限时按「不在通讯录里」处理并记日志);
+- `CallRuntime` 在来电第一次响铃时(`onCallChanged` 的 ring 快照处)查一次,结果记在
+  `Tracked.fromContacts` 上,后面 4 处规则判断(设置变更、来电变化、接听前校验)都用同一个值,
+  不会出现「接听前才判定、和倒计时时的判断不一致」;
+- 清单加 `READ_CONTACTS`;设置里的「自动接听规则」弹窗加一个勾选项
+  「通讯录内的人由我接听」,勾上时申请通讯录权限,没权限时提示
+  「现在所有来电都按通讯录外处理」;
+- 单测 `CallPolicyTest.contactsAreLeftToTheOwnerWhenEnabled`(通讯录内不接、通讯录外接、
+  关掉后照旧、名单+通讯录同时命中时按本人接、自动开始判断同样尊重)。
+
+顺带修了 `ChatViewModelTest` 里的 `TaskActions` 假实现缺 `pauseForHuman`(之前加 PiP 接管时漏的),
+否则单元测试编译不过。`app:testDebugUnitTest --tests *CallPolicyTest*` 通过,`assembleDebug` 通过。
+
+设备侧:新版已安装,`READ_CONTACTS` 已授权。**尚未在设备上点开这个新开关**(用户当时在微信里,
+不去打断),等空闲再点开并观察一通通讯录内/外的来电。

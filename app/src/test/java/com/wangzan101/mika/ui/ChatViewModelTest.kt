@@ -104,6 +104,7 @@ class ChatViewModelTest {
         override fun answerIn(conversationId: String, text: String) { calls += "answer@$conversationId:$text" }
         override fun approveIn(conversationId: String, key: Int) { calls += "approve@$conversationId:$key" }
         override fun togglePipSoundIn(conversationId: String) { calls += "toggle-sound@$conversationId" }
+        override fun pauseForHuman() { calls += "pauseForHuman" }
     }
 
     private val ready = SystemStatus(34, BuiltinShellStatus.Running, AccessibilityState.On, notificationsAllowed = true)
@@ -3640,3 +3641,4 @@ class ChatViewModelTest {
     }
 
 }
+

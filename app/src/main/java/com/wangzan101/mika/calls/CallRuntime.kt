@@ -174,7 +174,8 @@ class CallRuntime(private val app: MikaApp) {
                 val active = work
                 if (active != null && (!config.enabled || !config.credentialsConfigured ||
                         config.audioMode != active.config.audioMode || config.activeVoiceProfileId != active.config.activeVoiceProfileId ||
-                        (active.automatic && !active.answerSent && !CallPolicy.callerAllowed(config, active.track?.number)))) {
+                        (active.automatic && !active.answerSent &&
+                            !CallPolicy.callerAllowed(config, active.track?.number, inContacts = active.track?.fromContacts == true)))) {
                     cancelWork("AI 电话设置已变更，电话由系统处理")
                 }
                 if (config.audioMode != previousMode || config.enabled != previousEnabled) {
@@ -881,6 +882,8 @@ class CallRuntime(private val app: MikaApp) {
         val t = tracked[call]?.takeIf { it.service === service } ?: return
         if (t.phase == CallPhase.RINGING && t.initialRingPolicy == null) {
             t.initialRingPolicy = settings.state.value
+            // 通讯录内的来电由本人接:查一次留在这通电话上,后面几处规则判断都用它
+            t.fromContacts = settings.state.value.contactsHumanIncoming && ContactsLookup.inContacts(app, t.number)
             t.ringObservedAt = SystemClock.elapsedRealtime()
             t.ringObservedWallMs = System.currentTimeMillis()
             if (autoPauseWriting || !canAutomaticallyAnswerHere()) t.autoTried = true
@@ -910,7 +913,7 @@ class CallRuntime(private val app: MikaApp) {
                     (t.direction != CallDirection.INCOMING || !carrierCall(t.call)) ->
                     cancelWork("来电已变化，AI 未接听")
                 target === t && active.automatic && !active.answerSent &&
-                    !CallPolicy.callerAllowed(settings.state.value, t.number) -> cancelWork("来电已不符合自动接听规则")
+                    !CallPolicy.callerAllowed(settings.state.value, t.number, inContacts = t.fromContacts) -> cancelWork("来电已不符合自动接听规则")
                 target === t && t.phase != CallPhase.ACTIVE && active.bridging ->
                     cancelWork("通话已切换，AI 音频已停止")
             }
@@ -1494,8 +1497,8 @@ class CallRuntime(private val app: MikaApp) {
                 val config = settings.state.value
                 val initial = t.initialRingPolicy
                 if (autoPauseWriting || initial == null ||
-                    !CallPolicy.callerAllowed(initial, t.number, t.ringObservedWallMs) ||
-                    !CallPolicy.callerAllowed(config, t.number) || config.audioMode != w.config.audioMode ||
+                    !CallPolicy.callerAllowed(initial, t.number, t.ringObservedWallMs, inContacts = t.fromContacts) ||
+                    !CallPolicy.callerAllowed(config, t.number, inContacts = t.fromContacts) || config.audioMode != w.config.audioMode ||
                     SystemClock.elapsedRealtime() - t.ringObservedAt > CallPolicy.AUTO_ANSWER_WINDOW_MS) {
                     throw CallProblem("来电已超时或不再符合自动接听规则")
                 }
@@ -1755,6 +1758,8 @@ class CallRuntime(private val app: MikaApp) {
         var ringObservedAt: Long = 0L
         var ringObservedWallMs: Long = 0L
         var autoTried = false
+        /** 这个号码在通讯录里(只在「通讯录内本人接」开着时查过;查不到算不在)。 */
+        var fromContacts = false
         var suppressed = false
     }
     private enum class MediaStage { PREFLIGHT, VOLC_CONNECT, TELECOM_CONNECT, MUTE_ACQUIRE, SHELL_OPEN, PCM_BRIDGE, RELEASE }
@@ -1838,3 +1843,4 @@ internal class CallStopReason {
         if (value == expected) value = reason
     }
 }
+

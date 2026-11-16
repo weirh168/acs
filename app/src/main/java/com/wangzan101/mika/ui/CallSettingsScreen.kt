@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import android.content.Context
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -334,8 +335,8 @@ private fun CallSettingsWorkspace(
     }
 
     when (dialog) {
-        CallDialog.Rules -> CallRulesDialog(config, onDismiss = { dialog = null }, onSave = { all, numbers, delay ->
-            save { it.copy(allowAllIncoming = all, allowedIncomingNumbers = numbers, autoAnswerDelaySeconds = delay) }
+        CallDialog.Rules -> CallRulesDialog(config, onDismiss = { dialog = null }, onSave = { all, numbers, delay, contactsHuman ->
+            save { it.copy(allowAllIncoming = all, allowedIncomingNumbers = numbers, autoAnswerDelaySeconds = delay, contactsHumanIncoming = contactsHuman) }
         })
         CallDialog.Bypass -> CallBypassDialog(config.bypassIncomingNumbers, onDismiss = { dialog = null }) { numbers ->
             save { it.copy(bypassIncomingNumbers = numbers) }
@@ -866,14 +867,17 @@ private fun phaseLabel(phase: CallPhase): String = stringResource(when (phase) {
 
 @Composable
 private fun CallRulesDialog(
-    config: CallConfig, onDismiss: () -> Unit, onSave: suspend (Boolean, Set<String>, Int) -> Boolean,
+    config: CallConfig, onDismiss: () -> Unit, onSave: suspend (Boolean, Set<String>, Int, Boolean) -> Boolean,
 ) {
     var all by rememberSaveable { mutableStateOf(config.allowAllIncoming) }
     var numbers by rememberSaveable { mutableStateOf(config.allowedIncomingNumbers.sorted().joinToString("\n")) }
     var delay by rememberSaveable { mutableStateOf(config.autoAnswerDelaySeconds.toString()) }
+    var contactsHuman by rememberSaveable { mutableStateOf(config.contactsHumanIncoming) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var contactsAllowed by remember { mutableStateOf(ContactsLookup.allowed(context)) }
     val normalized = parseCallNumberList(numbers)
     val validNumbers = normalized != null
     val minDelay = CallConfig.MIN_AUTO_ANSWER_DELAY_SECONDS
@@ -888,6 +892,24 @@ private fun CallRulesDialog(
                 RadioRow(stringResource(R.string.calls_only_list), !all, { all = false }, first = true, enabled = !busy)
                 RadioRow(stringResource(R.string.calls_all_incoming), all, { all = true },
                     subtitle = stringResource(R.string.calls_all_note), enabled = !busy)
+                // 通讯录内本人接:开关打开时先要通讯录权限,没授权就按「都在通讯录外」处理并如实说明
+                Row(
+                    Modifier.fillMaxWidth().toggleable(contactsHuman, enabled = !busy, role = Role.Checkbox) { on ->
+                        contactsHuman = on
+                        if (on && !contactsAllowed) contactsAllowed = requestContactsPermission(context)
+                    },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(contactsHuman, onCheckedChange = null, enabled = !busy)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(stringResource(R.string.calls_contacts_human), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            if (contactsAllowed) stringResource(R.string.calls_contacts_human_note)
+                            else stringResource(R.string.calls_contacts_no_permission),
+                            style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3,
+                        )
+                    }
+                }
                 OutlinedTextField(
                     numbers, { numbers = it; error = false },
                     modifier = Modifier.fillMaxWidth().testTag("call-allowlist"),
@@ -917,7 +939,7 @@ private fun CallRulesDialog(
                 busy = true
                 scope.launch {
                     try {
-                        if (onSave(all, normalized ?: return@launch, duration)) onDismiss() else error = true
+                        if (onSave(all, normalized ?: return@launch, duration, contactsHuman)) onDismiss() else error = true
                     } finally { busy = false }
                 }
             }) { Text(stringResource(R.string.calls_save)) }
@@ -925,6 +947,23 @@ private fun CallRulesDialog(
         dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.calls_cancel)) } },
     )
 }
+
+/** 问一次通讯录权限;返回申请后此刻的状态(真正的授权结果在下一次进对话框时读到)。 */
+private fun requestContactsPermission(context: Context): Boolean {
+    var c: Context? = context
+    while (c is android.content.ContextWrapper) {
+        if (c is androidx.activity.ComponentActivity) {
+            androidx.core.app.ActivityCompat.requestPermissions(
+                c, arrayOf(android.Manifest.permission.READ_CONTACTS), CONTACTS_REQUEST,
+            )
+            return ContactsLookup.allowed(context)
+        }
+        c = c.baseContext
+    }
+    return ContactsLookup.allowed(context)
+}
+
+private const val CONTACTS_REQUEST = 4321
 
 @Composable
 private fun CallCredentialsDialog(runtime: CallRuntime, onDismiss: () -> Unit, onResult: (String) -> Unit) {
@@ -1097,3 +1136,4 @@ private fun CallBypassDialog(existing: Set<String>, onDismiss: () -> Unit, onSav
         dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.calls_cancel)) } },
     )
 }
+

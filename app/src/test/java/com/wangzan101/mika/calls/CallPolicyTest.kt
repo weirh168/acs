@@ -26,6 +26,26 @@ class CallPolicyTest {
         assertFalse(CallPolicy.callerAllowed(all.copy(audioVerified = false), null))
     }
 
+    @Test fun contactsAreLeftToTheOwnerWhenEnabled() {
+        val all = CallConfig(
+            enabled = true, autoAnswer = true, credentialsConfigured = true, audioVerified = true,
+            allowAllIncoming = true, contactsHumanIncoming = true,
+        )
+        // 通讯录里的号码:留给本人,AI 不接
+        assertFalse(CallPolicy.callerAllowed(all, "15551234567", inContacts = true))
+        // 通讯录外的号码:照常自动接
+        assertTrue(CallPolicy.callerAllowed(all, "15551234567", inContacts = false))
+        // 关掉这项后,通讯录内的人也照旧按名单规则走
+        assertTrue(CallPolicy.callerAllowed(all.copy(contactsHumanIncoming = false), "15551234567", inContacts = true))
+        // 没开「接听所有」时,通讯录外也得在名单里才接
+        val listed = all.copy(allowAllIncoming = false, allowedIncomingNumbers = setOf("15551234567"))
+        assertTrue(CallPolicy.callerAllowed(listed, "15551234567", inContacts = false))
+        // 名单里的号码如果同时在通讯录里,也按本人接
+        assertFalse(CallPolicy.callerAllowed(listed, "15551234567", inContacts = true))
+        // 自动开始的判断同样尊重这项
+        assertFalse(CallPolicy.canStartAutoAnswer(all, all, "15551234567", 1_000, inContacts = true))
+        assertTrue(CallPolicy.canStartAutoAnswer(all, all, "15551234567", 1_000, inContacts = false))
+    }
     @Test fun requiresExplicitSelectionOnMultiSimDevices() {
         val sim1 = CallSim("1", "SIM 1", true)
         val sim2 = CallSim("2", "SIM 2", false)
@@ -164,3 +184,4 @@ class CallPolicyTest {
         assertNull(CallPolicy.previousAppOpMode("Uid mode: MANAGE_ONGOING_CALLS: deny\nMANAGE_ONGOING_CALLS: allow"))
     }
 }
+

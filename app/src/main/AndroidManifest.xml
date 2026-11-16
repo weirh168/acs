@@ -5,6 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- 按住说话时录音，转成文字；用户浏览器里的网页要麦克风时也用它。 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- 用户浏览器里的网页要摄像头（Mika 自己拍照走系统相机，不用这个权限）；网页请求时先弹框问用户。 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- 用户浏览器里的网页要定位；网页请求时先弹框问用户。 -->
@@ -387,3 +388,4 @@
     </application>
 
 </manifest>
+

@@ -89,6 +89,9 @@
     <string name="calls_original_transcript">Call transcript</string>
     <string name="calls_outgoing_title">Place a call</string>
     <string name="calls_rules">Answering rules</string>
+    <string name="calls_contacts_human">Let me answer my contacts</string>
+    <string name="calls_contacts_human_note">Calls from contacts stay yours; everyone else is answered by the AI</string>
+    <string name="calls_contacts_no_permission">ACS cannot read contacts yet, so every call currently counts as not-in-contacts</string>
     <string name="calls_setup_credentials">Configure Volcengine realtime voice credentials.</string>
     <string name="calls_setup_shell">Connect the built-in ACS assistant first.</string>
     <string name="calls_sim_clear_preferred">Clear preferred SIM</string>
