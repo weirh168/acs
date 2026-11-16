@@ -532,3 +532,26 @@ WRITE_SECURE_SETTINGS    : granted=false(之前) → 已 pm grant,现在 granted
 ```
 
 从 `PermissionMissing` → `Restored`,助手进程在。以后这条诊断能如实反映"开机后到底恢复了没有"。
+
+## 豆包实时语音配好并连通（2026-11-16 18:38）
+
+用户给了 API Key(方舟实时语音),要求配到手机 AI 上并检查可用。
+
+过程里撞到一个真 bug:
+- 点「保存」弹窗一直不动、也不报错;
+- 日志: `keystore2 … KeystoreOperation::finish → Error::Km(VERIFICATION_FAILED)`,
+  即**Preferences 里存着的旧加密配置解不开了**(Keystore 钥匙对不上);
+- `CallVoiceProfileStore.load()` 原来把这种失败当 `false`,而 `save()` 里有
+  `check(load())`,于是**永远存不进去**,界面上表现为「点保存没反应」。
+
+修法:读不出来/解不开时当成"还没有配置"继续(`loaded = true`、内存置空、log 一行警告),
+下次保存会把这份重写成新的;不再让 `check(load())` 把保存永久堵死。
+
+修完后实机走通:
+1. 电话助手 › 设置 › 设备与权限 › 实时语音服务 › 编辑「默认实时语音」;
+2. API Key 填 `6911c1ab-…8fdc`,保存 → 界面提示「实时语音配置已保存」,
+   该套从「尚未配置」变成「待测试连接」,`mika_call_voice_profiles.xml` 从 237B 变 377B;
+3. 点「测试连接」→「**实时语音服务连接成功**;手机双向音频仍需通过测试电话验证」,
+   状态变「连接已测试」——说明这把 Key 被火山实时语音侧接受。
+
+仍未验证的:真实通话里双方能否听到声音(要真打一次电话)。

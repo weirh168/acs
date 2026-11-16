@@ -67,8 +67,17 @@ class CallVoiceProfileStore internal constructor(
     @Synchronized
     fun load(): Boolean {
         if (loaded) return true
+        // 读不出来/解不开(换过签名、Keystore 里的钥匙没了、内容坏了)时当成"还没有配置"继续,
+        // 不然 check(load()) 会让保存永远失败:用户填了 API Key 点保存,弹窗一直不动,也没提示。
+        // 旧内容本来就解不开,重置不会丢还能用的东西;下次保存会把这份重写成新的。
+        val raw = try {
+            backend.read()
+        } catch (e: Exception) {
+            android.util.Log.w("MikaVoiceProfiles", "cannot read stored voice profiles", e)
+            loaded = true
+            return true
+        }
         return try {
-            val raw = backend.read()
             require(raw == null || raw.length <= MAX_STORAGE_CHARS)
             val decoded = raw?.let {
                 if (cipher == null) it else {
@@ -83,8 +92,12 @@ class CallVoiceProfileStore internal constructor(
             mutable.value = stored.profiles
             loaded = true
             true
-        } catch (_: Exception) {
-            false
+        } catch (e: Exception) {
+            android.util.Log.w("MikaVoiceProfiles", "stored voice profiles are unreadable; starting empty", e)
+            stored = StoredVoiceProfiles()
+            mutable.value = emptyList()
+            loaded = true
+            true
         }
     }
 
