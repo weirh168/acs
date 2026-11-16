@@ -531,10 +531,14 @@ private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> U
                             Modifier.fillMaxWidth().clickable { onPick(number) }.heightIn(min = 48.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column {
-                                Text(name, fontSize = 15.sp, color = MikaTheme.colors.ink)
-                                Text(number, fontSize = 13.sp, color = MikaTheme.colors.ink3)
+                            Column(Modifier.weight(1f)) {
+                                // 号码放主行并强制 LTR:一眼能确认这是电话号码,不是名字
+                                Text(number, fontSize = 16.sp, color = MikaTheme.colors.ink,
+                                    style = TextStyle(textDirection = TextDirection.Ltr))
+                                Text(name, fontSize = 13.sp, color = MikaTheme.colors.ink3)
                             }
+                            Text(stringResource(R.string.calls_pick_use), fontSize = 13.sp,
+                                color = MikaTheme.colors.accent)
                         }
                     }
                 }
@@ -543,4 +547,5 @@ private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> U
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) } },
     )
 }
+
 

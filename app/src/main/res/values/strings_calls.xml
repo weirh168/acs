@@ -272,7 +272,10 @@
     <string name="trace_confirm_title">Turn on detailed logs?</string>
     <string name="trace_confirm_body">Request bodies are stored and may contain private content such as call text. Logs stay on this device and can be cleared at any time.</string>
     <string name="trace_confirm_ok">Turn on</string>
+    <string name="calls_pick_use">Fill in</string>
 </resources>
+
+
 
 
 
