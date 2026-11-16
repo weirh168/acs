@@ -14,6 +14,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import okio.ByteString.Companion.toByteString
 import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import java.io.IOException
 import io.opentelemetry.proto.trace.v1.Span.SpanKind
 import java.util.IdentityHashMap
@@ -30,6 +32,21 @@ class TraceStore(private val directory: File, private val byteLimit: Int = 8 * 1
 
     fun setStorageLimit(bytes: Long) = disk.setLimit(bytes)
 
+    /** 把全部运行日志打成一个 zip,写到 dest。返回文件(方便界面直接分享)。 */
+    @Synchronized fun exportZip(dest: File): File {
+        dest.parentFile?.mkdirs()
+        ZipOutputStream(dest.outputStream().buffered()).use { zip ->
+            directory.listFiles()?.filter { it.isDirectory }?.forEach { run ->
+                run.walkTopDown().filter { it.isFile }.forEach { file ->
+                    val entry = run.name + "/" + file.relativeTo(run).invariantSeparatorsPath
+                    zip.putNextEntry(ZipEntry(entry))
+                    file.inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                }
+            }
+        }
+        return dest
+    }
     /** 清空全部日志:逐个删掉运行目录,保留根目录本身。返回删掉的运行数。 */
     @Synchronized fun clear(): Int {
         val runs = directory.listFiles()?.filter { it.isDirectory } ?: emptyList()
@@ -354,3 +371,4 @@ class RunTrace internal constructor(internal val archive: TraceArchive, private 
     }
 
 }
+
