@@ -1,5 +1,25 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.ui.platform.LocalContext
+
+import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.ui.unit.sp
+
+import android.net.Uri
+
+import android.content.Intent
+
+import androidx.compose.foundation.layout.RowScope
+
+import androidx.compose.foundation.clickable
+
+import androidx.compose.ui.graphics.Color
+
+import androidx.compose.foundation.shape.RoundedCornerShape
+
+import androidx.compose.foundation.background
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.rememberScrollState
@@ -92,6 +112,9 @@ internal fun CallTaskScreen(
     var constraintsOpen by rememberSaveable { mutableStateOf(false) }
     var showSims by rememberSaveable { mutableStateOf(false) }
     var review by remember { mutableStateOf<CallTaskSubmission?>(null) }
+    // 谁说话:AI 代拨 / 我自己拨。记住上次选择,但每次进入都在分段控件上明确显示
+    var manual by rememberSaveable { mutableStateOf(false) }
+    var transcribeAlso by rememberSaveable { mutableStateOf(false) }
     val number = CallPolicy.outgoingNumber(draft.number)
     val goalLength = draft.goal.trim().length
     val maxGoal = CallTaskBrief.MAX_GOAL_CHARS
@@ -105,6 +128,18 @@ internal fun CallTaskScreen(
     val missingSim = stringResource(R.string.calls_task_pick_sim)
     val brief = remember(draft.goal, questions, draft.context, draft.constraints) {
         runCatching { CallTaskBrief(draft.goal, questions, draft.context, draft.constraints).validatedSnapshot() }.getOrNull()
+    }
+
+    CallDialModeSwitch(manual) { manual = it }
+    if (manual) {
+        CallManualDialBody(
+            number = draft.number, onNumber = { draft.number = it }, editable = editable,
+            parsed = number, simLabel = sim?.label ?: preferred?.label,
+            sims = state.simOptions, chosenSim = draft.simOverride,
+            onSim = { draft.simOverride = it },
+            transcribe = transcribeAlso, onTranscribe = { transcribeAlso = it },
+        )
+        return
     }
 
     feedback?.let { CallFeedback(it) }
@@ -325,3 +360,89 @@ private fun TaskReviewField(label: String, value: String) {
         Text(value, style = MaterialTheme.typography.bodyMedium)
     }
 }
+
+/** AI 代拨 / 我自己拨:这是「谁说话」的决策,所以放最上面。 */
+@Composable
+private fun CallDialModeSwitch(manual: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().background(MikaTheme.colors.fill, RoundedCornerShape(14.dp))
+            .padding(4.dp).testTag("call-dial-mode"),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        ModeHalf(stringResource(R.string.calls_mode_ai), !manual, "call-mode-ai") { onChange(false) }
+        ModeHalf(stringResource(R.string.calls_mode_manual), manual, "call-mode-manual") { onChange(true) }
+    }
+}
+
+@Composable
+private fun RowScope.ModeHalf(text: String, selected: Boolean, tag: String, onClick: () -> Unit) {
+    Box(
+        Modifier.weight(1f).heightIn(min = 44.dp)
+            .background(if (selected) MikaTheme.colors.surface else Color.Transparent, RoundedCornerShape(11.dp))
+            .clickable(onClick = onClick).testTag(tag),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, fontSize = 15.sp,
+            color = if (selected) MikaTheme.colors.ink else MikaTheme.colors.ink3,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
+    }
+}
+
+/**
+ * 我自己拨:只有号码、拨出卡、要不要事后转文字。
+ * 这里用的是系统拨号,AI 全程不参与 —— 不连接实时语音、不播开场白。
+ */
+@Composable
+private fun CallManualDialBody(
+    number: String, onNumber: (String) -> Unit, editable: Boolean, parsed: String?,
+    simLabel: String?, sims: List<CallSim>, chosenSim: String?, onSim: (String?) -> Unit,
+    transcribe: Boolean, onTranscribe: (Boolean) -> Unit,
+) {
+    val context = LocalContext.current
+    Column(Modifier.fillMaxWidth().testTag("call-manual-body"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedTextField(
+            number, onNumber, enabled = editable,
+            label = { Text(stringResource(R.string.calls_number)) },
+            modifier = Modifier.fillMaxWidth().testTag("call-number"),
+            singleLine = true,
+            textStyle = TextStyle(textDirection = TextDirection.Ltr),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            isError = number.isNotBlank() && parsed == null,
+        )
+        GroupCard {
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.calls_outgoing_sim), fontSize = 15.sp, color = MikaTheme.colors.ink)
+                Spacer(Modifier.weight(1f))
+                Text(simLabel ?: stringResource(R.string.calls_task_pick_sim), fontSize = 14.sp,
+                    color = MikaTheme.colors.ink3)
+            }
+        }
+        GroupCard {
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.calls_manual_transcribe), fontSize = 15.sp, color = MikaTheme.colors.ink)
+                    Text(stringResource(R.string.calls_manual_transcribe_note), fontSize = 13.sp,
+                        color = MikaTheme.colors.ink3)
+                }
+                Switch(transcribe, { onTranscribe(it) }, modifier = Modifier.testTag("call-manual-transcribe"))
+            }
+        }
+        FooterNote(stringResource(R.string.calls_manual_note))
+        Spacer(Modifier.size(8.dp))
+        CallPrimaryButton(stringResource(R.string.calls_manual_dial), parsed != null && editable, {
+            val target = parsed
+            if (target == null) return@CallPrimaryButton
+            val call = Intent(Intent.ACTION_CALL, Uri.fromParts("tel", target, null))
+            val canCall = context.checkSelfPermission(android.Manifest.permission.CALL_PHONE) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            // 没拨号权限就退回系统拨号盘:号码已填好,用户按一下即可
+            if (!canCall) call.action = Intent.ACTION_DIAL
+            call.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { context.startActivity(call) }
+        }, Modifier.fillMaxWidth().testTag("call-manual-dial"))
+        if (parsed == null) FooterNote(stringResource(R.string.calls_manual_need_number))
+    }
+}
+
+
+

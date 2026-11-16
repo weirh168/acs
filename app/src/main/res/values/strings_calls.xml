@@ -239,7 +239,16 @@
     <string name="calls_observe_title">Observation period · %1$d days left</string>
     <string name="calls_observe_note">The AI only records during this time, so you can check the rules for false positives. It starts answering when the period ends.</string>
     <string name="calls_observe_skip">Start answering now</string>
+    <string name="calls_mode_ai">AI dials</string>
+    <string name="calls_mode_manual">I dial</string>
+    <string name="calls_outgoing_sim">SIM</string>
+    <string name="calls_manual_transcribe">Transcribe afterwards</string>
+    <string name="calls_manual_transcribe_note">The AI only tidies up after the call, never during it</string>
+    <string name="calls_manual_note">You do the talking; the AI stays out of it</string>
+    <string name="calls_manual_dial">Dial</string>
+    <string name="calls_manual_need_number">Enter a number or pick one from contacts</string>
 </resources>
+
 
 
 

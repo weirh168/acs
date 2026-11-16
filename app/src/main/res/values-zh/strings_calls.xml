@@ -239,7 +239,16 @@
     <string name="calls_observe_title">观察期 · 还剩 %1$d 天</string>
     <string name="calls_observe_note">这段时间 AI 只记录、不接听，方便你确认规则有没有误伤。期满自动开始接听。</string>
     <string name="calls_observe_skip">提前开始接听</string>
+    <string name="calls_mode_ai">AI 代拨</string>
+    <string name="calls_mode_manual">我自己拨</string>
+    <string name="calls_outgoing_sim">拨出卡</string>
+    <string name="calls_manual_transcribe">通话后转成文字</string>
+    <string name="calls_manual_transcribe_note">AI 只在结束后整理，通话中不参与</string>
+    <string name="calls_manual_note">这通电话你自己说，AI 不介入也不插话</string>
+    <string name="calls_manual_dial">拨打</string>
+    <string name="calls_manual_need_number">先填号码或从通讯录选一个</string>
 </resources>
+
 
 
 
