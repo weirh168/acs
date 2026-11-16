@@ -5,6 +5,9 @@ enum class CallPhase { IDLE, DIALING, RINGING, CONNECTING, ACTIVE, HOLDING, DISC
 enum class CallDirection { INCOMING, OUTGOING }
 enum class CallAutoAnswerStage { OFF, BLOCKED, PAUSED, STANDBY, COUNTDOWN, PREPARING, ANSWERING, BUSY }
 
+/** AI 接不起来时怎么办:继续响铃让你接,或者直接挂断。 */
+enum class CallFallback { WAIT_USER, HANGUP }
+
 /** 自动接听的三张预设卡:一键把来源开关摆成常见组合。 */
 enum class CallPreset { SMART, ALL, LIST }
 
@@ -57,6 +60,14 @@ data class CallConfig(
     val answerInternational: Boolean = false,
     /** 不要接的号码:命中就直接不接,优先于任何来源开关。 */
     val blockedIncomingNumbers: Set<String> = emptySet(),
+    /** 号段:如 400、0571;白名单号段优先接,黑名单号段不接。 */
+    val allowedPrefixes: Set<String> = emptySet(),
+    val blockedPrefixes: Set<String> = emptySet(),
+    /** 只在一天里的这段时间自动接;两个都是 -1 表示全天。跨零点用 start > end 表示。 */
+    val activeStartMinute: Int = -1,
+    val activeEndMinute: Int = -1,
+    /** AI 接不起来时(连不上实时语音、被系统打断):等你接,还是直接挂断。 */
+    val fallback: CallFallback = CallFallback.WAIT_USER,
     val autoAnswerPausedUntilMs: Long? = null,
     val activeVoiceProfileId: String = CallVoiceProfile.DEFAULT_ID,
     internal val backgroundStandbyAuthorized: Boolean = false,
@@ -113,6 +124,29 @@ internal object CallPolicy {
         return if (local != null) "+86$local" else normalized
     }
 
+    /** 号段写法:400、0571,允许带 * 号结尾;只留数字。 */
+    fun normalisePrefix(value: String): String? {
+        val digits = value.trim().removeSuffix("*").filter { it.isDigit() }
+        return digits.takeIf { it.length in 2..8 }
+    }
+
+    /** 号码是不是落在这些号段里(按号码的纯数字形式比较)。 */
+    fun matchesPrefix(number: String?, prefixes: Set<String>): Boolean {
+        val digits = number?.filter { it.isDigit() } ?: return false
+        return prefixes.any { prefix -> normalisePrefix(prefix)?.let { digits.startsWith(it) } == true }
+    }
+
+    /** 现在是不是落在「只在某时段自动接」的窗口里;没设置就任何时候都算。 */
+    fun inActiveWindow(config: CallConfig, nowMs: Long): Boolean {
+        val start = config.activeStartMinute
+        val end = config.activeEndMinute
+        if (start !in 0..1439 || end !in 0..1439) return true
+        if (start == end) return true
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = nowMs }
+        val minute = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+        return if (start < end) minute in start until end else minute >= start || minute < end
+    }
+
     fun isBypassed(config: CallConfig, number: String?): Boolean =
         incomingMatchKey(number)?.let { key -> config.bypassIncomingNumbers.any { incomingMatchKey(it) == key } } == true
 
@@ -134,10 +168,14 @@ internal object CallPolicy {
         val key = number?.let(::incomingMatchKey)
         // 认不出来的串(不是电话号)按不接处理:宁可交给系统,也不要拿怪号码去接
         if (number != null && key == null) return false
-        // 黑名单最优先:名单里说不接,就不接
+        // 不在自动接听的时段里,一律不接(交给系统响铃)
+        if (!inActiveWindow(config, nowMs)) return false
+        // 黑名单最优先:名单里说不接就,或者号码落在不接的号段里,都不接
         if (key != null && config.blockedIncomingNumbers.any { incomingMatchKey(it) == key }) return false
-        // 白名单其次:说了必须 AI 接,就接(哪怕来源开关关着)
+        if (matchesPrefix(number, config.blockedPrefixes)) return false
+        // 白名单其次:说了必须 AI 接,就接(哪怕来源开关关着);号段同理
         if (key != null && config.allowedIncomingNumbers.any { incomingMatchKey(it) == key }) return true
+        if (matchesPrefix(number, config.allowedPrefixes)) return true
         return when (config.preset) {
             CallPreset.ALL -> true
             // 只接名单:白名单之外一律不接(隐藏号码没有号码可比,也按不接)
@@ -274,3 +312,5 @@ internal object CallPolicy {
         append("\n收尾：自行判断本通要说的事是否已经说清，结合上下文和对方的回应，不必等对方说‘再见’。如果内容已经办清而且没有未解的问题，可自然简短收尾，例如最后说‘那就先这样’；这轮不要再问问题。如果对方明确要求挂断或告别，只答‘好的，再见’。单纯停顿、普通道谢但事项还没聊完、或对方还在问事时继续听，不提前收尾。")
     }
 }
+
+

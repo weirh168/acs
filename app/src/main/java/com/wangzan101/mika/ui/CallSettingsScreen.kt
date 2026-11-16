@@ -335,22 +335,33 @@ private fun CallSettingsWorkspace(
     }
 
     when (dialog) {
-        CallDialog.Rules -> CallAutoAnswerRulesDialog(config, onDismiss = { dialog = null }, onSave = { draft ->
-            save {
-                it.copy(
-                    preset = draft.preset,
-                    answerContacts = draft.answerContacts,
-                    answerStrangers = draft.answerStrangers,
-                    answerHidden = draft.answerHidden,
-                    answerSpam = draft.answerSpam,
-                    answerRepeat = draft.answerRepeat,
-                    answerInternational = draft.answerInternational,
-                    allowedIncomingNumbers = draft.allowed,
-                    blockedIncomingNumbers = draft.blocked,
-                    autoAnswerDelaySeconds = draft.delaySeconds,
-                )
-            }
-        })
+        CallDialog.Rules -> CallAutoAnswerRulesDialog(
+            config,
+            permissionIssue = if (ready) null else stringResource(readinessSummary(config, ready)),
+            onFixPermissions = { dialog = null },
+            onDismiss = { dialog = null },
+            onSave = { draft ->
+                save {
+                    it.copy(
+                        preset = draft.preset,
+                        answerContacts = draft.answerContacts,
+                        answerStrangers = draft.answerStrangers,
+                        answerHidden = draft.answerHidden,
+                        answerSpam = draft.answerSpam,
+                        answerRepeat = draft.answerRepeat,
+                        answerInternational = draft.answerInternational,
+                        allowedIncomingNumbers = draft.allowed,
+                        blockedIncomingNumbers = draft.blocked,
+                        allowedPrefixes = draft.allowPrefixes,
+                        blockedPrefixes = draft.blockPrefixes,
+                        activeStartMinute = draft.activeStartMinute,
+                        activeEndMinute = draft.activeEndMinute,
+                        fallback = draft.fallback,
+                        autoAnswerDelaySeconds = draft.delaySeconds,
+                    )
+                }
+            },
+        )
         CallDialog.Bypass -> CallBypassDialog(config.bypassIncomingNumbers, onDismiss = { dialog = null }) { numbers ->
             save { it.copy(bypassIncomingNumbers = numbers) }
         }
@@ -1064,5 +1075,6 @@ private fun CallBypassDialog(existing: Set<String>, onDismiss: () -> Unit, onSav
         dismissButton = { TextButton(onClick = onDismiss, enabled = !busy) { Text(stringResource(R.string.calls_cancel)) } },
     )
 }
+
 
 

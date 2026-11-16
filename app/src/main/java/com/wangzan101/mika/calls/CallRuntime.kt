@@ -1128,6 +1128,17 @@ class CallRuntime(private val app: MikaApp) {
                         }
                     }
                 }
+                // AI 接不起来(还没接管就失败):按设置要么留着响铃让你接,要么直接挂断
+                if (w.automatic && w.direction == CallDirection.INCOMING && !w.telecomActionIssued &&
+                    settings.state.value.fallback == CallFallback.HANGUP) {
+                    val target = w.track
+                    if (target != null && !disconnected(target.call)) {
+                        runCatching { target.call.reject(false, null) }
+                            .onFailure { debugMediaException(w, it) }
+                        w.stopReason.record("$reason；AI 没接起来，已按设置挂断")
+                        detail = "$reason；AI 没接起来，已按设置挂断"
+                    }
+                }
                 if (work === w) {
                     lockedDial?.takeIf { it.ticket === w.lockedDialTicket }?.let {
                         finishLockedDial(it, reason, cancelUnplacedWork = false)

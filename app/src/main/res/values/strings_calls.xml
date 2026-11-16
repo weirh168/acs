@@ -183,5 +183,25 @@
     <string name="calls_preset_all">All to AI</string>
     <string name="calls_ring_value">%1$d s</string>
     <string name="calls_summary_ring">Answers after %1$d s of ringing</string>
+    <string name="calls_fallback_title">When the AI cannot answer</string>
+    <string name="calls_window_title">Only answer during a window</string>
+    <string name="calls_list_import_add">Add (%1$d)</string>
+    <string name="calls_window_note">Off means all day; on, other hours go to you</string>
+    <string name="calls_rules_blocked_fix">Fix</string>
+    <string name="calls_window_to">To</string>
+    <string name="calls_fallback_wait">Keep ringing for me</string>
+    <string name="calls_fallback_note">Used when the realtime voice fails or the system interrupts the AI</string>
+    <string name="calls_list_import_contacts">From contacts</string>
+    <string name="calls_rules_blocked">These rules are not in effect</string>
+    <string name="calls_list_block_prefix">Prefixes never answered</string>
+    <string name="calls_list_allow_prefix">Prefixes always answered</string>
+    <string name="calls_window_from">From</string>
+    <string name="calls_list_search">Search name or number</string>
+    <string name="calls_window_hint">24-hour HH:MM; crossing midnight (22:00 to 08:00) works</string>
+    <string name="calls_fallback_hangup">Hang up</string>
+    <string name="calls_list_paste">Paste</string>
+    <string name="calls_list_prefix_hint">e.g. 400, 0571; comma separated, matched from the start</string>
+    <string name="calls_list_no_contacts">Contacts unavailable (needs permission)</string>
 </resources>
+
 

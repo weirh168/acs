@@ -30,6 +30,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.content.Context
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +54,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.wangzan101.mika.R
+import com.wangzan101.mika.calls.CallFallback
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Checkbox
 import com.wangzan101.mika.calls.CallConfig
 import com.wangzan101.mika.calls.CallPolicy
 import com.wangzan101.mika.calls.CallPreset
@@ -70,6 +76,11 @@ data class CallRulesDraft(
     val answerInternational: Boolean,
     val allowed: Set<String>,
     val blocked: Set<String>,
+    val allowPrefixes: Set<String>,
+    val blockPrefixes: Set<String>,
+    val activeStartMinute: Int,
+    val activeEndMinute: Int,
+    val fallback: CallFallback,
     val delaySeconds: Int,
 )
 
@@ -95,6 +106,9 @@ internal object CallPresetDefaults {
 @Composable
 fun CallAutoAnswerRulesDialog(
     config: CallConfig,
+    /** 规则现在其实不会生效的原因(缺权限等);null 表示没问题。 */
+    permissionIssue: String? = null,
+    onFixPermissions: () -> Unit = {},
     onDismiss: () -> Unit,
     onSave: suspend (CallRulesDraft) -> Boolean,
 ) {
@@ -107,6 +121,12 @@ fun CallAutoAnswerRulesDialog(
     var international by rememberSaveable { mutableStateOf(config.answerInternational) }
     var allowed by rememberSaveable { mutableStateOf(config.allowedIncomingNumbers) }
     var blocked by rememberSaveable { mutableStateOf(config.blockedIncomingNumbers) }
+    var allowPrefixes by rememberSaveable { mutableStateOf(config.allowedPrefixes) }
+    var blockPrefixes by rememberSaveable { mutableStateOf(config.blockedPrefixes) }
+    var windowed by rememberSaveable { mutableStateOf(config.activeStartMinute >= 0 && config.activeEndMinute >= 0) }
+    var startText by rememberSaveable { mutableStateOf(CallTimeText.of(config.activeStartMinute)) }
+    var endText by rememberSaveable { mutableStateOf(CallTimeText.of(config.activeEndMinute)) }
+    var fallback by rememberSaveable { mutableStateOf(config.fallback) }
     var delay by rememberSaveable { mutableStateOf(config.autoAnswerDelaySeconds) }
     var listsOpen by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
@@ -114,10 +134,22 @@ fun CallAutoAnswerRulesDialog(
     val scope = rememberCoroutineScope()
 
     val flags = listOf(contacts, strangers, hidden, spam, repeat, international)
+    val startMinute = CallTimeText.parse(startText)
+    val endMinute = CallTimeText.parse(endText)
+    val windowValid = !windowed || (startMinute != null && endMinute != null)
     val dirty = preset != config.preset || !CallPresetDefaults.matches(preset, flags) ||
         allowed != config.allowedIncomingNumbers || blocked != config.blockedIncomingNumbers ||
-        delay != config.autoAnswerDelaySeconds
-    val draft = CallRulesDraft(preset, contacts, strangers, hidden, spam, repeat, international, allowed, blocked, delay)
+        allowPrefixes != config.allowedPrefixes || blockPrefixes != config.blockedPrefixes ||
+        windowed != (config.activeStartMinute >= 0) ||
+        (windowed && (startMinute != config.activeStartMinute || endMinute != config.activeEndMinute)) ||
+        fallback != config.fallback || delay != config.autoAnswerDelaySeconds
+    val draft = CallRulesDraft(
+        preset, contacts, strangers, hidden, spam, repeat, international, allowed, blocked,
+        allowPrefixes, blockPrefixes,
+        if (windowed) startMinute ?: -1 else -1,
+        if (windowed) endMinute ?: -1 else -1,
+        fallback, delay,
+    )
 
     fun applyPreset(next: CallPreset) {
         preset = next
@@ -140,6 +172,7 @@ fun CallAutoAnswerRulesDialog(
                         color = MikaTheme.colors.ink3, modifier = Modifier.padding(bottom = 12.dp))
                 }
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
+                    if (permissionIssue != null) PermissionBanner(permissionIssue, onFixPermissions)
                     SummaryCard(draft)
                     Spacer(Modifier.size(14.dp))
                     PresetCards(preset, flags, ::applyPreset)
@@ -170,6 +203,12 @@ fun CallAutoAnswerRulesDialog(
                                 modifier = Modifier.size(18.dp))
                         }
                     }
+                    Spacer(Modifier.size(14.dp))
+                    WindowSection(windowed, startText, endText, windowValid,
+                        onToggle = { windowed = it },
+                        onStart = { startText = it }, onEnd = { endText = it })
+                    Spacer(Modifier.size(14.dp))
+                    FallbackSection(fallback) { fallback = it }
                     Spacer(Modifier.size(14.dp))
                     RingSection(delay) { delay = it }
                     Spacer(Modifier.size(20.dp))
@@ -204,8 +243,11 @@ fun CallAutoAnswerRulesDialog(
     }
 
     if (listsOpen) {
-        CallNumbersDialog(allowed, blocked, onDismiss = { listsOpen = false }) { a, b ->
-            allowed = a; blocked = b; listsOpen = false
+        CallNumbersDialog(
+            allowed, blocked, allowPrefixes, blockPrefixes,
+            onDismiss = { listsOpen = false },
+        ) { a, b, ap, bp ->
+            allowed = a; blocked = b; allowPrefixes = ap; blockPrefixes = bp; listsOpen = false
         }
     }
 }
@@ -327,15 +369,21 @@ private fun SectionTitle(text: String) {
         modifier = Modifier.padding(start = 4.dp, bottom = 6.dp))
 }
 
-/** 白名单 / 黑名单:一个分段控件加一个多行输入框,保存时统一归一化。 */
+/** 号码名单:白名单 / 黑名单,外加两种号段;支持从通讯录多选、粘贴批量。 */
 @Composable
 private fun CallNumbersDialog(
-    allowed: Set<String>, blocked: Set<String>, onDismiss: () -> Unit,
-    onApply: (Set<String>, Set<String>) -> Unit,
+    allowed: Set<String>, blocked: Set<String>,
+    allowPrefixes: Set<String>, blockPrefixes: Set<String>,
+    onDismiss: () -> Unit,
+    onApply: (Set<String>, Set<String>, Set<String>, Set<String>) -> Unit,
 ) {
     var allowMode by rememberSaveable { mutableStateOf(true) }
     var allowText by rememberSaveable { mutableStateOf(allowed.sorted().joinToString("\n")) }
     var blockText by rememberSaveable { mutableStateOf(blocked.sorted().joinToString("\n")) }
+    var allowPrefixText by rememberSaveable { mutableStateOf(allowPrefixes.sorted().joinToString(",")) }
+    var blockPrefixText by rememberSaveable { mutableStateOf(blockPrefixes.sorted().joinToString(",")) }
+    var picking by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val allowParsed = parseCallNumberList(allowText)
     val blockParsed = parseCallNumberList(blockText)
     val ok = allowParsed != null && blockParsed != null
@@ -348,14 +396,33 @@ private fun CallNumbersDialog(
                     Segment(stringResource(R.string.calls_list_allow), allowMode) { allowMode = true }
                     Segment(stringResource(R.string.calls_list_block), !allowMode) { allowMode = false }
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ActionChip(stringResource(R.string.calls_list_import_contacts), "call-list-import") { picking = true }
+                    ActionChip(stringResource(R.string.calls_list_paste), "call-list-paste") {
+                        val clip = (context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager)
+                            ?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
+                        if (clip.isNotBlank()) {
+                            if (allowMode) allowText = listOf(allowText, clip).filter { it.isNotBlank() }.joinToString("\n")
+                            else blockText = listOf(blockText, clip).filter { it.isNotBlank() }.joinToString("\n")
+                        }
+                    }
+                }
                 OutlinedTextField(
                     if (allowMode) allowText else blockText,
                     { if (allowMode) allowText = it else blockText = it },
                     modifier = Modifier.fillMaxWidth().testTag(if (allowMode) "call-list-allow" else "call-list-block"),
                     label = { Text(stringResource(if (allowMode) R.string.calls_list_allow else R.string.calls_list_block)) },
                     supportingText = { Text(stringResource(if (allowMode) R.string.calls_list_allow_hint else R.string.calls_list_block_hint)) },
-                    minLines = 4, maxLines = 8,
+                    minLines = 3, maxLines = 6,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                )
+                OutlinedTextField(
+                    if (allowMode) allowPrefixText else blockPrefixText,
+                    { if (allowMode) allowPrefixText = it else blockPrefixText = it },
+                    modifier = Modifier.fillMaxWidth().testTag("call-list-prefixes"),
+                    label = { Text(stringResource(if (allowMode) R.string.calls_list_allow_prefix else R.string.calls_list_block_prefix)) },
+                    supportingText = { Text(stringResource(R.string.calls_list_prefix_hint)) },
+                    singleLine = true,
                 )
                 if (!ok) Text(stringResource(R.string.calls_allowlist_invalid, CallPolicy.MAX_ALLOWED_NUMBERS),
                     color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
@@ -363,13 +430,188 @@ private fun CallNumbersDialog(
         },
         confirmButton = {
             TextButton(enabled = ok, onClick = {
-                onApply(allowParsed.orEmpty(), blockParsed.orEmpty())
+                onApply(
+                    allowParsed.orEmpty(), blockParsed.orEmpty(),
+                    CallPrefixText.parse(allowPrefixText), CallPrefixText.parse(blockPrefixText),
+                )
             }) { Text(stringResource(R.string.calls_save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) } },
+    )
+    if (picking) {
+        CallContactsPickerDialog(target = allowMode, onDismiss = { picking = false }) { numbers ->
+            val merged = if (allowMode) listOf(allowText, numbers.joinToString("\n")) else listOf(blockText, numbers.joinToString("\n"))
+            if (allowMode) allowText = merged.filter { it.isNotBlank() }.joinToString("\n")
+            else blockText = merged.filter { it.isNotBlank() }.joinToString("\n")
+            picking = false
+        }
+    }
+}
+
+@Composable
+private fun ActionChip(text: String, tag: String, onClick: () -> Unit) {
+    Box(
+        Modifier.background(MikaTheme.colors.fill, RoundedCornerShape(10.dp)).clickable(onClick = onClick)
+            .heightIn(min = 44.dp).padding(horizontal = 14.dp, vertical = 10.dp).testTag(tag),
+    ) { Text(text, fontSize = 14.sp, color = MikaTheme.colors.ink) }
+}
+
+/** 从通讯录多选:勾中的号码回填到名单里。 */
+@Composable
+private fun CallContactsPickerDialog(
+    target: Boolean, onDismiss: () -> Unit, onPicked: (List<String>) -> Unit,
+) {
+    val context = LocalContext.current
+    val contacts = remember { ContactsList.load(context) }
+    var query by rememberSaveable { mutableStateOf("") }
+    val picked = remember { mutableStateListOf<String>() }
+    val shown = remember(query, contacts) {
+        if (query.isBlank()) contacts else contacts.filter { it.second.contains(query) || it.first.contains(query, true) }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.calls_list_import_contacts)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.calls_list_search)) }, singleLine = true)
+                if (contacts.isEmpty()) {
+                    Text(stringResource(R.string.calls_list_no_contacts), fontSize = 13.sp, color = MikaTheme.colors.ink3)
+                }
+                Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
+                    shown.forEach { (name, number) ->
+                        val on = picked.contains(number)
+                        Row(Modifier.fillMaxWidth().toggleable(on, role = Role.Checkbox) {
+                            if (it) picked.add(number) else picked.remove(number)
+                        }.heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(on, null)
+                            Column {
+                                Text(name, fontSize = 15.sp, color = MikaTheme.colors.ink)
+                                Text(number, fontSize = 13.sp, color = MikaTheme.colors.ink3)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = picked.isNotEmpty(), onClick = { onPicked(picked.toList()) }) {
+                Text(stringResource(R.string.calls_list_import_add, picked.size))
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.calls_cancel)) } },
     )
 }
 
+/** 只在通讯录读取权限在的时候查;读不到就当没有联系人。 */
+internal object ContactsList {
+    private const val MAX = 400
+
+    fun load(context: Context): List<Pair<String, String>> {
+        if (context.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED) return emptyList()
+        return runCatching {
+            context.contentResolver.query(
+                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
+                null, null, null,
+            )?.use { c ->
+                val out = LinkedHashMap<String, String>()
+                while (c.moveToNext() && out.size < MAX) {
+                    val name = c.getString(0)?.takeIf { it.isNotBlank() } ?: continue
+                    val number = c.getString(1)?.takeIf { it.isNotBlank() } ?: continue
+                    out.putIfAbsent(number, name)
+                }
+                out.map { it.key to it.value }
+            }.orEmpty()
+        }.getOrDefault(emptyList())
+    }
+}
+
+/** 号段输入:逗号/空格分开,归一到纯数字。 */
+internal object CallPrefixText {
+    fun parse(text: String): Set<String> =
+        text.split(',', '，', ' ', '\n', ';', '；').mapNotNull(CallPolicy::normalisePrefix).toSet()
+}
+
+/** HH:MM 与分钟数互转;解析不出来返回 null。 */
+internal object CallTimeText {
+    fun of(minute: Int): String =
+        if (minute !in 0..1439) "" else "%02d:%02d".format(minute / 60, minute % 60)
+
+    fun parse(text: String): Int? {
+        val m = Regex("^\\s*(\\d{1,2})\\s*[:：]\\s*(\\d{1,2})\\s*$").matchEntire(text) ?: return null
+        val h = m.groupValues[1].toIntOrNull() ?: return null
+        val mm = m.groupValues[2].toIntOrNull() ?: return null
+        if (h !in 0..23 || mm !in 0..59) return null
+        return h * 60 + mm
+    }
+}
+
+/** 规则其实还没生效时(缺通话权限等)顶部的黄条。 */
+@Composable
+private fun PermissionBanner(text: String, onFix: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(bottom = 12.dp)
+            .background(MikaTheme.colors.warnSoft, RoundedCornerShape(12.dp)).padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.calls_rules_blocked), fontSize = 14.sp,
+                color = MikaTheme.colors.warn, fontWeight = FontWeight.SemiBold)
+            Text(text, fontSize = 13.sp, color = MikaTheme.colors.ink2)
+        }
+        TextButton(onClick = onFix, modifier = Modifier.testTag("call-rules-fix")) {
+            Text(stringResource(R.string.calls_rules_blocked_fix))
+        }
+    }
+}
+
+/** 只在某段时间自动接。 */
+@Composable
+private fun WindowSection(
+    windowed: Boolean, startText: String, endText: String, valid: Boolean,
+    onToggle: (Boolean) -> Unit, onStart: (String) -> Unit, onEnd: (String) -> Unit,
+) {
+    val c = MikaTheme.colors
+    Column(Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(14.dp)).padding(14.dp)) {
+        Row(Modifier.fillMaxWidth().toggleable(windowed, role = Role.Switch) { onToggle(it) }
+            .heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.calls_window_title), fontSize = 15.sp, color = c.ink)
+                Text(stringResource(R.string.calls_window_note), fontSize = 13.sp, color = c.ink3)
+            }
+            Switch(windowed, null, modifier = Modifier.testTag("call-rules-window"))
+        }
+        if (windowed) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(startText, onStart, modifier = Modifier.weight(1f).testTag("call-rules-window-start"),
+                    label = { Text(stringResource(R.string.calls_window_from)) }, singleLine = true,
+                    isError = !valid, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+                OutlinedTextField(endText, onEnd, modifier = Modifier.weight(1f).testTag("call-rules-window-end"),
+                    label = { Text(stringResource(R.string.calls_window_to)) }, singleLine = true,
+                    isError = !valid, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text))
+            }
+            Text(stringResource(R.string.calls_window_hint), fontSize = 12.sp, color = c.ink3)
+        }
+    }
+}
+
+/** AI 接不起来时怎么办。 */
+@Composable
+private fun FallbackSection(fallback: CallFallback, onChange: (CallFallback) -> Unit) {
+    val c = MikaTheme.colors
+    Column(Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(14.dp)).padding(14.dp)) {
+        Text(stringResource(R.string.calls_fallback_title), fontSize = 15.sp, color = c.ink)
+        Text(stringResource(R.string.calls_fallback_note), fontSize = 13.sp, color = c.ink3,
+            modifier = Modifier.padding(top = 2.dp, bottom = 8.dp))
+        Row(Modifier.fillMaxWidth().background(c.fill, RoundedCornerShape(10.dp)).padding(3.dp)) {
+            Segment(stringResource(R.string.calls_fallback_wait), fallback == CallFallback.WAIT_USER) { onChange(CallFallback.WAIT_USER) }
+            Segment(stringResource(R.string.calls_fallback_hangup), fallback == CallFallback.HANGUP) { onChange(CallFallback.HANGUP) }
+        }
+    }
+}
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.Segment(text: String, selected: Boolean, onClick: () -> Unit) {
     Box(Modifier.weight(1f).heightIn(min = 40.dp)
@@ -381,6 +623,11 @@ private fun androidx.compose.foundation.layout.RowScope.Segment(text: String, se
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal)
     }
 }
+
+
+
+
+
 
 
 

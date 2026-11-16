@@ -183,5 +183,25 @@
     <string name="calls_preset_all">全部交给 AI</string>
     <string name="calls_ring_value">%1$d 秒</string>
     <string name="calls_summary_ring">响铃 %1$d 秒后接听</string>
+    <string name="calls_fallback_title">AI 接不起来时</string>
+    <string name="calls_window_title">只在某个时段自动接</string>
+    <string name="calls_list_import_add">加入名单（%1$d）</string>
+    <string name="calls_window_note">关掉就全天生效；开着时其他时间转给你自己</string>
+    <string name="calls_rules_blocked_fix">去开启</string>
+    <string name="calls_window_to">到</string>
+    <string name="calls_fallback_wait">继续响铃，让我接</string>
+    <string name="calls_fallback_note">实时语音连不上、或系统打断了 AI 时怎么处理</string>
+    <string name="calls_list_import_contacts">从通讯录选</string>
+    <string name="calls_rules_blocked">这些规则现在不会生效</string>
+    <string name="calls_list_block_prefix">不要接的号段</string>
+    <string name="calls_list_allow_prefix">必须 AI 接的号段</string>
+    <string name="calls_window_from">从</string>
+    <string name="calls_list_search">搜索姓名或号码</string>
+    <string name="calls_window_hint">24 小时制 HH:MM；跨零点可以直接写 22:00 到 08:00</string>
+    <string name="calls_fallback_hangup">直接挂断</string>
+    <string name="calls_list_paste">粘贴批量</string>
+    <string name="calls_list_prefix_hint">例如 400、0571；逗号分隔，按开头匹配</string>
+    <string name="calls_list_no_contacts">读不到通讯录（需要通讯录权限）</string>
 </resources>
+
 

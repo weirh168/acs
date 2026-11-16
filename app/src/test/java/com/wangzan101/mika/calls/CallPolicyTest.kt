@@ -60,6 +60,34 @@ class CallPolicyTest {
         assertTrue(CallPolicy.canStartAutoAnswer(smart, smart, "15551234567", 1_000, inContacts = false))
     }
 
+    @Test fun prefixesAndActiveWindowNarrowTheDecision() {
+        val all = CallConfig(enabled = true, autoAnswer = true, credentialsConfigured = true,
+            audioVerified = true, preset = CallPreset.ALL)
+        // 号段:不接的号段优先,命中的一概不接
+        assertFalse(CallPolicy.callerAllowed(all.copy(blockedPrefixes = setOf("400")), "4008001234"))
+        assertTrue(CallPolicy.callerAllowed(all.copy(blockedPrefixes = setOf("400")), "13800138000"))
+        // 必须接的号段:连「只接名单」模式也接
+        val listOnly = all.copy(preset = CallPreset.LIST, allowedPrefixes = setOf("0571"))
+        assertTrue(CallPolicy.callerAllowed(listOnly, "057188886666"))
+        assertFalse(CallPolicy.callerAllowed(listOnly, "13800138000"))
+        // 号段写法宽松:带 * 号、带横线都能归一
+        assertEquals("400", CallPolicy.normalisePrefix("400*"))
+        assertEquals("0571", CallPolicy.normalisePrefix(" 0571-"))
+        assertNull(CallPolicy.normalisePrefix("1"))
+        // 生效时段:窗口外不接,窗口内接;跨零点也对
+        val noon = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 12); set(java.util.Calendar.MINUTE, 0); set(java.util.Calendar.SECOND, 0)
+        }.timeInMillis
+        val night = noon + 12 * 60 * 60 * 1000L
+        val dayWindow = all.copy(activeStartMinute = 9 * 60, activeEndMinute = 18 * 60)
+        assertTrue(CallPolicy.callerAllowed(dayWindow, "13800138000", noon))
+        assertFalse(CallPolicy.callerAllowed(dayWindow, "13800138000", night))
+        val acrossMidnight = all.copy(activeStartMinute = 22 * 60, activeEndMinute = 8 * 60)
+        assertTrue(CallPolicy.callerAllowed(acrossMidnight, "13800138000", night))
+        assertFalse(CallPolicy.callerAllowed(acrossMidnight, "13800138000", noon))
+        // 没设时段就是全天
+        assertTrue(CallPolicy.inActiveWindow(all, noon))
+    }
     @Test fun requiresExplicitSelectionOnMultiSimDevices() {
         val sim1 = CallSim("1", "SIM 1", true)
         val sim2 = CallSim("2", "SIM 2", false)
@@ -198,6 +226,7 @@ class CallPolicyTest {
         assertNull(CallPolicy.previousAppOpMode("Uid mode: MANAGE_ONGOING_CALLS: deny\nMANAGE_ONGOING_CALLS: allow"))
     }
 }
+
 
 
 

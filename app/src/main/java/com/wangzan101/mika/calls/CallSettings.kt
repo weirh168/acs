@@ -30,6 +30,8 @@ class CallSettings(
             requireNotNull(CallPolicy.incomingNumber(it)) { "自动接听名单中包含无效号码" }
         }.distinctBy(CallPolicy::incomingMatchKey).toSet()
         require(config.blockedIncomingNumbers.size <= CallPolicy.MAX_ALLOWED_NUMBERS) { "最多可设置 100 个不接的号码" }
+        val allowPrefixes = config.allowedPrefixes.mapNotNull(CallPolicy::normalisePrefix).toSet()
+        val blockPrefixes = config.blockedPrefixes.mapNotNull(CallPolicy::normalisePrefix).toSet()
         val blocked = config.blockedIncomingNumbers.map {
             requireNotNull(CallPolicy.incomingNumber(it)) { "不接名单中包含无效号码" }
         }.distinctBy(CallPolicy::incomingMatchKey).toSet()
@@ -49,6 +51,8 @@ class CallSettings(
             allowedIncomingNumbers = numbers,
             bypassIncomingNumbers = bypass,
             blockedIncomingNumbers = blocked,
+            allowedPrefixes = allowPrefixes,
+            blockedPrefixes = blockPrefixes,
             autoAnswerPausedUntilMs = config.autoAnswerPausedUntilMs?.takeIf { it > System.currentTimeMillis() },
             audioVerified = audioVerified,
             autoAnswer = config.enabled && audioVerified && config.autoAnswer,
@@ -82,6 +86,11 @@ class CallSettings(
             .putBoolean("answer_repeat", next.answerRepeat)
             .putBoolean("answer_international", next.answerInternational)
             .putStringSet("blocklist", blocked)
+            .putStringSet("allow_prefixes", next.allowedPrefixes)
+            .putStringSet("block_prefixes", next.blockedPrefixes)
+            .putInt("active_start_minute", next.activeStartMinute)
+            .putInt("active_end_minute", next.activeEndMinute)
+            .putString("fallback", next.fallback.name)
             .putLong("auto_answer_paused_until_ms", next.autoAnswerPausedUntilMs ?: 0L)
             .putInt("max_seconds", next.maxCallSeconds)
             .putString("audio_mode", next.audioMode.name)
@@ -178,6 +187,14 @@ class CallSettings(
             answerSpam = prefs.getBoolean("answer_spam", false),
             answerRepeat = prefs.getBoolean("answer_repeat", true),
             answerInternational = prefs.getBoolean("answer_international", false),
+            allowedPrefixes = prefs.getStringSet("allow_prefixes", emptySet()).orEmpty()
+                .mapNotNull(CallPolicy::normalisePrefix).toSet(),
+            blockedPrefixes = prefs.getStringSet("block_prefixes", emptySet()).orEmpty()
+                .mapNotNull(CallPolicy::normalisePrefix).toSet(),
+            activeStartMinute = prefs.getInt("active_start_minute", -1),
+            activeEndMinute = prefs.getInt("active_end_minute", -1),
+            fallback = prefs.getString("fallback", null)?.let { n -> CallFallback.entries.firstOrNull { it.name == n } }
+                ?: CallFallback.WAIT_USER,
             blockedIncomingNumbers = prefs.getStringSet("blocklist", emptySet()).orEmpty()
                 .mapNotNull(CallPolicy::incomingNumber).distinctBy(CallPolicy::incomingMatchKey)
                 .take(CallPolicy.MAX_ALLOWED_NUMBERS).toSet(),
@@ -211,3 +228,4 @@ class CallSettings(
             CallSettings(context.getSharedPreferences("mika_call_settings", Context.MODE_PRIVATE))
     }
 }
+
