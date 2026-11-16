@@ -226,7 +226,10 @@
     <string name="calls_ring_chip_now">马上接（3 秒）</string>
     <string name="calls_ring_chip_two">响两下（5 秒）</string>
     <string name="calls_ring_later2">多等一会（10 秒）</string>
+    <string name="calls_notification_hangup">挂断</string>
+    <string name="calls_notification_open_text">看文字</string>
 </resources>
+
 
 
 

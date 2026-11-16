@@ -226,7 +226,10 @@
     <string name="calls_ring_chip_now">Answer at once (3 s)</string>
     <string name="calls_ring_chip_two">Two rings (5 s)</string>
     <string name="calls_ring_later2">Wait longer (10 s)</string>
+    <string name="calls_notification_hangup">Hang up</string>
+    <string name="calls_notification_open_text">Read text</string>
 </resources>
+
 
 
 

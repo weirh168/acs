@@ -46,6 +46,11 @@ internal class CallNotifications(private val context: Context) {
         val openCalls = PendingIntent.getActivity(context, ID, Intent(context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             .putExtra(MainActivity.EXTRA_OPEN_CALLS, true), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val hangUp = PendingIntent.getBroadcast(context, 1, Intent(context, CallNotificationAction::class.java)
+            .setAction(ACTION_HANGUP).setData(Uri.fromParts("mika-call", callId, null)), PendingIntent.FLAG_IMMUTABLE)
+        val openText = PendingIntent.getActivity(context, 2, Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(MainActivity.EXTRA_OPEN_CALLS, true), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val builder = Notification.Builder(context, CHANNEL)
             .setContentTitle(context.getString(R.string.app_name)).setContentText(message)
             .setSmallIcon(android.R.drawable.sym_action_call)
@@ -53,6 +58,8 @@ internal class CallNotifications(private val context: Context) {
             .setContentIntent(openCalls)
             .addAction(Notification.Action.Builder(null,
                 context.getString(if (ringing) R.string.calls_cancel_ai_answer else R.string.calls_takeover), takeOver).build())
+            .addAction(Notification.Action.Builder(null, context.getString(R.string.calls_notification_hangup), hangUp).build())
+            .addAction(Notification.Action.Builder(null, context.getString(R.string.calls_notification_open_text), openText).build())
         manager?.notify(ID, builder.build()) ?: return false
         true
     }.getOrDefault(false)
@@ -134,6 +141,7 @@ internal class CallNotifications(private val context: Context) {
     companion object {
         const val ACTION = "com.wangzan101.mika.calls.TAKEOVER"
         const val ACTION_CANCEL_LOCKED_DIAL = "com.wangzan101.mika.calls.CANCEL_LOCKED_DIAL"
+        const val ACTION_HANGUP = "com.wangzan101.mika.calls.HANGUP"
         const val LOCKED_DIAL_SCHEME = "mika-locked-dial"
         const val CHANNEL = "mika_ai_calls"
         const val COMPLETED_CHANNEL = "mika_ai_call_completed"
@@ -147,17 +155,22 @@ class CallNotificationAction : BroadcastReceiver() {
         val action = intent.action
         val uri = intent.data ?: return
         if (!((action == CallNotifications.ACTION && uri.scheme == "mika-call") ||
+                (action == CallNotifications.ACTION_HANGUP && uri.scheme == "mika-call") ||
                 (action == CallNotifications.ACTION_CANCEL_LOCKED_DIAL && uri.scheme == CallNotifications.LOCKED_DIAL_SCHEME))) return
         val id = uri.schemeSpecificPart ?: return
         val app = context.applicationContext as? MikaApp ?: return
         val pending = goAsync()
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                if (action == CallNotifications.ACTION_CANCEL_LOCKED_DIAL) app.calls.cancelLockedDial(id)
-                else app.calls.takeover(id)
+                when (action) {
+                    CallNotifications.ACTION_CANCEL_LOCKED_DIAL -> app.calls.cancelLockedDial(id)
+                    CallNotifications.ACTION_HANGUP -> app.calls.hangup(id)
+                    else -> app.calls.takeover(id)
+                }
             } finally {
                 pending.finish()
             }
         }
     }
 }
+
