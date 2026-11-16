@@ -346,6 +346,24 @@ class TaskRun(
      * 用户在小窗里亲手操作了:不搬走任务、不动虚拟屏,只是让它在下一个会改动屏幕的工具之前停下,
      * 等用户点「继续」再接着做(和小窗里直接点/滑配合,人机不会抢着操作)。
      */
+    /**
+     * 接管时把这个任务在虚拟屏上的 App 挪到用户主屏,让用户直接在大屏上操作。
+     * 不依赖 takeover 句柄(它要求任务正处在运行中):有句柄就先走 handOver,没有就直接搬任务。
+     */
+    fun handAppToUser() {
+        val t = takeover
+        val d = displayId.value
+        scope.launch {
+            if (t != null && t.handOver(null)) return@launch
+            if (d < 0) return@launch
+            runCatching {
+                val sh = phoneServices.hub.shell.value ?: return@runCatching
+                val task = sh.topTaskId(d)
+                if (task >= 0) sh.moveTask(task, android.view.Display.DEFAULT_DISPLAY)
+            }
+        }
+    }
+
     fun userTookControl() {
         if (_state.value !is TaskState.Running) return
         userOnPage()

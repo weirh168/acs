@@ -299,3 +299,17 @@ git rebase upstream/main        # 或 git merge upstream/main
 因此「接管后直接进 App/网页」这条还没验成。下一步建议:不依赖 `takeover.handOver`
 (它要求任务正处于运行中且有接管句柄),改成接管时直接让内置助手在主屏 `am start` 当前那个包
 (网页就 open 那个 URL),这样和任务状态解耦、更稳。
+
+## 接管直接「搬到主屏」，不再依赖 takeover 句柄（2026-11-16 08:56）
+
+按讨论的思路改了:
+
+1. `TaskRun.handAppToUser()`：有 takeover 句柄就走 `handOver`；没有就直接
+   `shell.topTaskId(虚拟屏)` + `shell.moveTask(taskId, Display.DEFAULT_DISPLAY)`，把那个 App 挪到用户主屏。
+2. `MikaApp.pauseForHumanIn()`：`run.handAppToUser()` 之后 `run.userTookControl()` ——
+   先搬、再停自动操作（顺序不再影响搬动）。
+3. `ChatViewModel.userTakeOverPip()`：只调 `pauseForHuman()`（里面已含搬家），避免重复调用。
+
+已构建、已装。**但今天手机控制反复掉线**（连着跑任务都报 “phone control isn't ready”，
+助手进程在但 App 不认），所以这轮没抓到「点小窗 → 设置出现在主屏」的实机画面。
+用户侧要做一次「设置 › 手机操作 › 去处理 / 重新配对」把控制恢复，之后即可验证。

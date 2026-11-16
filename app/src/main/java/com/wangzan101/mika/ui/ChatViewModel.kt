@@ -1530,7 +1530,7 @@ class ChatViewModel(
         // 这样人力可以直接在真实界面上操作;小窗只作为「已交给你」的提示留着。
         // 顺序要紧:先接管(把 App/网页搬到用户屏幕上),再确认自动操作停止;
         // 先暂停会让任务不再处于「运行中」,接管那边就不动手了
-        takeOver()
+        // pauseForHuman 内部已经先把 App 搬到用户主屏、再停自动操作
         pauseForHuman()
         _ui.update { it.copy(pip = it.pip.copy(tookOver = true)) }
     }
