@@ -271,12 +271,13 @@ private fun CallSettingsWorkspace(
                             onBypass = { dialog = CallDialog.Bypass },
                             onPause = { minutes -> perform(priority = true) { runtime.pauseAutoAnswer(minutes) } },
                             onResume = { perform(priority = true) { runtime.resumeAutoAnswer() } },
-                            onInstructions = onInstructions,
+                            onInstructions = onInstructions,
 
                             history = history,
 
                             onHistory = { tab = CallWorkspaceTab.History },
                             onDelay = { seconds -> scope.launch { save { it.copy(autoAnswerDelaySeconds = seconds) } } },
+                            onEditConfig = { change -> scope.launch { save(change) } },
                         )
                         CallWorkspaceTab.Task -> CallTaskScreen(
                             taskDraft, config, state, ready,
@@ -532,6 +533,7 @@ private fun CallReceivePage(
     onPause: (Int) -> Unit, onResume: () -> Unit, onInstructions: () -> Unit, onStartStandby: () -> Unit,
     history: List<CallRecord> = emptyList(), onHistory: () -> Unit = {},
     onDelay: (Int) -> Unit = {},
+    onEditConfig: ((CallConfig) -> CallConfig) -> Unit = {},
 ) {
     var scopeOpen by rememberSaveable { mutableStateOf(false) }
     var importantOpen by rememberSaveable { mutableStateOf(false) }
@@ -540,6 +542,34 @@ private fun CallReceivePage(
         GroupCard {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 LiveCallTranscript(state.callId, state.liveTranscript)
+                // 一键纠正:只给两个按钮,规则由个案累积,不用进设置页
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val number = state.number
+                    OutlinedButton(
+                        onClick = {
+                            if (number != null) onEditConfig { cfg ->
+                                cfg.copy(bypassIncomingNumbers = cfg.bypassIncomingNumbers + number)
+                            }
+                        },
+                        enabled = number != null,
+                        modifier = Modifier.weight(1f).testTag("call-fix-person"),
+                    ) { Text(stringResource(R.string.calls_fix_person), fontSize = 13.sp) }
+                    OutlinedButton(
+                        onClick = {
+                            onEditConfig { cfg ->
+                                val smart = if (cfg.preset == CallPreset.LIST) CallPreset.SMART else cfg.preset
+                                val international = number?.trim()?.startsWith("+") == true
+                                cfg.copy(
+                                    preset = smart,
+                                    answerInternational = cfg.answerInternational || international,
+                                    answerHidden = cfg.answerHidden || number == null,
+                                    answerStrangers = cfg.answerStrangers || (number != null && !international),
+                                )
+                            }
+                        },
+                        modifier = Modifier.weight(1f).testTag("call-fix-category"),
+                    ) { Text(stringResource(R.string.calls_fix_category), fontSize = 13.sp) }
+                }
             }
         }
     }
@@ -1195,5 +1225,6 @@ private fun ExceptionRow(title: String, note: String, tag: String, onClick: () -
         Icon(MikaIcons.Chevron, null, tint = MikaTheme.colors.ink3, modifier = Modifier.size(18.dp))
     }
 }
+
 
 

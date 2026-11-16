@@ -228,7 +228,10 @@
     <string name="calls_ring_later2">多等一会（10 秒）</string>
     <string name="calls_notification_hangup">挂断</string>
     <string name="calls_notification_open_text">看文字</string>
+    <string name="calls_fix_person">以后这个人我自己接</string>
+    <string name="calls_fix_category">以后这类都让 AI 接</string>
 </resources>
+
 
 
 

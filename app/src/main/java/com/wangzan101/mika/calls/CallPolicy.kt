@@ -66,6 +66,8 @@ data class CallConfig(
     /** 只在一天里的这段时间自动接;两个都是 -1 表示全天。跨零点用 start > end 表示。 */
     val activeStartMinute: Int = -1,
     val activeEndMinute: Int = -1,
+    /** 机构号(400/955xx/100xx)直接转给本人,不交给 AI。 */
+    val institutionTransfer: Boolean = true,
     /** AI 接不起来时(连不上实时语音、被系统打断):等你接,还是直接挂断。 */
     val fallback: CallFallback = CallFallback.WAIT_USER,
     val autoAnswerPausedUntilMs: Long? = null,
@@ -162,6 +164,21 @@ internal object CallPolicy {
      */
     const val MIN_PLAUSIBLE_DIGITS = 7
 
+    /**
+     * 机构号:400/800 客服、95xxx 银行保险、100xx/123xx 公共热线这类号码。
+     * 这类电话通常是「业务通知 / 需要本人做决定」,默认直接转给本人,不交给 AI。
+     * 只认固定前缀,宁可少认也不误伤普通手机号。
+     */
+    fun isInstitutionNumber(number: String?): Boolean {
+        val digits = number?.filter { it.isDigit() } ?: return false
+        val local = digits.removePrefix("86")
+        if (local.length < 5) return false
+        return local.startsWith("400") || local.startsWith("800") ||
+            (local.length == 5 && local.startsWith("95")) ||
+            (local.length in 5..6 && (local.startsWith("100") || local.startsWith("123"))) ||
+            (local.length in 5..6 && local.startsWith("95"))
+    }
+
     fun isBypassed(config: CallConfig, number: String?): Boolean =
         incomingMatchKey(number)?.let { key -> config.bypassIncomingNumbers.any { incomingMatchKey(it) == key } } == true
 
@@ -215,6 +232,8 @@ internal object CallPolicy {
         // 白名单其次:说了必须 AI 接,就接(哪怕来源开关关着);号段同理
         if (key != null && config.allowedIncomingNumbers.any { incomingMatchKey(it) == key }) return true
         if (matchesPrefix(number, config.allowedPrefixes)) return true
+        // 机构号默认转给本人(白名单显式要求 AI 接的已经在上面返回了)
+        if (config.institutionTransfer && isInstitutionNumber(number)) return false
         return when (config.preset) {
             CallPreset.ALL -> true
             // 只接名单:白名单之外一律不接(隐藏号码没有号码可比,也按不接)
@@ -351,6 +370,8 @@ internal object CallPolicy {
         append("\n收尾：自行判断本通要说的事是否已经说清，结合上下文和对方的回应，不必等对方说‘再见’。如果内容已经办清而且没有未解的问题，可自然简短收尾，例如最后说‘那就先这样’；这轮不要再问问题。如果对方明确要求挂断或告别，只答‘好的，再见’。单纯停顿、普通道谢但事项还没聊完、或对方还在问事时继续听，不提前收尾。")
     }
 }
+
+
 
 
 

@@ -228,7 +228,10 @@
     <string name="calls_ring_later2">Wait longer (10 s)</string>
     <string name="calls_notification_hangup">Hang up</string>
     <string name="calls_notification_open_text">Read text</string>
+    <string name="calls_fix_person">I answer this person from now on</string>
+    <string name="calls_fix_category">Let the AI answer this kind</string>
 </resources>
+
 
 
 
