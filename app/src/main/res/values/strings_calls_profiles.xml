@@ -14,6 +14,7 @@
     <string name="calls_voice_test">Test connection</string>
     <string name="calls_voice_testing">Testing…</string>
     <string name="calls_voice_add">Add realtime voice configuration</string>
+    <string name="calls_voice_reuse_speech_creds">Reuse the Doubao credentials from speech-to-text</string>
     <string name="calls_voice_edit">Edit realtime voice configuration</string>
     <string name="calls_voice_test_note">A successful connection test does not verify two-way carrier-call audio. Complete a real test call before enabling automatic answer.</string>
     <string name="calls_voice_name">Configuration name</string>

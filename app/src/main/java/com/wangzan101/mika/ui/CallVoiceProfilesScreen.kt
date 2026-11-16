@@ -144,6 +144,9 @@ private fun CallVoiceProfileDialog(
     var appId by remember(profile) { mutableStateOf("") }
     var accessKey by remember(profile) { mutableStateOf("") }
     var legacy by remember(profile) { mutableStateOf(false) }
+    // 语音转文字里已经存过的豆包(火山)凭据:同一套账号,新建实时语音时可以直接沿用,不用再抄一遍密钥
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val reused = remember { runCatching { com.wangzan101.mika.voice.SpeechSettings.get(context).doubaoCredentials() }.getOrNull() }
     val id = profile?.id.orEmpty()
     val configured = profile?.credentialsConfigured == true
     val valid = name.isNotBlank() && endpoint.startsWith("wss://") && model.isNotBlank() &&
@@ -163,6 +166,22 @@ private fun CallVoiceProfileDialog(
                 OutlinedTextField(speaker, { speaker = it.take(CallPolicy.MAX_SPEAKER_CHARS) }, Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.calls_speaker)) }, singleLine = true, enabled = !externalBusy,
                     supportingText = { Text(stringResource(R.string.calls_speaker_edit_note)) })
+                if (reused != null && profile == null) {
+                    TextButton(
+                        onClick = {
+                            if (reused.apiKey.isNotBlank()) {
+                                apiKey = reused.apiKey
+                                legacy = false
+                            } else {
+                                appId = reused.appId
+                                accessKey = reused.accessKey
+                                legacy = true
+                            }
+                        },
+                        enabled = !externalBusy,
+                        modifier = Modifier.testTag("call-voice-reuse-speech"),
+                    ) { Text(stringResource(R.string.calls_voice_reuse_speech_creds)) }
+                }
                 HorizontalDivider()
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                     Checkbox(legacy, { legacy = it }, enabled = !externalBusy)

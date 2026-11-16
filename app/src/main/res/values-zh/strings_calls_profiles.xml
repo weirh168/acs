@@ -14,6 +14,7 @@
     <string name="calls_voice_test">测试连接</string>
     <string name="calls_voice_testing">正在测试…</string>
     <string name="calls_voice_add">添加实时语音配置</string>
+    <string name="calls_voice_reuse_speech_creds">沿用“语音转文字”里的豆包凭据</string>
     <string name="calls_voice_edit">编辑实时语音配置</string>
     <string name="calls_voice_test_note">连接成功不代表运营商电话中双方都能听到声音。开启自动接听前，请完成一次真实测试通话。</string>
     <string name="calls_voice_name">配置名称</string>

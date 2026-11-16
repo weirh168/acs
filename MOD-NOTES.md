@@ -412,3 +412,38 @@ topResumedActivity = com.android.settings/.HWSettings   (主屏)
 
 构建 + 安装完成。**这一轮没能实机确认**:发任务的同一时刻用户正在微信里录语音,
 我按的小窗坐标打到了微信界面上,已立刻停止自动操作(不再去点手机)。
+
+## 全面复查:接管后主页 + 正常使用 + 返回不拉回（已验证）（2026-11-16 11:06）
+
+逐个环节实测(USB,日志+截图):
+
+| 环节 | 结果 |
+|---|---|
+| 运行中点小窗 | `handAppToUser display=145 pkg=com.android.settings` → `launchOnMain entry exit=0` |
+| 落到哪里 | `topResumedActivity = com.android.settings/.HWSettings`(主页),整屏 |
+| 声音 | `cmd appops get com.android.settings PLAY_AUDIO` → Default mode: allow(没有被静音) |
+| 任务侧 | 「已暂停 · 你在操作,ACS 已暂停」「任务暂停中,继续后生效」 |
+| 按返回 | 3 秒、11 秒后前台都是 ACS —— **没有被拉回** |
+| 任务已结束再点小窗 | `pauseForHumanIn no-run … last=com.android.settings` → `launchLast exit=0`,同样进主页 |
+
+补充体验改动:小窗展开态左上角加了明确的 **「进去操作」** 按钮(⧉),不用再猜「点小窗是展开还是接管」。
+
+用户侧「没正常」最可能的原因:小窗位置会随聊天滚动变化,点偏了只会展开、不会接管;现在有按钮可点。
+
+## 豆包语音现状核查 + 一键沿用凭据（2026-11-16 13:40）
+
+核查结果(设备上读到的原始记录):
+
+| 项 | 状态 |
+|---|---|
+| 语音转文字 = 豆包 | ✅ 已配:`speech_choice={"type":"doubao","resourceId":"volc.seedasr.sauc.duration"}` + 加密凭据在 |
+| 电话助手实时语音 = 豆包音色 | ❌ **实时语音服务里 0 条配置**(页面只有「添加实时语音配置」),所以「AI 电话尚未就绪」 |
+| 电话权限 | ❌ 之前未授权 → 已 `pm grant` 补上 READ_PHONE_STATE、CALL_PHONE |
+
+关键发现:语音转文字里存的豆包凭据就是 `apiKey/appId/accessKey`,和实时语音要的
+`VolcRealtimeCredentials(apiKey, appId, accessKey)` **是同一套字段**。所以新增:
+「添加实时语音配置」弹窗里多一个 **「沿用「语音转文字」里的豆包凭据」** 按钮,
+点一下自动填好(apiKey 优先,只有 appId+accessKey 时切到旧版认证),音色默认
+`zh_female_vv_jupiter_bigtts`。构建通过。
+
+**没装上去**:USB 变成 offline、无线调试也关了(mDNS 无结果),等设备连上再装并实测连接。
