@@ -179,6 +179,25 @@ internal object CallPolicy {
             (local.length in 5..6 && local.startsWith("95"))
     }
 
+    /**
+     * 「以后这类都让 AI 接」:按这通电话的特征把对应来源打开。
+     * 只接名单模式会顺手切回智能接听,否则打开了开关也不生效。
+     * 纯函数,好测:UI 只负责把 inContacts 查好传进来。
+     */
+    fun quickFixAnswerCategory(config: CallConfig, number: String?, inContacts: Boolean): CallConfig {
+        val smart = if (config.preset == CallPreset.LIST) CallPreset.SMART else config.preset
+        val international = number?.trim()?.startsWith("+") == true
+        val hidden = number == null
+        return config.copy(
+            preset = smart,
+            answerContacts = config.answerContacts || (inContacts && !hidden),
+            answerHidden = config.answerHidden || hidden,
+            answerInternational = config.answerInternational || (international && !hidden),
+            answerStrangers = config.answerStrangers || (!hidden && !inContacts && !international),
+            institutionTransfer = if (isInstitutionNumber(number)) false else config.institutionTransfer,
+        )
+    }
+
     fun isBypassed(config: CallConfig, number: String?): Boolean =
         incomingMatchKey(number)?.let { key -> config.bypassIncomingNumbers.any { incomingMatchKey(it) == key } } == true
 
@@ -370,6 +389,7 @@ internal object CallPolicy {
         append("\n收尾：自行判断本通要说的事是否已经说清，结合上下文和对方的回应，不必等对方说‘再见’。如果内容已经办清而且没有未解的问题，可自然简短收尾，例如最后说‘那就先这样’；这轮不要再问问题。如果对方明确要求挂断或告别，只答‘好的，再见’。单纯停顿、普通道谢但事项还没聊完、或对方还在问事时继续听，不提前收尾。")
     }
 }
+
 
 
 

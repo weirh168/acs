@@ -538,6 +538,7 @@ private fun CallReceivePage(
     var scopeOpen by rememberSaveable { mutableStateOf(false) }
     var importantOpen by rememberSaveable { mutableStateOf(false) }
     var pauseOpen by rememberSaveable { mutableStateOf(false) }
+    val liveContext = LocalContext.current
     if (state.aiActive || state.liveTranscript.isNotEmpty()) {
         GroupCard {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -557,14 +558,8 @@ private fun CallReceivePage(
                     OutlinedButton(
                         onClick = {
                             onEditConfig { cfg ->
-                                val smart = if (cfg.preset == CallPreset.LIST) CallPreset.SMART else cfg.preset
-                                val international = number?.trim()?.startsWith("+") == true
-                                cfg.copy(
-                                    preset = smart,
-                                    answerInternational = cfg.answerInternational || international,
-                                    answerHidden = cfg.answerHidden || number == null,
-                                    answerStrangers = cfg.answerStrangers || (number != null && !international),
-                                )
+                                val inContacts = number != null && ContactsLookup.inContacts(liveContext, number)
+                                CallPolicy.quickFixAnswerCategory(cfg, number, inContacts)
                             }
                         },
                         modifier = Modifier.weight(1f).testTag("call-fix-category"),
@@ -1225,6 +1220,8 @@ private fun ExceptionRow(title: String, note: String, tag: String, onClick: () -
         Icon(MikaIcons.Chevron, null, tint = MikaTheme.colors.ink3, modifier = Modifier.size(18.dp))
     }
 }
+
+
 
 
 
