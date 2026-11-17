@@ -196,17 +196,12 @@ fun SettingsScreen(
     }
     when (visiblePage) {
         SettingsPage.MyData -> MyDataScreen(
-            counts = remember {
-                // 计数来自各自运行时的当前快照;取不到时就是 0,界面会说「没有」
+            counts = run {
+                // 记忆走 Flow,对话取一次列表;登录与学到做法暂时还没有读数接口,如实留 0
                 val app = context.applicationContext as com.wangzan101.mika.MikaApp
-                runCatching {
-                    MyDataCounts(
-                        memories = app.memory.items().value.size,
-                        learned = 0,
-                        logins = 0,
-                        conversations = 0,
-                    )
-                }.getOrDefault(MyDataCounts())
+                val memories by remember(app) { app.memory.items() }.collectAsState()
+                val conversations = remember(app) { runCatching { app.conversations.list() }.getOrDefault(emptyList()) }
+                MyDataCounts(memories = memories.size, conversations = conversations.size)
             },
             onBack = toHome,
             onManageMemories = { onOpenMemory?.invoke() },
@@ -740,6 +735,7 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
 
 
 
