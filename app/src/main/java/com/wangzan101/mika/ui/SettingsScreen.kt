@@ -205,6 +205,12 @@ fun SettingsScreen(
             },
             onBack = toHome,
             onManageMemories = { onOpenMemory?.invoke() },
+            onClearAll = {
+                val app = context.applicationContext as com.wangzan101.mika.MikaApp
+                // 记忆:stripMemory(空集) 表示一条都不留;对话:逐个删
+                runCatching { app.memory.stripMemory(emptySet()) }
+                runCatching { app.conversations.list().forEach { app.conversations.delete(it.id) } }
+            },
         )
         SettingsPage.Home -> SettingsContent(
             status = status, androidRelease = androidRelease,
@@ -735,6 +741,7 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
 
 
 
