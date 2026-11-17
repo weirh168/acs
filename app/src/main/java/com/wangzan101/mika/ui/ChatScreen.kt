@@ -804,8 +804,23 @@ private fun EmptyState(
             }
         }
         if (tasks.isNotEmpty()) {
-            MikaCard(Modifier.padding(top = 28.dp)) {
-                tasks.forEachIndexed { i, task ->
+            var examplePage by remember { mutableStateOf(0) }
+            val pageSize = 3
+            val pages = (tasks.size + pageSize - 1) / pageSize
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().padding(top = 20.dp, start = 8.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("试试这样说", Modifier.weight(1f), style = EmptyLead, color = c.ink2)
+                if (pages > 1) {
+                    Text("换一批", Modifier.clickable(role = Role.Button) { examplePage++ },
+                        style = ExampleText, color = c.accent)
+                }
+            }
+            val start = (examplePage * pageSize) % tasks.size
+            val shown = tasks.drop(start).plus(tasks.take(start)).take(pageSize)
+            MikaCard(Modifier.padding(top = 10.dp)) {
+                shown.forEachIndexed { i, task ->
                     ExampleRow(MikaIcons.Message, task.title, first = i == 0) { onPick(task.prompt) }
                 }
             }
