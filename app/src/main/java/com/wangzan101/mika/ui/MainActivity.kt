@@ -84,6 +84,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var monitor: SystemStatusMonitor
     private var requestedConversation by mutableStateOf<String?>(null)
     private var requestedCalls by mutableStateOf(false)
+    private var requestedBrowser by mutableStateOf(false)
     private var requestedCallHistoryId by mutableStateOf<String?>(null)
     private var openTeach by mutableStateOf(false)
     private var requestedSharedDraft by mutableStateOf<SharedDraftRequest?>(null)
@@ -111,6 +112,7 @@ class MainActivity : ComponentActivity() {
         }
         requestedConversation = intent.getStringExtra(EXTRA_OPEN_CONVERSATION)
         requestedCalls = intent.getBooleanExtra(EXTRA_OPEN_CALLS, false)
+        requestedBrowser = intent.getBooleanExtra(EXTRA_OPEN_BROWSER, false)
         requestedCallHistoryId = intent.getStringExtra(EXTRA_CALL_HISTORY_ID)
         takeTeach(intent)
         shareInCurrent = savedInstanceState?.getBoolean(STATE_SHARE_IN_CURRENT, false) ?: false
@@ -131,6 +133,7 @@ class MainActivity : ComponentActivity() {
                     MikaRoot(
                         store, monitor, ::perform, requestedConversation, { requestedConversation = null },
                         requestedCalls, requestedCallHistoryId, { requestedCalls = false; requestedCallHistoryId = null },
+                        requestedBrowser, { requestedBrowser = false },
                         requestedSharedDraft,
                         onSharedDraftOpened = { accepted, draft ->
                             requestedSharedDraft = null
@@ -157,6 +160,7 @@ class MainActivity : ComponentActivity() {
         shareJob?.cancel()
         requestedConversation = intent.getStringExtra(EXTRA_OPEN_CONVERSATION)
         requestedCalls = intent.getBooleanExtra(EXTRA_OPEN_CALLS, false)
+        requestedBrowser = intent.getBooleanExtra(EXTRA_OPEN_BROWSER, false)
         requestedCallHistoryId = intent.getStringExtra(EXTRA_CALL_HISTORY_ID)
         if (requestedConversation != null || intent.getBooleanExtra(EXTRA_OPEN_TEACH, false)) {
             app.chat.cancelPendingSharedDraft()
@@ -334,6 +338,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_OPEN_CONVERSATION = "open_conversation"
         const val EXTRA_OPEN_CALLS = "open_calls"
+        const val EXTRA_OPEN_BROWSER = "open_browser"
         const val EXTRA_CALL_HISTORY_ID = "call_history_id"
         const val EXTRA_OPEN_TEACH = "open_teach"
         const val EXTRA_TEACH_GOAL = "teach_goal"
@@ -371,6 +376,8 @@ private fun MikaRoot(
     requestedCalls: Boolean,
     requestedCallHistoryId: String?,
     onCallsOpened: () -> Unit,
+    requestedBrowser: Boolean = false,
+    onBrowserOpened: () -> Unit = {},
     sharedDraft: SharedDraftRequest?,
     onSharedDraftOpened: (Boolean, SharedDraft) -> Unit,
     openTeach: Boolean,
@@ -416,6 +423,12 @@ private fun MikaRoot(
                 nav.reset()
             }
             onConversationOpened()
+        }
+    }
+    LaunchedEffect(requestedBrowser) {
+        if (requestedBrowser) {
+            nav.push(Route.Browser)
+            onBrowserOpened()
         }
     }
     LaunchedEffect(requestedCalls, requestedCallHistoryId) {

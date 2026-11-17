@@ -709,24 +709,29 @@ private fun EmptyState(
             if (result != null) hits = mapHits(result.hits.map { it.id })
             searching = false
         }
-        // 搜索框:样式和位置向浏览器地址栏靠拢,往下挪一点
-        SearchField(
-            query,
-            { query = it },
-            "搜索或输入网址",
-            Modifier.padding(top = 26.dp),
-            onSubmit = {
-                val text = query.trim()
-                val looksUrl = !text.contains(" ") && text.contains(".")
-                if (looksUrl) {
+        // 首页这一格改成浏览器入口:和抽屉里的「浏览器」是同一个页面
+        Box(
+            Modifier.fillMaxWidth().padding(top = 26.dp)
+                .background(c.fill, MikaShapes.Button)
+                .clickable(role = Role.Button) {
                     runCatching {
-                        val url = if (text.startsWith("http")) text else "https://" + text
-                        searchCtx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                        searchCtx.startActivity(
+                            android.content.Intent(searchCtx, com.wangzan101.mika.ui.MainActivity::class.java)
+                                .putExtra(com.wangzan101.mika.ui.MainActivity.EXTRA_OPEN_BROWSER, true)
+                                .addFlags(
+                                    android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                                        android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT,
+                                ),
+                        )
                     }
-                    query = ""
                 }
-            },
-        )
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(MikaIcons.Globe, null, Modifier.size(18.dp), tint = c.ink3)
+                Text("浏览器", Modifier.padding(start = 8.dp), style = MikaType.Body, color = c.ink2)
+            }
+        }
         if (query.isNotBlank()) {
             Column(Modifier.padding(top = 10.dp)) {
                 if (hits.isEmpty()) {
