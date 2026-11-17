@@ -505,6 +505,35 @@ fun AdvancedSettingsContent(
     PageScaffold(stringResource(R.string.settings_advanced), onBack) {
         val sandboxRow = sandbox?.takeIf { it !is SandboxStatus.Unsupported }
         if (proxy != null || webSearch != null || sandboxRow != null || computerAccess != null || mcpServersCount != null || showRoot) {
+        // 结论卡:先回答「通不通」,再让人改设置
+        var probing by remember { mutableStateOf(false) }
+        var probe by remember { mutableStateOf<com.wangzan101.mika.net.ProbeResult?>(null) }
+        val probeScope = rememberCoroutineScope()
+        val ok = probe?.let { it.reachable } ?: true
+        GroupCard(Modifier.testTag("net-conclusion")) {
+            ListRow(
+                MikaIcons.Globe,
+                if (probe == null) "网络" else if (ok) "网络正常" else "网络有点问题",
+                if (probe == null) "点右边测一下，看模型、搜索、下载通不通" else if (ok)
+                    "下载更新 " + com.wangzan101.mika.net.ProbeResult.summary(probe!!) else
+                    "下载更新 " + com.wangzan101.mika.net.ProbeResult.summary(probe!!),
+                first = true,
+            ) {
+                TextButton(
+                    onClick = {
+                        probing = true
+                        probeScope.launch {
+                            probe = com.wangzan101.mika.net.NetworkProbe.head(
+                                com.wangzan101.mika.about.MikaLinks.LATEST_RELEASE_API,
+                            )
+                            probing = false
+                        }
+                    },
+                    enabled = !probing,
+                    modifier = Modifier.testTag("net-probe"),
+                ) { Text(if (probing) "测着…" else "测一下", fontSize = 14.sp) }
+            }
+        }
             GroupLabel(stringResource(R.string.settings_connections))
             GroupCard {
                 var first = true
