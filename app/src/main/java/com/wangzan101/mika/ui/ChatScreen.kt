@@ -456,52 +456,22 @@ fun ChatScreen(
             if (runJustFinished) askReturnHome = true
         }
         if (askReturnHome && runJustFinished) {
-            // 悬浮小窗:半透明、可拖动,初始贴在输入栏上方
-            var dragBy by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-                androidx.compose.material3.Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MikaTheme.colors.surface.copy(alpha = 0.88f),
-                    tonalElevation = 6.dp,
-                    shadowElevation = 8.dp,
-                    modifier = Modifier
-                        .fillMaxWidth(0.62f)
-                        .padding(bottom = 96.dp)
-                        .offset { androidx.compose.ui.unit.IntOffset(dragBy.x.roundToInt(), dragBy.y.roundToInt()) }
-                        .pointerInput(Unit) {
-                            detectDragGestures { change, delta ->
-                                change.consume()
-                                dragBy += delta
-                            }
-                        },
-                ) {
-                    Row(
-                        Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text("做完了", fontSize = 12.sp, color = MikaTheme.colors.ink, modifier = Modifier.weight(1f))
-                        Text(
-                            "留着",
-                            fontSize = 12.sp,
-                            color = MikaTheme.colors.ink3,
-                            modifier = Modifier
-                                .clickable(role = Role.Button) { askReturnHome = false }
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                        Text(
-                            "回首页",
-                            fontSize = 12.sp,
-                            color = MikaTheme.colors.accent,
-                            modifier = Modifier
-                                .clickable(role = Role.Button) {
-                                    askReturnHome = false
-                                    if (vm.canSwitch()) vm.newConversation()
-                                }
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
-                }
-            }
+            // 做完了:半透明对话框;点「回首页」才真的回到新对话首页
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { askReturnHome = false },
+                containerColor = MikaTheme.colors.surface.copy(alpha = 0.86f),
+                title = { Text("做完了") },
+                text = { Text("回到首页开始新对话？") },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = {
+                        askReturnHome = false
+                        if (vm.canSwitch()) vm.newConversation()
+                    }) { Text("回首页") }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { askReturnHome = false }) { Text("留在这里") }
+                },
+            )
         }
         val composerCtx = LocalContext.current
         Composer(
