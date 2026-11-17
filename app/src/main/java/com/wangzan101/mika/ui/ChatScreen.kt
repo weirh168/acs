@@ -456,9 +456,13 @@ fun ChatScreen(
             if (runJustFinished) askReturnHome = true
         }
         if (askReturnHome && runJustFinished) {
-            // 悬浮小窗:半透明、可拖动,初始贴在输入栏上方
+            // 悬浮小窗:半透明、可拖动。用 Popup 单独开一层,
+            // 之前用 Box(fillMaxSize) 嵌在 Column 里,受父约束后高度为 0,所以整块看不见。
             var dragBy by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+            androidx.compose.ui.window.Popup(
+                alignment = Alignment.BottomCenter,
+                offset = androidx.compose.ui.unit.IntOffset(0, -240),
+            ) {
                 androidx.compose.material3.Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = MikaTheme.colors.surface.copy(alpha = 0.88f),
