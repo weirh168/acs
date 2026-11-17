@@ -471,8 +471,12 @@ fun SettingsContent(
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp))
         }
 
+        // 组内一行都没命中时,组名也不显示
+        val aiShown = hit(tCalls, "打电话", "接电话") || hit(tPhoneOps, "无障碍", "权限") || hit(tDuringWork, "节奏", "声音")
+        val handyShown = hit(tCapsule, "悬浮", "胶囊") || hit(tLanguage, "字体", "深浅色") || hit(tPersonalStart, "启动", "首屏")
+        val connShown = hit(tModel, "大模型", "服务商", "Token") || hit(tWechat, "微信") || hit(tNotif, "弹窗", "通知")
         // 三组按「我想干什么」排,不按模块名排;AI 接打电话是核心能力,放第一行
-        GroupLabel(stringResource(R.string.settings_group_ai))
+        if (aiShown) GroupLabel(stringResource(R.string.settings_group_ai))
         GroupCard {
             if (hit(tCalls, "打电话", "接电话")) {
                 ListRow(MikaIcons.Phone, tCalls, stringResource(R.string.calls_entry_sub), first = true, onClick = onOpenCalls) {
@@ -500,7 +504,7 @@ fun SettingsContent(
             }
         }
 
-        GroupLabel("用起来顺手")
+        if (handyShown) GroupLabel("用起来顺手")
         GroupCard {
             if (hit(tCapsule, "悬浮", "胶囊")) {
                 ListRow(MikaIcons.Message, tCapsule, CapsuleSettingsCopy.SUBTITLE, first = true, onClick = onOpenCapsule) {
@@ -523,7 +527,7 @@ fun SettingsContent(
             }
         }
 
-        GroupLabel(stringResource(R.string.settings_group_connect))
+        if (connShown) GroupLabel(stringResource(R.string.settings_group_connect))
         GroupCard {
             if (hit(tModel, "大模型", "服务商", "Token")) {
                 ListRow(MikaIcons.Spark, tModel, stringResource(R.string.settings_model_sub), first = true, onClick = onOpenModels) {
