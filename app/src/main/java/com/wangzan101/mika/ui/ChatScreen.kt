@@ -720,6 +720,14 @@ private fun EmptyState(
                 "com.eg.android.AlipayGphone" to "支付宝",
                 "com.autonavi.minimap" to "高德",
                 "com.ss.android.ugc.aweme" to "抖音",
+                "com.tencent.mobileqq" to "QQ",
+                "com.taobao.taobao" to "淘宝",
+                "com.jingdong.app.mall" to "京东",
+                "me.ele" to "饿了么",
+                "com.sankuai.meituan" to "美团",
+                "com.netease.cloudmusic" to "网易云音乐",
+                "tv.danmaku.bili" to "哔哩哔哩",
+                "com.zhihu.android" to "知乎",
             )
         }
         val installed = remember(quickCtx) {
@@ -727,13 +735,24 @@ private fun EmptyState(
             quickApps.filter { (pkg, _) -> runCatching { pm.getApplicationInfo(pkg, 0) }.isSuccess }
         }
         val pm = quickCtx.packageManager
+        var appPage by remember { mutableStateOf(0) }
         if (installed.isNotEmpty()) {
-            Text("直接打开", Modifier.padding(top = 26.dp, start = 8.dp), style = EmptyLead, color = c.ink2)
+            androidx.compose.foundation.layout.Row(
+                Modifier.fillMaxWidth().padding(top = 26.dp, start = 8.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("直接打开", Modifier.weight(1f), style = EmptyLead, color = c.ink2)
+                if (installed.size > 5) {
+                    Text("换一批", Modifier.clickable(role = Role.Button) { appPage++ },
+                        style = ExampleText, color = c.accent)
+                }
+            }
             Row(
                 Modifier.fillMaxWidth().padding(top = 12.dp, start = 8.dp, end = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                installed.take(5).forEach { (pkg, label) ->
+                val start = (appPage * 5) % installed.size
+                installed.drop(start).plus(installed.take(start)).take(5).forEach { (pkg, label) ->
                     val icon = remember(pkg) {
                         runCatching {
                             (pm.getApplicationIcon(pkg) as? android.graphics.drawable.BitmapDrawable)
