@@ -516,10 +516,41 @@ fun AdvancedSettingsContent(
         if (proxy != null || webSearch != null || sandboxRow != null || computerAccess != null || mcpServersCount != null || showRoot) {
         // 结论卡:先回答「通不通」,再让人改设置
         var probing by remember { mutableStateOf(false) }
-        // 探测结果:标签 -> 这一项的结论
         var probeLines by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
         val probeScope = rememberCoroutineScope()
         val probeContext = LocalContext.current
+        // 探测逻辑抽成函数:首次测量与「关掉代理再测一次」共用
+        val runProbe: () -> Unit = {
+            probing = true
+            probeScope.launch {
+                val lines = mutableListOf<Pair<String, String>>()
+                modelBaseUrl?.takeIf { it.isNotBlank() }?.let { base ->
+                    // 模型服务只要连得上就算通(401/403 也说明网络到了)
+                    val r = com.wangzan101.mika.net.NetworkProbe.head(base) { it in 100..499 }
+                    lines += "模型服务" to com.wangzan101.mika.net.ProbeResult.summary(r)
+                }
+                val searchSettings = com.wangzan101.mika.settings.WebSearchSettings.get(probeContext)
+                val searchConfig = runCatching { searchSettings.get() }.getOrNull()
+                val searchService = runCatching { searchSettings.service() }.getOrNull()
+                when {
+                    searchService != null -> {
+                        val s = com.wangzan101.mika.net.SearchProbe.run(searchService)
+                        lines += "网页搜索" to com.wangzan101.mika.net.ProbeResult.summary(s)
+                    }
+                    searchConfig?.enabled != true -> lines += "网页搜索" to "未启用"
+                    else -> lines += "网页搜索" to "没填完整"
+                }
+                // GitHub 的 release 接口不认 HEAD(会回 404),用 GET 只取状态码
+                val d = com.wangzan101.mika.net.NetworkProbe.head(
+                    com.wangzan101.mika.about.MikaLinks.LATEST_RELEASE_API,
+                    method = "GET",
+                    accept = { it in 200..399 || it == 403 || it == 404 },
+                )
+                lines += "下载更新" to com.wangzan101.mika.net.ProbeResult.summary(d)
+                probeLines = lines
+                probing = false
+            }
+        }
         val allOk = probeLines?.all { it.second.endsWith("秒") } ?: true
         GroupCard(Modifier.testTag("net-conclusion")) {
             ListRow(
@@ -530,30 +561,17 @@ fun AdvancedSettingsContent(
                     else -> "网络有点问题"
                 },
                 probeLines?.joinToString(" · ") { it.first + " " + it.second }
-                    ?: "点右边测一下，看模型和下载通不通",
+                    ?: "点右边测一下，看模型、搜索、下载通不通",
                 first = true,
             ) {
                 TextButton(
-                    onClick = {
-                        probing = true
-                        probeScope.launch {
-                            val lines = mutableListOf<Pair<String, String>>()
-                            modelBaseUrl?.takeIf { it.isNotBlank() }?.let { base ->
-                                // 模型服务只要连得上就算通(401/403 也说明网络到了)
-                                val r = com.wangzan101.mika.net.NetworkProbe.head(base) { it in 100..499 }
-                                lines += "模型服务" to com.wangzan101.mika.net.ProbeResult.summary(r)
-                            }
-                            val d = com.wangzan101.mika.net.NetworkProbe.head(
-                                com.wangzan101.mika.about.MikaLinks.LATEST_RELEASE_API,
-                            )
-                            lines += "下载更新" to com.wangzan101.mika.net.ProbeResult.summary(d)
-                            probeLines = lines
-                            probing = false
-                        }
-                    },
+                    onClick = { runProbe() },
                     enabled = !probing,
                     modifier = Modifier.testTag("net-probe"),
                 ) { Text(if (probing) "测着…" else "测一下", fontSize = 14.sp) }
+            }
+            if (probeLines != null && !allOk && proxy?.isNotBlank() == true) {
+                NetProbeRetryRow { onClearProxy(); runProbe() }
             }
         }
             GroupLabel(stringResource(R.string.settings_connections))
@@ -693,6 +711,7 @@ private fun NetProbeRetryRow(onClick: () -> Unit) {
         }
     }
 }
+
 
 
 
