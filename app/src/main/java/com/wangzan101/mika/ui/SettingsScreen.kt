@@ -437,8 +437,17 @@ fun SettingsContent(
                 callsEnabled?.let { RowValue(if (it) stringResource(R.string.state_on) else stringResource(R.string.state_off)) }
                 RowChevron()
             }
-            ListRow(MikaIcons.Phone, stringResource(R.string.settings_phone_ops), stringResource(R.string.settings_phone_ops_sub), onClick = onOpenPhoneOps) {
+            val phoneOpsReady = status.sdkInt >= Prerequisites.MIN_SDK &&
+                status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On
+            val phoneOpsLabel = stringResource(R.string.settings_phone_ops)
+            ListRow(MikaIcons.Phone, phoneOpsLabel, stringResource(R.string.settings_phone_ops_sub), onClick = onOpenPhoneOps) {
                 PhoneOpsPill(status)
+                // 没通时行内直接给动作,不用点进子页才知道要补什么
+                if (!phoneOpsReady && status.sdkInt >= Prerequisites.MIN_SDK) {
+                    TextButton(onClick = onOpenPhoneOps) {
+                        Text(stringResource(R.string.settings_fix_row), fontSize = 13.sp)
+                    }
+                }
                 RowChevron()
             }
             ListRow(MikaIcons.Moon, stringResource(R.string.settings_during_work), stringResource(R.string.settings_during_work_sub), onClick = onOpenDuringWork) { RowChevron() }
@@ -759,6 +768,7 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
 
 
 

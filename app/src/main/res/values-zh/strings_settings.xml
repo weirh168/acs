@@ -3,6 +3,7 @@
     <string name="language_title">语言</string>
     <string name="language_system">跟随系统</string>
     <string name="language_system_detail">系统语言 ACS 有译文时用它,没有时用英文</string>
+    <string name="settings_fix_row">去补齐</string>
     <string name="settings_basic">常用</string>
     <string name="settings_group_ai">AI 怎么做事</string>
     <string name="settings_group_connect">连什么、用什么</string>
@@ -218,6 +219,7 @@
     <string name="settings_scheduled_quiet_end">结束时间</string>
     <string name="settings_scheduled_quiet_equal">开始和结束时间设为不同时间后，通知才会静音。</string>
 </resources>
+
 
 
 

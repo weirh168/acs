@@ -16,6 +16,7 @@
     <string name="language_persian" translatable="false">فارسی</string>
     <string name="settings_group_ai">How the AI works</string>
     <string name="settings_group_connect">Connect and use</string>
+    <string name="settings_fix_row">Fix</string>
     <string name="settings_basic">Common</string>
     <string name="settings_language_sub">Simplified Chinese · follows system light/dark</string>
     <string name="settings_language_appearance">Language &amp; appearance</string>
@@ -234,4 +235,5 @@
     <string name="settings_scheduled_quiet_end">End time</string>
     <string name="settings_scheduled_quiet_equal">Choose different start and end times to silence notifications.</string>
 </resources>
+
 
