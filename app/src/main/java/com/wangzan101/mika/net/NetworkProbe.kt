@@ -19,13 +19,14 @@ object NetworkProbe {
     suspend fun head(
         url: String,
         timeoutMs: Int = 5_000,
+        method: String = "HEAD",
         accept: (Int) -> Boolean = { it in 200..399 },
     ): ProbeResult = withContext(Dispatchers.IO) {
         val start = System.currentTimeMillis()
         var connection: HttpURLConnection? = null
         try {
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
-                requestMethod = "HEAD"
+                requestMethod = method
                 connectTimeout = timeoutMs
                 readTimeout = timeoutMs
                 instanceFollowRedirects = true
@@ -43,4 +44,5 @@ object NetworkProbe {
         }
     }
 }
+
 

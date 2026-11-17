@@ -12,10 +12,11 @@
     <string name="web_search_missing_key">%1$s 需要 API 密钥才能使用。</string>
     <string name="web_search_get_key">获取 API 密钥</string>
     <string name="web_search_privacy">密钥会加密保存在本机。搜索结果按不可信内容处理。</string>
-    <string name="web_search_row_sub">可选搜索服务；始终可以使用浏览器搜索</string>
+    <string name="web_search_row_sub">AI 上网查资料时用它，随时可换</string>
     <string name="web_search_enabled">启用网页搜索</string>
     <string name="web_search_api_key">API 密钥（可选）</string>
     <string name="web_search_invalid_endpoint">请输入不带查询参数的 HTTP 或 HTTPS 网址。</string>
     <string name="web_search_action">搜索网页</string>
 </resources>
+
 
