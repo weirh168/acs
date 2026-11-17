@@ -53,9 +53,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -886,7 +890,10 @@ private fun EmptyState(
         // 四种态:接过 / 还没接过 / 接听已关。没接上的提醒还没数据源,先不做
         val callsFlow = app?.calls?.settings?.state
         val callsOn = callsFlow?.collectAsState()?.value?.enabled ?: true
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.Top,
+        ) {
             Column(Modifier.weight(1f)) {
         // 点卡片进「AI 接打电话」看具体记录(走 Activity 的 open_calls 入口)
         MikaCard(Modifier.padding(top = 12.dp).clickable(role = Role.Button) {
@@ -898,19 +905,19 @@ private fun EmptyState(
                 )
             }
         }) {
-            Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+            Column(Modifier.padding(horizontal = 11.dp, vertical = 7.dp)) {
                 when {
                     !callsOn -> {
-                        Text("接听已关", style = MikaType.Title, color = c.ink3)
-                        Text("打来你自己接", Modifier.padding(top = 4.dp), style = EmptyLead, color = c.ink3)
+                        Text("接听已关", fontSize = 12.sp, color = c.ink3)
+                        Text("打来你自己接", Modifier.padding(top = 2.dp), fontSize = 10.sp, color = c.ink3)
                     }
                     todayCalls > 0 -> Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("$todayCalls 通", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = c.ink)
-                        Text("今天 AI 替你接的", Modifier.padding(start = 8.dp), fontSize = 13.sp, color = c.ink2)
+                        Text("$todayCalls 通", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = c.ink)
+                        Text("今天 AI 替你接的", Modifier.padding(start = 6.dp), fontSize = 11.sp, color = c.ink2)
                     }
                     else -> {
-                        Text("今天还没替你接电话", style = MikaType.Title, color = c.ink2)
-                        Text("有电话进来时它在这儿记着", Modifier.padding(top = 4.dp), style = EmptyLead, color = c.ink3)
+                        Text("今天还没替你接电话", fontSize = 12.sp, color = c.ink2)
+                        Text("有电话进来时它在这儿记着", Modifier.padding(top = 2.dp), fontSize = 10.sp, color = c.ink3)
                     }
                 }
             }
@@ -918,15 +925,16 @@ private fun EmptyState(
             }
                 // 「＋」:从已安装的 App 里挑一个加进来
                 var picking by remember { mutableStateOf(false) }
-                Column(
-                    Modifier.width(64.dp).clickable(role = Role.Button) { picking = true },
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Box(
+                    Modifier.weight(0.3f).fillMaxHeight().padding(start = 8.dp)
+                        .background(c.surface, RoundedCornerShape(14.dp))
+                        .clickable(role = Role.Button) { picking = true },
+                    contentAlignment = Alignment.Center,
                 ) {
-                    Box(
-                        Modifier.size(48.dp).background(c.greySoft, RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(MikaIcons.Plus, "增加 App", Modifier.size(22.dp), tint = c.ink3) }
-                    Text("增加", Modifier.padding(top = 6.dp), style = ExampleText, color = c.ink2, maxLines = 1)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(MikaIcons.Plus, "增加 App", Modifier.size(16.dp), tint = c.ink3)
+                        Text("增加", Modifier.padding(start = 4.dp), fontSize = 11.sp, color = c.ink2, maxLines = 1)
+                    }
                 }
                 if (picking) {
                     val apps = remember(quickCtx) {
