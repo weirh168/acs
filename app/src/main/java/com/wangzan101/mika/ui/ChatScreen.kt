@@ -660,6 +660,25 @@ private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, onPi
             Text(ChatCopy.greeting(hour), style = MikaType.LargeTitle, color = c.ink)
             Text(ChatCopy.EMPTY_PROMPT, Modifier.padding(top = 6.dp), style = EmptyLead, color = c.ink2)
         }
+        // 今天替你接了几通:这是产品的差异点,首屏先答「它在替我干活」
+        val app = LocalContext.current.applicationContext as? MikaApp
+        val todayCalls = remember(app) {
+            runCatching {
+                val start = java.time.LocalDate.now()
+                    .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+                app?.calls?.history?.value.orEmpty().count { it.startedAtMs >= start }
+            }.getOrDefault(0)
+        }
+        if (todayCalls > 0) {
+            MikaCard(Modifier.padding(top = 20.dp)) {
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("$todayCalls 通", style = MikaType.LargeTitle, color = c.ink)
+                        Text("今天 AI 替你接的", Modifier.padding(start = 8.dp), style = EmptyLead, color = c.ink2)
+                    }
+                }
+            }
+        }
         if (tasks.isNotEmpty()) {
             MikaCard(Modifier.padding(top = 28.dp)) {
                 tasks.forEachIndexed { i, task ->
