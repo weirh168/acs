@@ -785,7 +785,16 @@ private fun EmptyState(
         // 四种态:接过 / 还没接过 / 接听已关。没接上的提醒还没数据源,先不做
         val callsFlow = app?.calls?.settings?.state
         val callsOn = callsFlow?.collectAsState()?.value?.enabled ?: true
-        MikaCard(Modifier.padding(top = 12.dp)) {
+        // 点卡片进「AI 接打电话」看具体记录(走 Activity 的 open_calls 入口)
+        MikaCard(Modifier.padding(top = 12.dp).clickable(role = Role.Button) {
+            runCatching {
+                quickCtx.startActivity(
+                    android.content.Intent(quickCtx, com.wangzan101.mika.ui.MainActivity::class.java)
+                        .putExtra(com.wangzan101.mika.ui.MainActivity.EXTRA_OPEN_CALLS, true)
+                        .addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
+                )
+            }
+        }) {
             Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
                 when {
                     !callsOn -> {
