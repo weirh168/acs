@@ -1,5 +1,7 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.ui.unit.sp
+
 import com.wangzan101.mika.R
 import com.wangzan101.mika.i18n.tr
 import androidx.compose.ui.res.pluralStringResource
@@ -211,6 +213,12 @@ fun SettingsScreen(
         )
         SettingsPage.Advanced -> AdvancedSettingsContent(
             proxy = proxy, proxyNote = proxy?.let { NetProxyCopy.subtitle(it, browserProxy) }, onOpenProxy = { editingProxy = true },
+            onClearProxy = {
+                scope.launch {
+                    withContext(Dispatchers.IO) { proxies.set("") }
+                    proxy = withContext(Dispatchers.IO) { proxies.get() }
+                }
+            },
             webSearch = webSearch, onOpenWebSearch = { editingSearch = true },
             sandbox = sandboxStatus, onOpenSandbox = { page = SettingsPage.Sandbox },
             showRecovery = status.sdkInt >= Prerequisites.MIN_SDK, onOpenRecovery = { page = SettingsPage.Recovery },
@@ -476,6 +484,7 @@ fun AdvancedSettingsContent(
     proxy: String? = null,
     proxyNote: String? = null,
     onOpenProxy: () -> Unit = {},
+    onClearProxy: () -> Unit = {},
     webSearch: WebSearchConfig? = null,
     onOpenWebSearch: () -> Unit = {},
     sandbox: SandboxStatus? = null,
@@ -503,6 +512,12 @@ fun AdvancedSettingsContent(
                 proxy?.let {
                     ListRow(MikaIcons.Link, NetProxyCopy.TITLE, "填了就走代理，不填就直连", first = take(), onClick = onOpenProxy) {
                         RowValue(NetProxyCopy.value(it))
+                        // 代理坏了要能立刻关掉,不用点进子页
+                        if (it.isNotBlank()) {
+                            TextButton(onClick = onClearProxy, modifier = Modifier.testTag("net-proxy-off")) {
+                                Text("关掉", fontSize = 13.sp)
+                            }
+                        }
                         RowChevron()
                     }
                 }
@@ -604,4 +619,6 @@ private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Un
         }
     }
 }
+
+
 
