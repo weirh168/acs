@@ -786,15 +786,15 @@ private fun EmptyState(
         val callsFlow = app?.calls?.settings?.state
         val callsOn = callsFlow?.collectAsState()?.value?.enabled ?: true
         MikaCard(Modifier.padding(top = 12.dp)) {
-            Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
                 when {
                     !callsOn -> {
                         Text("接听已关", style = MikaType.Title, color = c.ink3)
                         Text("打来你自己接", Modifier.padding(top = 4.dp), style = EmptyLead, color = c.ink3)
                     }
                     todayCalls > 0 -> Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("$todayCalls 通", style = MikaType.LargeTitle, color = c.ink)
-                        Text("今天 AI 替你接的", Modifier.padding(start = 8.dp), style = EmptyLead, color = c.ink2)
+                        Text("$todayCalls 通", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = c.ink)
+                        Text("今天 AI 替你接的", Modifier.padding(start = 8.dp), fontSize = 13.sp, color = c.ink2)
                     }
                     else -> {
                         Text("今天还没替你接电话", style = MikaType.Title, color = c.ink2)
