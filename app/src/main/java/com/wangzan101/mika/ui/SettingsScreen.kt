@@ -104,6 +104,8 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit = {},
     /** 外部 MCP server 设置(outbound);为空时不显示入口。 */
     mcpServers: com.wangzan101.mika.settings.McpServerStore? = null,
+    /** 接打电话此刻是否开着;null 表示调用方没传。 */
+    callsEnabled: Boolean? = null,
 ) {
     val configs by store.configs.collectAsState()
     val roles by store.roles.collectAsState()
@@ -231,6 +233,7 @@ fun SettingsScreen(
             autoArchiveDays = autoArchiveDays,
             onOpenAutoArchive = { editingAutoArchive = true },
             onOpenMemory = { page = SettingsPage.MyData },
+        callsEnabled = callsEnabled,
             onOpenRecommendations = { page = SettingsPage.Recommendations },
             onOpenAdvanced = { page = SettingsPage.Advanced },
             versionName = BuildConfig.VERSION_NAME, updateVersion = updateVersion, onOpenAbout = onOpenAbout,
@@ -410,6 +413,7 @@ fun SettingsContent(
     language: AppLanguage = AppLanguage.System,
     onOpenLanguage: () -> Unit = {},
     onOpenMemory: (() -> Unit)? = null,
+    callsEnabled: Boolean? = null,
     onOpenRecommendations: () -> Unit = {},
     onOpenAdvanced: () -> Unit = {},
     versionName: String = "",
@@ -428,7 +432,11 @@ fun SettingsContent(
         // 三组按「我想干什么」排,不按模块名排;AI 接打电话是核心能力,放第一行
         GroupLabel(stringResource(R.string.settings_group_ai))
         GroupCard {
-            ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), stringResource(R.string.calls_entry_sub), first = true, onClick = onOpenCalls) { RowChevron() }
+            ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), stringResource(R.string.calls_entry_sub), first = true, onClick = onOpenCalls) {
+                // 彩色胶囊只表示健康;开关状态用灰字值
+                callsEnabled?.let { RowValue(if (it) stringResource(R.string.state_on) else stringResource(R.string.state_off)) }
+                RowChevron()
+            }
             ListRow(MikaIcons.Phone, stringResource(R.string.settings_phone_ops), stringResource(R.string.settings_phone_ops_sub), onClick = onOpenPhoneOps) {
                 PhoneOpsPill(status)
                 RowChevron()
@@ -751,6 +759,7 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
 
 
 
