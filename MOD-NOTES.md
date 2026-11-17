@@ -1035,3 +1035,28 @@ AI 通话卡 + 一键纠正两按钮、通知三键(人工接管/挂断/看文�
 - 新增国内服务商 博查 Bocha(core/search/BochaSearch.kt)
 
 备注:博查密钥加密存在本机,未进代码库;该密钥在对话里明文出现过,已提醒用户轮换。
+
+## 「我的数据」P0 交接状态（2026-11-17 13:30）
+
+已完成（提交 b33fd7d 之前共 7 个提交）:
+- MyDataSummary 纯函数 + MyDataSummaryTest(3 用例)  ✅
+- 三行改名:它记得我什么 / 旧对话自动收起 / 哪些 App 能用屏幕  ✅
+- 推荐任务移出隐私组 → 「其他」组  ✅
+- MyDataScreen 子页 + SettingsPage.MyData 路由(记忆行进入)  ✅
+- 记忆/对话真实计数(memory.items() Flow + conversations.list())  ✅
+- 清空(记忆+对话)+ 二次确认弹窗  ✅
+- 导出:MyDataExporter 写 metadata-only JSON 到 getExternalFilesDir("exports")  ✅ 代码
+
+剩 3 个小项(新会话做):
+1. 登录网站 / 学到的做法 的读数 —— 无接口。SiteRegistry 只有 list()(字段 host/lastVisitMs/
+   loggedInByUser/challengedAtMs),需先加 count 或 clear;RunLearning 在 task/ 下不暴露条数。
+2. 清空登录网站 —— 同上,SiteRegistry 无 clear(),要补才能让「只删记忆与登录」这句成立。
+3. 设置页「我的数据」三行的右侧值:它记得我什么→查看(或条数)、旧对话自动收起→已关闭/已收起 N 段、
+   哪些 App 能用屏幕→3 个允许·2 个被禁(需被禁 App 计数)。
+
+未验证:
+- 导出功能从未真机点过(自动点击多次命中相邻行)。需人工点「它记得我什么」→「导出我的数据」,
+  看到「已导出:…json」后 ls 该目录确认。
+
+点击经验(重要):uiautomator dump 里文本节点的 bounds 中心不等于可点击行中心,常命中下一行;
+要取包含该文本的可点击父节点 bounds,或把 y 上移半行(约 60-70px)。
