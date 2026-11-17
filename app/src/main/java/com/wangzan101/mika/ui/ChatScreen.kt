@@ -738,7 +738,7 @@ private fun EmptyState(
     val c = MikaTheme.colors
     val hour = remember(conversation) { LocalTime.now().hour }
     Column(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 10.dp)) {
+        Column(Modifier.padding(start = 8.dp, end = 8.dp)) {
             Text(ChatCopy.greeting(hour), style = MikaType.LargeTitle, color = c.ink)
             Text(ChatCopy.EMPTY_PROMPT, Modifier.padding(top = 6.dp), style = EmptyLead, color = c.ink2)
         }
@@ -770,7 +770,7 @@ private fun EmptyState(
         }
         // 首页这一格改成浏览器入口:和抽屉里的「浏览器」是同一个页面
         Box(
-            Modifier.fillMaxWidth().padding(top = 26.dp)
+            Modifier.fillMaxWidth().padding(top = 16.dp)
                 .background(c.fill, MikaShapes.Button)
                 .clickable(role = Role.Button) {
                     runCatching {
