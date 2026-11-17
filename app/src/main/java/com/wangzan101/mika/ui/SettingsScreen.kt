@@ -1,5 +1,11 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.ui.unit.dp
+
+import androidx.compose.foundation.layout.padding
+
+import androidx.compose.foundation.layout.fillMaxWidth
+
 import androidx.compose.ui.unit.sp
 
 import com.wangzan101.mika.R
@@ -664,6 +670,26 @@ private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Un
     }
 }
 
-
-
+/** 探测失败且配了代理时的一行:先建议关掉代理再测一次。
+ *  独立成函数是为了避开本文件里同名的自定义 Row / Text 组件。 */
+@Composable
+private fun NetProbeRetryRow(onClick: () -> Unit) {
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.Text(
+            "看起来是代理的问题，要不要先关掉再试？",
+            fontSize = 13.sp,
+            color = MikaTheme.colors.ink2,
+            modifier = Modifier.weight(1f),
+        )
+        androidx.compose.material3.TextButton(
+            onClick = onClick,
+            modifier = Modifier.testTag("net-probe-without-proxy"),
+        ) {
+            androidx.compose.material3.Text("关掉代理再测一次", fontSize = 13.sp)
+        }
+    }
+}
 
