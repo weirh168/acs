@@ -37,7 +37,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -659,6 +663,51 @@ private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, onPi
         Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 52.dp)) {
             Text(ChatCopy.greeting(hour), style = MikaType.LargeTitle, color = c.ink)
             Text(ChatCopy.EMPTY_PROMPT, Modifier.padding(top = 6.dp), style = EmptyLead, color = c.ink2)
+        }
+        // 直接打开:最高频的五个 App,点一下就走
+        val quickCtx = LocalContext.current
+        val quickApps = remember {
+            listOf(
+                "com.tencent.mm" to "微信",
+                "com.xingin.xhs" to "小红书",
+                "com.eg.android.AlipayGphone" to "支付宝",
+                "com.autonavi.minimap" to "高德",
+                "com.ss.android.ugc.aweme" to "抖音",
+            )
+        }
+        val installed = remember(quickCtx) {
+            val pm = quickCtx.packageManager
+            quickApps.filter { (pkg, _) -> runCatching { pm.getApplicationInfo(pkg, 0) }.isSuccess }
+        }
+        val pm = quickCtx.packageManager
+        if (installed.isNotEmpty()) {
+            Text("直接打开", Modifier.padding(top = 26.dp, start = 8.dp), style = EmptyLead, color = c.ink2)
+            Row(
+                Modifier.fillMaxWidth().padding(top = 12.dp, start = 8.dp, end = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                installed.take(5).forEach { (pkg, label) ->
+                    val icon = remember(pkg) {
+                        runCatching {
+                            (pm.getApplicationIcon(pkg) as? android.graphics.drawable.BitmapDrawable)
+                                ?.bitmap?.asImageBitmap()
+                        }.getOrNull()
+                    }
+                    Column(
+                        Modifier.width(64.dp).clickable(role = Role.Button) {
+                            runCatching {
+                                pm.getLaunchIntentForPackage(pkg)?.let { quickCtx.startActivity(it) }
+                            }
+                        },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        icon?.let {
+                            Image(it, contentDescription = label, modifier = Modifier.size(48.dp))
+                        }
+                        Text(label, Modifier.padding(top = 6.dp), style = ExampleText, color = c.ink, maxLines = 1)
+                    }
+                }
+            }
         }
         // 今天替你接了几通:这是产品的差异点,首屏先答「它在替我干活」
         val app = LocalContext.current.applicationContext as? MikaApp
