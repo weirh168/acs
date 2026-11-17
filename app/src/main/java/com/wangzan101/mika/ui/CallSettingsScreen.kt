@@ -554,6 +554,17 @@ private fun CallReceivePage(
         }
     }
     Spacer(Modifier.size(12.dp))
+    // 接听范围提到最上面:普通人最想改的就是「AI 接谁的电话」
+    GroupCard(Modifier.testTag("call-scope-card")) {
+        ListRow(
+            MikaIcons.Phone,
+            "接听范围",
+            rulesSummary(config),
+            first = true,
+            onClick = onRules,
+        ) { RowChevron() }
+    }
+    Spacer(Modifier.size(12.dp))
     if (state.aiActive || state.liveTranscript.isNotEmpty()) {
         GroupCard {
             Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -663,15 +674,6 @@ private fun CallReceivePage(
 
     GroupLabel(stringResource(R.string.calls_rules))
     GroupCard(Modifier.testTag("call-incoming-rules")) {
-        CallFoldRow(MikaIcons.Phone, stringResource(R.string.calls_rule_scope), scopeOpen,
-            "call-rules-scope", subtitle = rulesSummary(config)) { scopeOpen = !scopeOpen }
-        if (scopeOpen) {
-            FooterNote(stringResource(R.string.calls_rule_delay_summary, config.autoAnswerDelaySeconds))
-            TextButton(onClick = onRules, modifier = Modifier.fillMaxWidth().testTag("call-edit-rules")) {
-                Text(stringResource(R.string.calls_edit_rule))
-            }
-        }
-        HorizontalDivider()
         val paused = state.autoAnswerStage == CallAutoAnswerStage.PAUSED
         CallFoldRow(MikaIcons.Clock, stringResource(R.string.calls_rule_pause), pauseOpen,
             "call-rules-pause", subtitle = if (paused) autoAnswerSummary(config, state) else null) { pauseOpen = !pauseOpen }
