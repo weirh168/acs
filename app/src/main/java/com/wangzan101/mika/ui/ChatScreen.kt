@@ -458,42 +458,43 @@ fun ChatScreen(
         if (askReturnHome && runJustFinished) {
             // 做完了:半透明对话框;点「回首页」才真的回到新对话首页
             // 小窗:半透明、约半屏宽,不挡住下面的答案
+            var barDrag by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
             androidx.compose.ui.window.Dialog(onDismissRequest = { askReturnHome = false }) {
                 androidx.compose.material3.Surface(
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(18.dp),
                     color = MikaTheme.colors.surface.copy(alpha = 0.86f),
                     tonalElevation = 4.dp,
-                    modifier = Modifier.fillMaxWidth(0.52f),
+                    modifier = Modifier
+                        .offset { androidx.compose.ui.unit.IntOffset(barDrag.x.roundToInt(), barDrag.y.roundToInt()) }
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, delta ->
+                                change.consume()
+                                barDrag += delta
+                            }
+                        },
                 ) {
-                    Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-                        Text("做完了", fontSize = 14.sp, color = MikaTheme.colors.ink, fontWeight = FontWeight.Medium)
+                    Row(
+                        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("做完了", fontSize = 12.sp, color = MikaTheme.colors.ink)
                         Text(
-                            "回到首页开始新对话？",
-                            fontSize = 12.sp, color = MikaTheme.colors.ink2,
-                            modifier = Modifier.padding(top = 6.dp),
+                            "留着",
+                            fontSize = 12.sp, color = MikaTheme.colors.ink3,
+                            modifier = Modifier
+                                .clickable(role = Role.Button) { askReturnHome = false }
+                                .padding(start = 10.dp, end = 2.dp, top = 4.dp, bottom = 4.dp),
                         )
-                        Row(
-                            Modifier.fillMaxWidth().padding(top = 12.dp),
-                            horizontalArrangement = Arrangement.End,
-                        ) {
-                            Text(
-                                "留着",
-                                fontSize = 12.sp, color = MikaTheme.colors.ink3,
-                                modifier = Modifier
-                                    .clickable(role = Role.Button) { askReturnHome = false }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
-                            Text(
-                                "回首页",
-                                fontSize = 12.sp, color = MikaTheme.colors.accent,
-                                modifier = Modifier
-                                    .clickable(role = Role.Button) {
-                                        askReturnHome = false
-                                        if (vm.canSwitch()) vm.newConversation()
-                                    }
-                                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                            )
-                        }
+                        Text(
+                            "回首页",
+                            fontSize = 12.sp, color = MikaTheme.colors.accent,
+                            modifier = Modifier
+                                .clickable(role = Role.Button) {
+                                    askReturnHome = false
+                                    if (vm.canSwitch()) vm.newConversation()
+                                }
+                                .padding(start = 8.dp, end = 2.dp, top = 4.dp, bottom = 4.dp),
+                        )
                     }
                 }
             }
