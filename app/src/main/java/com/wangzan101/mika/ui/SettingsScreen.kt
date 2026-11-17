@@ -452,8 +452,18 @@ fun SettingsContent(
         val tModel = stringResource(R.string.settings_model)
         val tWechat = stringResource(R.string.wechat_title)
         val tNotif = StatusCopy.NOTIFICATIONS
-        val anyShown = listOf(tCalls, tPhoneOps, tDuringWork, tCapsule, tLanguage, tPersonalStart, tModel, tWechat, tNotif)
-            .any { hit(it) }
+        // 用和行内一致的判定(含别名),否则别名命中时还会误报「没有匹配」
+        val anyShown = listOf(
+            hit(tCalls, "打电话", "接电话"),
+            hit(tPhoneOps, "无障碍", "权限"),
+            hit(tDuringWork, "节奏", "声音"),
+            hit(tCapsule, "悬浮", "胶囊"),
+            hit(tLanguage, "字体", "深浅色"),
+            hit(tPersonalStart, "启动", "首屏"),
+            hit(tModel, "大模型", "服务商", "Token"),
+            hit(tWechat, "微信"),
+            hit(tNotif, "弹窗", "通知"),
+        ).any { it }
 
         SearchField(settingsQuery, { settingsQuery = it }, "搜索设置项", Modifier.testTag("settings-search"))
         if (!anyShown) {
@@ -833,6 +843,7 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
 
 
 
