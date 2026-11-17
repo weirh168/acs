@@ -38,12 +38,15 @@ object QuickAppsStore {
         return saved + DEFAULTS.map { it.first }.filter { it !in saved }
     }
 
-    /** 把某个 App 提到最前面。 */
-    fun moveToFront(context: Context, packageName: String) {
+    /**
+     * 长按某个 App:把它挪到队尾,这一格就换成池子里的另一个。
+     * 反复长按会不断换新,原来的 App 不会被删掉,只是排到后面。
+     */
+    fun rotateOut(context: Context, packageName: String) {
         val current = order(context).toMutableList()
-        if (current.isEmpty() || current[0] == packageName) return
+        if (current.size < 2) return
         current.remove(packageName)
-        prefs(context).edit().putString(KEY, (listOf(packageName) + current).joinToString(",")).apply()
+        prefs(context).edit().putString(KEY, (current + packageName).joinToString(",")).apply()
     }
 
     fun labelOf(packageName: String): String =

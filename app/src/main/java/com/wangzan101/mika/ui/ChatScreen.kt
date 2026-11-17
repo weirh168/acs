@@ -756,7 +756,7 @@ private fun EmptyState(
                             .pointerInput(pkg) {
                                 detectTapGestures(
                                     onLongPress = {
-                                        com.wangzan101.mika.settings.QuickAppsStore.moveToFront(quickCtx, pkg)
+                                        com.wangzan101.mika.settings.QuickAppsStore.rotateOut(quickCtx, pkg)
                                         orderVersion++
                                     },
                                 )
