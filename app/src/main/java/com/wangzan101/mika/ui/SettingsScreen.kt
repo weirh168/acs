@@ -452,6 +452,15 @@ fun SettingsContent(
         val tModel = stringResource(R.string.settings_model)
         val tWechat = stringResource(R.string.wechat_title)
         val tNotif = StatusCopy.NOTIFICATIONS
+        val tMemory = stringResource(R.string.settings_memory_data)
+        val tArchive = stringResource(R.string.settings_auto_archive)
+        val tAppAccess = stringResource(R.string.appaccess_title)
+        val tRecommend = stringResource(R.string.recommendations_title)
+        val tAdvanced = stringResource(R.string.settings_advanced)
+        val tAbout = stringResource(R.string.settings_about)
+        // 我的数据 / 其他 也纳入搜索:搜「记忆」「归档」「推荐」都能命中
+        val dataShown = hit(tMemory, "记忆", "数据") || hit(tArchive, "归档", "收起") || hit(tAppAccess, "权限", "屏幕")
+        val otherShown = hit(tRecommend, "推荐", "首页") || hit(tAdvanced, "代理", "其他") || hit(tAbout, "版本", "更新")
         // 用和行内一致的判定(含别名),否则别名命中时还会误报「没有匹配」
         val anyShown = listOf(
             hit(tCalls, "打电话", "接电话"),
@@ -463,6 +472,7 @@ fun SettingsContent(
             hit(tModel, "大模型", "服务商", "Token"),
             hit(tWechat, "微信"),
             hit(tNotif, "弹窗", "通知"),
+            dataShown, otherShown,
         ).any { it }
 
         SearchField(settingsQuery, { settingsQuery = it }, "搜索设置项", Modifier.testTag("settings-search"))
@@ -550,12 +560,14 @@ fun SettingsContent(
             }
         }
 
-        GroupLabel(stringResource(R.string.settings_privacy))
+        if (dataShown) GroupLabel(stringResource(R.string.settings_privacy))
         GroupCard {
             onOpenMemory?.let {
-                ListRow(MikaIcons.Heart, stringResource(R.string.settings_memory_data), stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
+                if (hit(tMemory, "记忆", "数据")) {
+                    ListRow(MikaIcons.Heart, tMemory, stringResource(R.string.settings_memory_sub), first = true, onClick = it) { RowChevron() }
+                }
             }
-            ListRow(
+            if (hit(tArchive, "归档", "收起")) ListRow(
                 MikaIcons.Archive,
                 stringResource(R.string.settings_auto_archive),
                 stringResource(R.string.settings_auto_archive_sub),
@@ -568,16 +580,22 @@ fun SettingsContent(
                 )
                 RowChevron()
             }
-            ListRow(MikaIcons.Shield, stringResource(R.string.appaccess_title), stringResource(R.string.appaccess_row_sub), onClick = onOpenAppAccess) { RowChevron() }
+            if (hit(tAppAccess, "权限", "屏幕")) {
+                ListRow(MikaIcons.Shield, tAppAccess, stringResource(R.string.appaccess_row_sub), onClick = onOpenAppAccess) { RowChevron() }
+            }
         }
 
-        GroupLabel(stringResource(R.string.settings_other))
+        if (otherShown) GroupLabel(stringResource(R.string.settings_other))
         GroupCard {
-            ListRow(MikaIcons.Message, stringResource(R.string.recommendations_title), "首页那几张推荐卡，可以关掉", first = true, onClick = onOpenRecommendations) { RowChevron() }
-            ListRow(MikaIcons.Wrench, stringResource(R.string.settings_advanced), stringResource(R.string.settings_advanced_sub), onClick = onOpenAdvanced) { RowChevron() }
+            if (hit(tRecommend, "推荐", "首页")) {
+                ListRow(MikaIcons.Message, tRecommend, "首页那几张推荐卡，可以关掉", first = true, onClick = onOpenRecommendations) { RowChevron() }
+            }
+            if (hit(tAdvanced, "代理", "其他")) {
+                ListRow(MikaIcons.Wrench, tAdvanced, stringResource(R.string.settings_advanced_sub), onClick = onOpenAdvanced) { RowChevron() }
+            }
         }
         GroupCard {
-            ListRow(MikaIcons.Info, stringResource(R.string.settings_about), first = true, onClick = onOpenAbout) {
+            if (hit(tAbout, "版本", "更新")) ListRow(MikaIcons.Info, tAbout, first = true, onClick = onOpenAbout) {
                 TrailingValue(AboutCopy.settingsValue(updateVersion, versionName))
                 RowChevron()
             }
@@ -847,6 +865,7 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
 
 
 
