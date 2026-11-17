@@ -829,55 +829,6 @@ private fun EmptyState(
             ) {
                 val size = 4
                 val start = (appPage * size) % installed.size
-                // 「＋」:从已安装的 App 里挑一个加进来
-                var picking by remember { mutableStateOf(false) }
-                Column(
-                    Modifier.width(64.dp).clickable(role = Role.Button) { picking = true },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box(
-                        Modifier.size(48.dp).background(c.greySoft, RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(MikaIcons.Plus, "增加 App", Modifier.size(22.dp), tint = c.ink3) }
-                    Text("增加", Modifier.padding(top = 6.dp), style = ExampleText, color = c.ink2, maxLines = 1)
-                }
-                if (picking) {
-                    val apps = remember(quickCtx) {
-                        val intent = android.content.Intent(android.content.Intent.ACTION_MAIN)
-                            .addCategory(android.content.Intent.CATEGORY_LAUNCHER)
-                        quickCtx.packageManager.queryIntentActivities(intent, 0)
-                            .mapNotNull { ri ->
-                                val p = ri.activityInfo?.packageName ?: return@mapNotNull null
-                                if (p == quickCtx.packageName) return@mapNotNull null
-                                p to (ri.loadLabel(quickCtx.packageManager)?.toString() ?: p)
-                            }
-                            .distinctBy { it.first }
-                            .sortedBy { it.second }
-                    }
-                    androidx.compose.ui.window.Dialog(onDismissRequest = { picking = false }) {
-                        androidx.compose.material3.Surface(shape = RoundedCornerShape(14.dp), color = c.surface) {
-                            Column(Modifier.padding(12.dp)) {
-                                Text("加一个 App 到首页", fontSize = 13.sp, color = c.ink)
-                                androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 320.dp).padding(top = 8.dp)) {
-                                    items(apps.size) { i ->
-                                        val (p, label) = apps[i]
-                                        Text(
-                                            label, fontSize = 13.sp, color = c.ink,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable {
-                                                    com.wangzan101.mika.settings.QuickAppsStore.pinToFront(quickCtx, p, label)
-                                                    picking = false
-                                                    orderVersion++
-                                                }
-                                                .padding(vertical = 10.dp),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
                 installed.drop(start).plus(installed.take(start)).take(size).forEach { (pkg, label) ->
                     val icon = remember(pkg) {
                         runCatching {
@@ -935,6 +886,8 @@ private fun EmptyState(
         // 四种态:接过 / 还没接过 / 接听已关。没接上的提醒还没数据源,先不做
         val callsFlow = app?.calls?.settings?.state
         val callsOn = callsFlow?.collectAsState()?.value?.enabled ?: true
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
         // 点卡片进「AI 接打电话」看具体记录(走 Activity 的 open_calls 入口)
         MikaCard(Modifier.padding(top = 12.dp).clickable(role = Role.Button) {
             runCatching {
@@ -961,6 +914,57 @@ private fun EmptyState(
                     }
                 }
             }
+        }
+            }
+                // 「＋」:从已安装的 App 里挑一个加进来
+                var picking by remember { mutableStateOf(false) }
+                Column(
+                    Modifier.width(64.dp).clickable(role = Role.Button) { picking = true },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Box(
+                        Modifier.size(48.dp).background(c.greySoft, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(MikaIcons.Plus, "增加 App", Modifier.size(22.dp), tint = c.ink3) }
+                    Text("增加", Modifier.padding(top = 6.dp), style = ExampleText, color = c.ink2, maxLines = 1)
+                }
+                if (picking) {
+                    val apps = remember(quickCtx) {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_MAIN)
+                            .addCategory(android.content.Intent.CATEGORY_LAUNCHER)
+                        quickCtx.packageManager.queryIntentActivities(intent, 0)
+                            .mapNotNull { ri ->
+                                val p = ri.activityInfo?.packageName ?: return@mapNotNull null
+                                if (p == quickCtx.packageName) return@mapNotNull null
+                                p to (ri.loadLabel(quickCtx.packageManager)?.toString() ?: p)
+                            }
+                            .distinctBy { it.first }
+                            .sortedBy { it.second }
+                    }
+                    androidx.compose.ui.window.Dialog(onDismissRequest = { picking = false }) {
+                        androidx.compose.material3.Surface(shape = RoundedCornerShape(14.dp), color = c.surface) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text("加一个 App 到首页", fontSize = 13.sp, color = c.ink)
+                                androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 320.dp).padding(top = 8.dp)) {
+                                    items(apps.size) { i ->
+                                        val (p, label) = apps[i]
+                                        Text(
+                                            label, fontSize = 13.sp, color = c.ink,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    com.wangzan101.mika.settings.QuickAppsStore.pinToFront(quickCtx, p, label)
+                                                    picking = false
+                                                    orderVersion++
+                                                }
+                                                .padding(vertical = 10.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
         }
         val editCtx = LocalContext.current
         var editingTask by remember { mutableStateOf<com.wangzan101.mika.settings.RecommendedTask?>(null) }
