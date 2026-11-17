@@ -25,9 +25,9 @@
     <string name="settings_other">其他</string>
     <string name="settings_advanced">高级与其他</string>
     <string name="settings_advanced_sub">代理、计算环境、连接与修复</string>
-    <string name="settings_connections">网络与连接</string>
+    <string name="settings_connections">网络</string>
     <string name="settings_maintenance">维护</string>
-    <string name="settings_sandbox">文件与计算环境</string>
+    <string name="settings_sandbox">读写文件与计算</string>
     <string name="settings_routes">记住的操作路线</string>
     <plurals name="settings_count_routes">
         <item quantity="other">%1$d 条</item>
@@ -99,7 +99,7 @@
     <string name="routes_clear_body">清除后,做过的事下次会重新一步步来做,不影响别的设置。</string>
     <string name="clear">清除</string>
     <string name="sandbox_proxy_off">%1$s · 允许联网后才生效</string>
-    <string name="net_proxy">网络代理</string>
+    <string name="net_proxy">上网方式</string>
     <string name="net_proxy_row_sub">调模型、下更新、内置浏览器和命令都走它</string>
     <string name="net_proxy_hint">ACS 调模型（对话、模型列表、账号登录）、在 App 里下载更新、内置浏览器，以及「文件与计算环境」里的命令（那里允许联网时）都走这个代理。这台手机和局域网里的地址（localhost、192.168.x.x、10.x.x.x、以 .local 结尾的名字）始终直连，本地模型照常能用。可以带「用户:密码@」，加密保存在这台手机上。留空表示直连。</string>
     <string name="net_proxy_invalid">写成 http://主机:端口 的样子（也可以是 socks5、socks5h、https），主机前面可以带「用户:密码@」。</string>
@@ -214,3 +214,4 @@
     <string name="settings_scheduled_quiet_end">结束时间</string>
     <string name="settings_scheduled_quiet_equal">开始和结束时间设为不同时间后，通知才会静音。</string>
 </resources>
+

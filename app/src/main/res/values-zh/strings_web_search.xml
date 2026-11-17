@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="web_search_title">网页搜索</string>
+    <string name="web_search_title">搜索用哪个</string>
     <string name="web_search_provider">搜索服务</string>
     <string name="web_search_note_you">不填密钥用免费接口（每天 100 次），填了走付费接口。</string>
     <string name="web_search_searxng_url">实例地址</string>
@@ -18,3 +18,4 @@
     <string name="web_search_invalid_endpoint">请输入不带查询参数的 HTTP 或 HTTPS 网址。</string>
     <string name="web_search_action">搜索网页</string>
 </resources>
+
