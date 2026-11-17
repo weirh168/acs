@@ -570,8 +570,18 @@ fun AdvancedSettingsContent(
                     modifier = Modifier.testTag("net-probe"),
                 ) { Text(if (probing) "测着…" else "测一下", fontSize = 14.sp) }
             }
-            if (probeLines != null && !allOk && proxy?.isNotBlank() == true) {
-                NetProbeRetryRow { onClearProxy(); runProbe() }
+            // 有失败就给下一步:配了代理就建议先关掉,没配且是搜索失败就直接去改搜索设置
+            if (probeLines != null && !allOk) {
+                val searchFailed = probeLines?.any { it.first == "网页搜索" && !it.second.endsWith("秒") } == true
+                if (proxy?.isNotBlank() == true) {
+                    NetProbeRetryRow("看起来是代理的问题，要不要先关掉再试？", "关掉代理再测一次") {
+                        onClearProxy(); runProbe()
+                    }
+                } else if (searchFailed) {
+                    NetProbeRetryRow("网页搜索没通，可能是服务或额度的问题", "去改搜索设置") {
+                        onOpenWebSearch()
+                    }
+                }
             }
         }
             GroupLabel(stringResource(R.string.settings_connections))
@@ -692,7 +702,7 @@ private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Un
 /** 探测失败且配了代理时的一行:先建议关掉代理再测一次。
  *  独立成函数是为了避开本文件里同名的自定义 Row / Text 组件。 */
 @Composable
-private fun NetProbeRetryRow(onClick: () -> Unit) {
+private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) {
     androidx.compose.foundation.layout.Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -707,10 +717,11 @@ private fun NetProbeRetryRow(onClick: () -> Unit) {
             onClick = onClick,
             modifier = Modifier.testTag("net-probe-without-proxy"),
         ) {
-            androidx.compose.material3.Text("关掉代理再测一次", fontSize = 13.sp)
+            androidx.compose.material3.Text(action, fontSize = 13.sp)
         }
     }
 }
+
 
 
 
