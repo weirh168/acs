@@ -519,6 +519,7 @@ fun AdvancedSettingsContent(
         // 探测结果:标签 -> 这一项的结论
         var probeLines by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
         val probeScope = rememberCoroutineScope()
+        val probeContext = LocalContext.current
         val allOk = probeLines?.all { it.second.endsWith("秒") } ?: true
         GroupCard(Modifier.testTag("net-conclusion")) {
             ListRow(
@@ -692,4 +693,5 @@ private fun NetProbeRetryRow(onClick: () -> Unit) {
         }
     }
 }
+
 
