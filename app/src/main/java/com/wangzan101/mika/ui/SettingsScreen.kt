@@ -80,7 +80,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /** 设置里能进入的子页面;[Home] 是设置首页,[Advanced] 集中放置连接、维护和工程能力。 */
-private enum class SettingsPage { Home, Advanced, AppAccess, PhoneOps, Calls, Wechat, DuringWork, Capsule, Language, Notifications, Recommendations, Sandbox, Recovery, SelfCheck, ComputerAccess, McpServers, Root, Developer, RunStats, Proactive }
+private enum class SettingsPage { Home, MyData, Advanced, AppAccess, PhoneOps, Calls, Wechat, DuringWork, Capsule, Language, Notifications, Recommendations, Sandbox, Recovery, SelfCheck, ComputerAccess, McpServers, Root, Developer, RunStats, Proactive }
 
 /**
  * 设置页:总状态卡 + 常用 / 我的数据 / 其他。高级与其他只增加一层,各子页返回来时的页面。
@@ -195,6 +195,22 @@ fun SettingsScreen(
         else -> page
     }
     when (visiblePage) {
+        SettingsPage.MyData -> MyDataScreen(
+            counts = remember {
+                // 计数来自各自运行时的当前快照;取不到时就是 0,界面会说「没有」
+                val app = context.applicationContext as com.wangzan101.mika.MikaApp
+                runCatching {
+                    MyDataCounts(
+                        memories = app.memory.items().value.size,
+                        learned = 0,
+                        logins = 0,
+                        conversations = 0,
+                    )
+                }.getOrDefault(MyDataCounts())
+            },
+            onBack = toHome,
+            onManageMemories = { onOpenMemory?.invoke() },
+        )
         SettingsPage.Home -> SettingsContent(
             status = status, androidRelease = androidRelease,
             mainModel = roles.main?.let { id -> configs.firstOrNull { it.id == id } }?.let(ProviderConnection::displayName),
@@ -212,7 +228,7 @@ fun SettingsScreen(
             onPersonalStart = { flags.setPersonalStart(it); personalStart = it },
             autoArchiveDays = autoArchiveDays,
             onOpenAutoArchive = { editingAutoArchive = true },
-            onOpenMemory = onOpenMemory,
+            onOpenMemory = { page = SettingsPage.MyData },
             onOpenRecommendations = { page = SettingsPage.Recommendations },
             onOpenAdvanced = { page = SettingsPage.Advanced },
             versionName = BuildConfig.VERSION_NAME, updateVersion = updateVersion, onOpenAbout = onOpenAbout,
@@ -724,6 +740,9 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
+
+
 
 
 
