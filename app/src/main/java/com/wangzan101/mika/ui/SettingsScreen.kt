@@ -501,7 +501,7 @@ fun AdvancedSettingsContent(
                 var first = true
                 fun take(): Boolean = first.also { first = false }
                 proxy?.let {
-                    ListRow(MikaIcons.Link, NetProxyCopy.TITLE, proxyNote, first = take(), onClick = onOpenProxy) {
+                    ListRow(MikaIcons.Link, NetProxyCopy.TITLE, "填了就走代理，不填就直连", first = take(), onClick = onOpenProxy) {
                         RowValue(NetProxyCopy.value(it))
                         RowChevron()
                     }
@@ -512,17 +512,12 @@ fun AdvancedSettingsContent(
                     }
                 }
                 if (sandboxRow != null) {
-                    ListRow(MikaIcons.Terminal, stringResource(R.string.settings_sandbox), first = take(), onClick = onOpenSandbox) {
+                    ListRow(MikaIcons.Terminal, stringResource(R.string.settings_sandbox), "已就绪，不用管", first = take(), onClick = onOpenSandbox) {
                         RowValue(sandboxValue(sandboxRow)); RowChevron()
                     }
                 }
-                computerAccess?.let { on ->
-                    ListRow(MikaIcons.Desktop, stringResource(R.string.mcp_title), first = take(), onClick = onOpenComputerAccess) {
-                        RowValue(stringResource(if (on) R.string.state_on else R.string.state_off)); RowChevron()
-                    }
-                }
                 mcpServersCount?.let { count ->
-                    ListRow(MikaIcons.Link, stringResource(R.string.mcp_servers_title), first = take(), onClick = onOpenMcpServers) {
+                    ListRow(MikaIcons.Link, stringResource(R.string.mcp_servers_title), "0 个也能正常用", first = take(), onClick = onOpenMcpServers) {
                         RowValue(stringResource(R.string.mcp_servers_count, count)); RowChevron()
                     }
                 }
@@ -530,6 +525,16 @@ fun AdvancedSettingsContent(
                     ListRow(MikaIcons.Key, PhoneSetupCopy.ROOT_GROUP, PhoneSetupCopy.rootEntryLine(rootCommands), first = take(), onClick = onOpenRoot) {
                         RowChevron()
                     }
+                }
+            }
+        }
+        // 连接电脑属于调试通道,不属于「网络」
+        computerAccess?.let { on ->
+            GroupLabel("调试")
+            GroupCard {
+                ListRow(MikaIcons.Desktop, stringResource(R.string.mcp_title), "只有排查问题才要用", first = true,
+                    onClick = onOpenComputerAccess) {
+                    RowValue(stringResource(if (on) R.string.state_on else R.string.state_off)); RowChevron()
                 }
             }
         }
@@ -599,3 +604,4 @@ private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Un
         }
     }
 }
+
