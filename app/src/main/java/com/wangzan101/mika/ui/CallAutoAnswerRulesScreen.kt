@@ -563,7 +563,7 @@ private fun ActionChip(text: String, tag: String, onClick: () -> Unit) {
 
 /** 只在通讯录读取权限在的时候查;读不到就当没有联系人。 */
 internal object ContactsList {
-    private const val MAX = 400
+    private const val MAX = 20_000
 
     /** 名单里的号码 -> 通讯录名字;查不到就不出现。 */
     fun namesFor(context: Context, numbers: Set<String>): List<String> = load(context)
@@ -588,13 +588,17 @@ internal object ContactsList {
                     android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
                 null, null, null,
             )?.use { c ->
-                val out = LinkedHashMap<String, String>()
+                // 号码一张表:姓名可以为空(只有号码的联系人也算),按纯数字去重
+                val out = LinkedHashMap<String, Pair<String, String>>()
+                val nameIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val numberIdx = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
                 while (c.moveToNext() && out.size < MAX) {
-                    val name = c.getString(0)?.takeIf { it.isNotBlank() } ?: continue
-                    val number = c.getString(1)?.takeIf { it.isNotBlank() } ?: continue
-                    out.putIfAbsent(number, name)
+                    val number = c.getString(numberIdx)?.trim()?.takeIf { it.isNotBlank() } ?: continue
+                    val name = c.getString(nameIdx)?.trim().orEmpty()
+                    val key = number.filter { it.isDigit() }.ifBlank { number }
+                    out.putIfAbsent(key, number to name)
                 }
-                out.map { it.key to it.value }
+                out.values.toList()
             }.orEmpty()
         }.getOrDefault(emptyList())
     }
@@ -768,6 +772,7 @@ private fun androidx.compose.foundation.layout.RowScope.Segment(text: String, se
             fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal)
     }
 }
+
 
 
 

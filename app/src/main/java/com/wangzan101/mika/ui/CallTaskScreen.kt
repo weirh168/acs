@@ -1,5 +1,9 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.foundation.lazy.items
+
+import androidx.compose.foundation.lazy.LazyColumn
+
 import androidx.compose.ui.platform.LocalContext
 
 import androidx.compose.ui.text.font.FontWeight
@@ -515,8 +519,8 @@ private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> U
     val contacts = remember { ContactsList.load(context) }
     var query by rememberSaveable { mutableStateOf("") }
     val shown = remember(query, contacts) {
-        if (query.isBlank()) contacts.take(80)
-        else contacts.filter { it.second.contains(query) || normaliseDialNumber(it.first).contains(query, true) }.take(80)
+        if (query.isBlank()) contacts
+        else contacts.filter { it.second.contains(query, true) || normaliseDialNumber(it.first).contains(query, true) }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -525,20 +529,22 @@ private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> U
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.calls_list_search)) }, singleLine = true)
+                Text("共 " + contacts.size + " 个号码" + if (query.isBlank()) "" else "，匹配 " + shown.size + " 个",
+                    fontSize = 12.sp, color = MikaTheme.colors.ink3)
                 if (contacts.isEmpty()) {
                     Text(stringResource(R.string.calls_list_no_contacts), fontSize = 13.sp,
                         color = MikaTheme.colors.ink3)
                 }
-                Column(Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState())) {
-                    shown.forEach { (rawNumber, name) ->
-                        val number = normaliseDialNumber(rawNumber)
+                LazyColumn(Modifier.heightIn(max = 380.dp).fillMaxWidth()) {
+                    items(shown) { entry ->
+                        val number = normaliseDialNumber(entry.first)
+                        val name = entry.second.ifBlank { "未命名" }
                         Row(
-                            Modifier.fillMaxWidth().clickable { onPick(number) }.heightIn(min = 48.dp),
+                            Modifier.fillMaxWidth().clickable { onPick(number) }.heightIn(min = 52.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(Modifier.weight(1f)) {
-                                // 号码放主行并强制 LTR:一眼能确认这是电话号码,不是名字
-                                Text(normaliseDialNumber(number), fontSize = 16.sp, color = MikaTheme.colors.ink,
+                                Text(number, fontSize = 16.sp, color = MikaTheme.colors.ink,
                                     style = TextStyle(textDirection = TextDirection.Ltr))
                                 Text(name, fontSize = 13.sp, color = MikaTheme.colors.ink3)
                             }
@@ -565,6 +571,7 @@ private fun normaliseDialNumber(raw: String): String {
     if (stripped != null) return stripped
     return if (text.startsWith("+")) "+$digits" else digits
 }
+
 
 
 
