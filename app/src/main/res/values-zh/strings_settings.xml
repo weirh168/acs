@@ -15,7 +15,7 @@
     <string name="settings_during_work_sub">自主模式、操作节奏、步数上限与声音</string>
     <string name="settings_notif_sub">什么时候弹出、去系统里改</string>
     <string name="settings_privacy">我的数据</string>
-    <string name="settings_memory_data">记忆与数据</string>
+    <string name="settings_memory_data">它记得我什么</string>
     <string name="settings_memory_sub">记忆、技能、操作路线与网站登录</string>
     <string name="settings_saved_data">保存的数据</string>
     <string name="settings_web_logins">网站登录</string>
@@ -202,8 +202,8 @@
     <string name="settings_token_budget_custom">自定义 Token 预算</string>
     <string name="settings_token_budget_apply">使用</string>
     <string name="settings_token_budget_invalid">请输入 %1$s 到 %2$s 的整数。</string>
-    <string name="settings_auto_archive">自动归档对话</string>
-    <string name="settings_auto_archive_sub">太久没有新消息的对话自动收进归档</string>
+    <string name="settings_auto_archive">旧对话自动收起</string>
+    <string name="settings_auto_archive_sub">超过 30 天没聊的收起来，随时能找回</string>
     <string name="settings_auto_archive_hint">超过选定的时间没有新消息的对话会收进归档。置顶的对话和有任务在运行的对话不归档；随时可以在对话列表的归档里恢复。</string>
     <plurals name="settings_auto_archive_days">
         <item quantity="other">%1$d 天</item>
@@ -214,4 +214,5 @@
     <string name="settings_scheduled_quiet_end">结束时间</string>
     <string name="settings_scheduled_quiet_equal">开始和结束时间设为不同时间后，通知才会静音。</string>
 </resources>
+
 
