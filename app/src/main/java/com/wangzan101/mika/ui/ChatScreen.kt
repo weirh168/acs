@@ -2,6 +2,8 @@ package com.wangzan101.mika.ui
 
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGestures
+import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.scrollBy
 import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.cap.sandbox.AttachmentFailureReason
@@ -54,6 +56,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.union
@@ -453,14 +456,24 @@ fun ChatScreen(
             if (runJustFinished) askReturnHome = true
         }
         if (askReturnHome && runJustFinished) {
-            // 悬浮小窗,不挡住结果:贴在输入栏上方
+            // 悬浮小窗:半透明、可拖动,初始贴在输入栏上方
+            var dragBy by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
                 androidx.compose.material3.Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = MikaTheme.colors.surface.copy(alpha = 0.88f),
                     tonalElevation = 6.dp,
                     shadowElevation = 8.dp,
-                    modifier = Modifier.fillMaxWidth(0.62f).padding(bottom = 96.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.62f)
+                        .padding(bottom = 96.dp)
+                        .offset { androidx.compose.ui.unit.IntOffset(dragBy.x.roundToInt(), dragBy.y.roundToInt()) }
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, delta ->
+                                change.consume()
+                                dragBy += delta
+                            }
+                        },
                 ) {
                     Row(
                         Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
