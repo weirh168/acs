@@ -432,7 +432,8 @@ fun ChatScreen(
                 // 别的对话里还有任务在跑(并行时):菜单上一个小圆点,侧栏「进行中」里能切过去
                 leftBadge = others.isNotEmpty(),
 
-                subtitle = sub?.first,
+                // 标题下面那行:固定写「手机助手」,有任务状态时接在后面
+                subtitle = if (sub?.first.isNullOrBlank()) "手机助手" else "手机助手 · " + sub!!.first,
                 subtitleColor = when (sub?.second) {
                     ChatCopy.Tone.Accent -> c.accent
                     ChatCopy.Tone.Warn -> c.warn
