@@ -709,7 +709,24 @@ private fun EmptyState(
             if (result != null) hits = mapHits(result.hits.map { it.id })
             searching = false
         }
-        SearchField(query, { query = it }, "搜对话", Modifier.padding(top = 18.dp),)
+        // 搜索框:样式和位置向浏览器地址栏靠拢,往下挪一点
+        SearchField(
+            query,
+            { query = it },
+            "搜索或输入网址",
+            Modifier.padding(top = 26.dp),
+            onSubmit = {
+                val text = query.trim()
+                val looksUrl = !text.contains(" ") && text.contains(".")
+                if (looksUrl) {
+                    runCatching {
+                        val url = if (text.startsWith("http")) text else "https://" + text
+                        searchCtx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)))
+                    }
+                    query = ""
+                }
+            },
+        )
         if (query.isNotBlank()) {
             Column(Modifier.padding(top = 10.dp)) {
                 if (hits.isEmpty()) {
