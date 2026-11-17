@@ -1736,14 +1736,14 @@ internal fun Composer(
                 if (onOpenCalls != null) {
                     // 电话图标用系统同款:绿色圆角方块 + 白色话筒
                     Box(
-                        Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
+                        Modifier.padding(start = 10.dp).size(36.dp).clip(RoundedCornerShape(10.dp))
                             .clickable(role = Role.Button) { onOpenCalls() },
                         contentAlignment = Alignment.Center,
                     ) {
                         Image(
                             painter = painterResource(R.drawable.ic_acs_call),
                             contentDescription = "AI 接打电话",
-                            modifier = Modifier.size(44.dp),
+                            modifier = Modifier.size(36.dp),
                         )
                     }
                 }
