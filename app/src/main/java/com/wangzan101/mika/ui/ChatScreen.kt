@@ -457,21 +457,46 @@ fun ChatScreen(
         }
         if (askReturnHome && runJustFinished) {
             // 做完了:半透明对话框;点「回首页」才真的回到新对话首页
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { askReturnHome = false },
-                containerColor = MikaTheme.colors.surface.copy(alpha = 0.86f),
-                title = { Text("做完了") },
-                text = { Text("回到首页开始新对话？") },
-                confirmButton = {
-                    androidx.compose.material3.TextButton(onClick = {
-                        askReturnHome = false
-                        if (vm.canSwitch()) vm.newConversation()
-                    }) { Text("回首页") }
-                },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { askReturnHome = false }) { Text("留在这里") }
-                },
-            )
+            // 小窗:半透明、约半屏宽,不挡住下面的答案
+            androidx.compose.ui.window.Dialog(onDismissRequest = { askReturnHome = false }) {
+                androidx.compose.material3.Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MikaTheme.colors.surface.copy(alpha = 0.86f),
+                    tonalElevation = 4.dp,
+                    modifier = Modifier.fillMaxWidth(0.52f),
+                ) {
+                    Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                        Text("做完了", fontSize = 14.sp, color = MikaTheme.colors.ink, fontWeight = FontWeight.Medium)
+                        Text(
+                            "回到首页开始新对话？",
+                            fontSize = 12.sp, color = MikaTheme.colors.ink2,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                        Row(
+                            Modifier.fillMaxWidth().padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.End,
+                        ) {
+                            Text(
+                                "留着",
+                                fontSize = 12.sp, color = MikaTheme.colors.ink3,
+                                modifier = Modifier
+                                    .clickable(role = Role.Button) { askReturnHome = false }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                            Text(
+                                "回首页",
+                                fontSize = 12.sp, color = MikaTheme.colors.accent,
+                                modifier = Modifier
+                                    .clickable(role = Role.Button) {
+                                        askReturnHome = false
+                                        if (vm.canSwitch()) vm.newConversation()
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
         }
         val composerCtx = LocalContext.current
         Composer(
