@@ -1,5 +1,7 @@
 package com.wangzan101.mika.ui
 
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.scrollBy
 import com.wangzan101.mika.cap.sandbox.AttachmentFailure
 import com.wangzan101.mika.cap.sandbox.AttachmentFailureReason
@@ -428,10 +430,7 @@ fun ChatScreen(
                 left = MikaIcons.Menu, leftLabel = stringResource(R.string.chat_menu), onLeft = onOpenDrawer,
                 // 别的对话里还有任务在跑(并行时):菜单上一个小圆点,侧栏「进行中」里能切过去
                 leftBadge = others.isNotEmpty(),
-                right = {
-                    BarIconButton(MikaIcons.Paperclip, stringResource(R.string.file_library_title), onOpenFiles)
-                    BarIconButton(MikaIcons.New, stringResource(R.string.chat_new), { vm.newConversation() }, enabled = vm.canSwitch())
-                },
+
                 subtitle = sub?.first,
                 subtitleColor = when (sub?.second) {
                     ChatCopy.Tone.Accent -> c.accent
@@ -711,28 +710,14 @@ private fun EmptyState(
             }
             return@Column
         }
-        // 直接打开:最高频的五个 App,点一下就走
+        // 直接打开:用户排过序就用他的顺序,点一下就走,长按移到最前
         val quickCtx = LocalContext.current
-        val quickApps = remember {
-            listOf(
-                "com.tencent.mm" to "微信",
-                "com.xingin.xhs" to "小红书",
-                "com.eg.android.AlipayGphone" to "支付宝",
-                "com.autonavi.minimap" to "高德",
-                "com.ss.android.ugc.aweme" to "抖音",
-                "com.tencent.mobileqq" to "QQ",
-                "com.taobao.taobao" to "淘宝",
-                "com.jingdong.app.mall" to "京东",
-                "me.ele" to "饿了么",
-                "com.sankuai.meituan" to "美团",
-                "com.netease.cloudmusic" to "网易云音乐",
-                "tv.danmaku.bili" to "哔哩哔哩",
-                "com.zhihu.android" to "知乎",
-            )
-        }
-        val installed = remember(quickCtx) {
+        var orderVersion by remember { mutableStateOf(0) }
+        val installed = remember(quickCtx, orderVersion) {
             val pm = quickCtx.packageManager
-            quickApps.filter { (pkg, _) -> runCatching { pm.getApplicationInfo(pkg, 0) }.isSuccess }
+            val order = com.wangzan101.mika.settings.QuickAppsStore.order(quickCtx)
+            order.map { pkg -> pkg to com.wangzan101.mika.settings.QuickAppsStore.labelOf(pkg) }
+                .filter { (pkg, _) -> runCatching { pm.getApplicationInfo(pkg, 0) }.isSuccess }
         }
         val pm = quickCtx.packageManager
         var appPage by remember { mutableStateOf(0) }
@@ -742,7 +727,7 @@ private fun EmptyState(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("直接打开", Modifier.weight(1f), style = EmptyLead, color = c.ink2)
-                if (installed.size > 5) {
+                if (installed.size > 4) {
                     Text("换一批", Modifier.clickable(role = Role.Button) { appPage++ },
                         style = ExampleText, color = c.accent)
                 }
@@ -751,8 +736,9 @@ private fun EmptyState(
                 Modifier.fillMaxWidth().padding(top = 12.dp, start = 8.dp, end = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(18.dp),
             ) {
-                val start = (appPage * 5) % installed.size
-                installed.drop(start).plus(installed.take(start)).take(5).forEach { (pkg, label) ->
+                val size = 4
+                val start = (appPage * size) % installed.size
+                installed.drop(start).plus(installed.take(start)).take(size).forEach { (pkg, label) ->
                     val icon = remember(pkg) {
                         runCatching {
                             (pm.getApplicationIcon(pkg) as? android.graphics.drawable.BitmapDrawable)
@@ -760,11 +746,21 @@ private fun EmptyState(
                         }.getOrNull()
                     }
                     Column(
-                        Modifier.width(64.dp).clickable(role = Role.Button) {
-                            runCatching {
-                                pm.getLaunchIntentForPackage(pkg)?.let { quickCtx.startActivity(it) }
+                        Modifier.width(64.dp)
+                            .clickable(role = Role.Button) {
+                                runCatching {
+                                    pm.getLaunchIntentForPackage(pkg)?.let { quickCtx.startActivity(it) }
+                                }
                             }
-                        },
+                            // 长按:把这个 App 挪到最前面,顺序会记住
+                            .pointerInput(pkg) {
+                                detectTapGestures(
+                                    onLongPress = {
+                                        com.wangzan101.mika.settings.QuickAppsStore.moveToFront(quickCtx, pkg)
+                                        orderVersion++
+                                    },
+                                )
+                            },
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         icon?.let {
