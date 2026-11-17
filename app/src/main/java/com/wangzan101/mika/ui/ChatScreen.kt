@@ -804,6 +804,14 @@ private fun EmptyState(
             }
         }
         if (tasks.isNotEmpty()) {
+            // 点得多的排前面;点一次记一次
+            val statsCtx = LocalContext.current
+            var statsTick by remember { mutableStateOf(0) }
+            val ordered = remember(tasks, statsTick) {
+                val map = tasks.associateBy { it.title }
+                com.wangzan101.mika.settings.ExampleStats.order(statsCtx, tasks.map { it.title })
+                    .mapNotNull { map[it] }
+            }
             var examplePage by remember { mutableStateOf(0) }
             val pageSize = 3
             val pages = (tasks.size + pageSize - 1) / pageSize
@@ -817,11 +825,15 @@ private fun EmptyState(
                         style = ExampleText, color = c.accent)
                 }
             }
-            val start = (examplePage * pageSize) % tasks.size
-            val shown = tasks.drop(start).plus(tasks.take(start)).take(pageSize)
+            val start = (examplePage * pageSize) % ordered.size
+            val shown = ordered.drop(start).plus(ordered.take(start)).take(pageSize)
             MikaCard(Modifier.padding(top = 10.dp)) {
                 shown.forEachIndexed { i, task ->
-                    ExampleRow(MikaIcons.Message, task.title, first = i == 0) { onPick(task.prompt) }
+                    ExampleRow(MikaIcons.Message, task.title, first = i == 0) {
+                        com.wangzan101.mika.settings.ExampleStats.hit(statsCtx, task.title)
+                        statsTick++
+                        onPick(task.prompt)
+                    }
                 }
             }
         }
