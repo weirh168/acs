@@ -16,7 +16,11 @@ data class ProbeResult(val reachable: Boolean, val elapsedMs: Long, val detail: 
 
 /** 只问一句「这个地址现在通不通」:HEAD 请求、5 秒超时,不下载响应体。 */
 object NetworkProbe {
-    suspend fun head(url: String, timeoutMs: Int = 5_000): ProbeResult = withContext(Dispatchers.IO) {
+    suspend fun head(
+        url: String,
+        timeoutMs: Int = 5_000,
+        accept: (Int) -> Boolean = { it in 200..399 },
+    ): ProbeResult = withContext(Dispatchers.IO) {
         val start = System.currentTimeMillis()
         var connection: HttpURLConnection? = null
         try {
@@ -29,7 +33,7 @@ object NetworkProbe {
             }
             val code = connection.responseCode
             val elapsed = System.currentTimeMillis() - start
-            if (code in 200..399) ProbeResult(true, elapsed, "") else ProbeResult(false, elapsed, "HTTP $code")
+            if (accept(code)) ProbeResult(true, elapsed, "") else ProbeResult(false, elapsed, "HTTP $code")
         } catch (e: java.net.SocketTimeoutException) {
             ProbeResult(false, System.currentTimeMillis() - start, "超时")
         } catch (e: Exception) {
@@ -39,3 +43,4 @@ object NetworkProbe {
         }
     }
 }
+

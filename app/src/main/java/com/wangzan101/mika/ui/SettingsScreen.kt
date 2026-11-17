@@ -213,6 +213,7 @@ fun SettingsScreen(
         )
         SettingsPage.Advanced -> AdvancedSettingsContent(
             proxy = proxy, proxyNote = proxy?.let { NetProxyCopy.subtitle(it, browserProxy) }, onOpenProxy = { editingProxy = true },
+            modelBaseUrl = configs.firstOrNull()?.baseUrl,
             onClearProxy = {
                 scope.launch {
                     withContext(Dispatchers.IO) { proxies.set("") }
@@ -485,6 +486,8 @@ fun AdvancedSettingsContent(
     proxyNote: String? = null,
     onOpenProxy: () -> Unit = {},
     onClearProxy: () -> Unit = {},
+    /** 主模型的地址:用来测「模型服务」通不通。 */
+    modelBaseUrl: String? = null,
     webSearch: WebSearchConfig? = null,
     onOpenWebSearch: () -> Unit = {},
     sandbox: SandboxStatus? = null,
@@ -507,25 +510,37 @@ fun AdvancedSettingsContent(
         if (proxy != null || webSearch != null || sandboxRow != null || computerAccess != null || mcpServersCount != null || showRoot) {
         // 结论卡:先回答「通不通」,再让人改设置
         var probing by remember { mutableStateOf(false) }
-        var probe by remember { mutableStateOf<com.wangzan101.mika.net.ProbeResult?>(null) }
+        // 探测结果:标签 -> 这一项的结论
+        var probeLines by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
         val probeScope = rememberCoroutineScope()
-        val ok = probe?.let { it.reachable } ?: true
+        val allOk = probeLines?.all { it.second.endsWith("秒") } ?: true
         GroupCard(Modifier.testTag("net-conclusion")) {
             ListRow(
                 MikaIcons.Globe,
-                if (probe == null) "网络" else if (ok) "网络正常" else "网络有点问题",
-                if (probe == null) "点右边测一下，看模型、搜索、下载通不通" else if (ok)
-                    "下载更新 " + com.wangzan101.mika.net.ProbeResult.summary(probe!!) else
-                    "下载更新 " + com.wangzan101.mika.net.ProbeResult.summary(probe!!),
+                when {
+                    probeLines == null -> "网络"
+                    allOk -> "网络正常"
+                    else -> "网络有点问题"
+                },
+                probeLines?.joinToString(" · ") { it.first + " " + it.second }
+                    ?: "点右边测一下，看模型和下载通不通",
                 first = true,
             ) {
                 TextButton(
                     onClick = {
                         probing = true
                         probeScope.launch {
-                            probe = com.wangzan101.mika.net.NetworkProbe.head(
+                            val lines = mutableListOf<Pair<String, String>>()
+                            modelBaseUrl?.takeIf { it.isNotBlank() }?.let { base ->
+                                // 模型服务只要连得上就算通(401/403 也说明网络到了)
+                                val r = com.wangzan101.mika.net.NetworkProbe.head(base) { it in 100..499 }
+                                lines += "模型服务" to com.wangzan101.mika.net.ProbeResult.summary(r)
+                            }
+                            val d = com.wangzan101.mika.net.NetworkProbe.head(
                                 com.wangzan101.mika.about.MikaLinks.LATEST_RELEASE_API,
                             )
+                            lines += "下载更新" to com.wangzan101.mika.net.ProbeResult.summary(d)
+                            probeLines = lines
                             probing = false
                         }
                     },
@@ -648,6 +663,7 @@ private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Un
         }
     }
 }
+
 
 
 
