@@ -442,7 +442,6 @@ fun ChatDrawer(
         if (searchActive) SearchArchiveFilterRow(searchFilter, onSearchFilterChange)
         // 搜索、多选、归档视图时把几个入口收起来，把高度让给列表;退出后原样回来
         if (!searchActive && !selecting && !archivedView) Column(Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-            if (showPersonal) NavEntry(MikaIcons.Message, stringResource(R.string.drawer_personal), onClick = onPersonal)
             NavEntry(MikaIcons.New, stringResource(R.string.chat_new), enabled = canSwitch, onClick = onNew)
             NavEntry(MikaIcons.Phone, "通话记录", onClick = onCalls)
             NavEntry(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onPlans)
