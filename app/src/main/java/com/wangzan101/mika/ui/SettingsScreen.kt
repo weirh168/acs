@@ -462,18 +462,13 @@ fun SettingsContent(
                 )
                 RowChevron()
             }
-            ListRow(
-                MikaIcons.Message,
-                stringResource(R.string.recommendations_title),
-                stringResource(R.string.recommendations_sub),
-                onClick = onOpenRecommendations,
-            ) { RowChevron() }
             ListRow(MikaIcons.Shield, stringResource(R.string.appaccess_title), stringResource(R.string.appaccess_row_sub), onClick = onOpenAppAccess) { RowChevron() }
         }
 
         GroupLabel(stringResource(R.string.settings_other))
         GroupCard {
-            ListRow(MikaIcons.Wrench, stringResource(R.string.settings_advanced), stringResource(R.string.settings_advanced_sub), first = true, onClick = onOpenAdvanced) { RowChevron() }
+            ListRow(MikaIcons.Message, stringResource(R.string.recommendations_title), "首页那几张推荐卡，可以关掉", first = true, onClick = onOpenRecommendations) { RowChevron() }
+            ListRow(MikaIcons.Wrench, stringResource(R.string.settings_advanced), stringResource(R.string.settings_advanced_sub), onClick = onOpenAdvanced) { RowChevron() }
         }
         GroupCard {
             ListRow(MikaIcons.Info, stringResource(R.string.settings_about), first = true, onClick = onOpenAbout) {
