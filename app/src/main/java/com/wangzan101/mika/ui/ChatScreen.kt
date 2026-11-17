@@ -98,6 +98,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.Shape
@@ -1732,14 +1733,17 @@ internal fun Composer(
                     }
                 }
                 if (onOpenCalls != null) {
-                    // 常规电话图标:绿色圆底 + 白色话筒
+                    // 电话图标用系统同款:绿色圆角方块 + 白色话筒
                     Box(
-                        Modifier.size(MikaSize.IconButton)
-                            .background(Color(0xFF34C759), CircleShape).clip(CircleShape)
+                        Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
                             .clickable(role = Role.Button) { onOpenCalls() },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(MikaIcons.Phone, "AI 接打电话", Modifier.size(18.dp), tint = Color.White)
+                        Image(
+                            painter = painterResource(R.drawable.ic_acs_call),
+                            contentDescription = "AI 接打电话",
+                            modifier = Modifier.size(44.dp),
+                        )
                     }
                 }
                 Box(Modifier.weight(1f).padding(start = if (showAttach) 2.dp else 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)) {
