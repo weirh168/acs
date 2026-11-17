@@ -987,7 +987,7 @@ private fun EmptyState(
                     .mapNotNull { map[it] }
             }
             var examplePage by remember { mutableStateOf(0) }
-            val pageSize = 4
+            val pageSize = 3
             val pages = (tasks.size + pageSize - 1) / pageSize
             androidx.compose.foundation.layout.Row(
                 Modifier.fillMaxWidth().padding(top = 14.dp, start = 8.dp, end = 8.dp),
