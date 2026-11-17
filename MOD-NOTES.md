@@ -1105,3 +1105,25 @@ AI 通话卡 + 一键纠正两按钮、通知三键(人工接管/挂断/看文�
 - app/src/main/java/com/wangzan101/mika/ui/ChatScreen.kt（顶部栏 421、空态与示例渲染）
 - app/src/main/java/com/wangzan101/mika/ui/ChatCopy.kt:30（示例列表定义，ExampleKind.Web 等）
 - app/src/main/res/values-zh/strings_chat.xml（示例文案）
+
+## 首页搜索扩展：先把「跳转落点」补上（2026-11-17 20:10）
+
+现状：首页搜索只覆盖对话（`ConversationStore.search`，ChatScreen.kt 的 EmptyState）。
+稿子要求搜「快递」能同时出：对话、号码与记录、任务。
+
+卡点不是搜索，是**结果点开去哪儿**：
+- `EmptyState(onPick, onOpen)` 只有「填进输入框」和「打开某个对话」，没有打开通话记录/任务。
+- 抽屉层的 `onCalls`（ChatDrawer.kt:358）只能打开「AI 接打电话」整页，落不到某条记录。
+
+要做，按这三步：
+1. 给 EmptyState 加 `onOpenCall: (String) -> Unit`、`onOpenTask: (String) -> Unit`；
+   在 ChatScreen 调用处从上层传下来。
+2. 在 MainActivity 把这两个接到带参数的路由（需先确认 Route.Calls 是否支持 initialRecordId 之类，
+   类似 CallSettingsScreen 已有的 initialHistoryCallId 参数——照它加即可）。
+3. 搜索 UI 分三段：对话 / 号码与记录 / 任务；每段各自点开对应落点。
+
+数据源备忘：
+- 通话记录：`app.calls.history`（StateFlow<List<CallRecord>>，字段 number/startedAtMs/direction/result）
+- 任务：`RunStore`（见 RunStatsScreen 的用法）
+
+顺带：电话卡第三态（接听已关 → 灰卡）逻辑已写但未真机验证；要验需关总开关后**停在对话首页**再 dump。
