@@ -4,13 +4,17 @@
     <string name="language_system">跟随系统</string>
     <string name="language_system_detail">系统语言 ACS 有译文时用它,没有时用英文</string>
     <string name="settings_basic">常用</string>
+    <string name="settings_group_ai">AI 怎么做事</string>
+    <string name="settings_group_connect">连什么、用什么</string>
     <string name="settings_language_appearance">语言与外观</string>
+    <string name="settings_language_sub">简体中文 · 跟随系统深浅色</string>
     <string name="settings_personal_start">打开就进助手</string>
     <string name="settings_personal_start_sub">点开 App 直接对话，不用先点别处</string>
     <string name="settings_model">AI 引擎</string>
     <string name="settings_model_sub">默认用哪个大脑，一般不用改</string>
     <string name="settings_not_set">未设置</string>
     <string name="settings_phone_ops">手机操作</string>
+    <string name="settings_phone_ops_sub">能看屏幕、能点按钮</string>
     <string name="settings_during_work">任务运行</string>
     <string name="settings_during_work_sub">自主模式、操作节奏、步数上限与声音</string>
     <string name="settings_notif_sub">什么时候弹出、去系统里改</string>
@@ -214,6 +218,7 @@
     <string name="settings_scheduled_quiet_end">结束时间</string>
     <string name="settings_scheduled_quiet_equal">开始和结束时间设为不同时间后，通知才会静音。</string>
 </resources>
+
 
 
 

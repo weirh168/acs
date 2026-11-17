@@ -425,27 +425,24 @@ fun SettingsContent(
     PageScaffold(stringResource(R.string.settings_title), onBack) {
         StatusSummary(check, onProblem, onOpenNotifications = onOpenNotifications)
 
-        GroupLabel(stringResource(R.string.settings_basic))
+        // 三组按「我想干什么」排,不按模块名排;AI 接打电话是核心能力,放第一行
+        GroupLabel(stringResource(R.string.settings_group_ai))
         GroupCard {
-            ListRow(MikaIcons.Spark, stringResource(R.string.settings_model), stringResource(R.string.settings_model_sub), first = true, onClick = onOpenModels) {
-                RowValue(mainModel ?: stringResource(R.string.settings_not_set))
-                RowChevron()
-            }
-            ListRow(MikaIcons.Phone, stringResource(R.string.settings_phone_ops), onClick = onOpenPhoneOps) {
+            ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), stringResource(R.string.calls_entry_sub), first = true, onClick = onOpenCalls) { RowChevron() }
+            ListRow(MikaIcons.Phone, stringResource(R.string.settings_phone_ops), stringResource(R.string.settings_phone_ops_sub), onClick = onOpenPhoneOps) {
                 PhoneOpsPill(status)
                 RowChevron()
             }
-            ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), stringResource(R.string.calls_entry_sub), onClick = onOpenCalls) { RowChevron() }
-            ListRow(MikaIcons.Chats, stringResource(R.string.wechat_title), stringResource(R.string.wechat_settings_sub), onClick = onOpenWechat) {
-                WechatEntryStatus(wechatState, wechatBound)
-                RowChevron()
-            }
             ListRow(MikaIcons.Moon, stringResource(R.string.settings_during_work), stringResource(R.string.settings_during_work_sub), onClick = onOpenDuringWork) { RowChevron() }
-            ListRow(MikaIcons.Message, CapsuleSettingsCopy.TITLE, CapsuleSettingsCopy.SUBTITLE, onClick = onOpenCapsule) {
+        }
+
+        GroupLabel("用起来顺手")
+        GroupCard {
+            ListRow(MikaIcons.Message, CapsuleSettingsCopy.TITLE, CapsuleSettingsCopy.SUBTITLE, first = true, onClick = onOpenCapsule) {
                 RowValue(CapsuleSettingsCopy.label(capsuleMode))
                 RowChevron()
             }
-            ListRow(MikaIcons.Globe, stringResource(R.string.settings_language_appearance), onClick = onOpenLanguage) {
+            ListRow(MikaIcons.Globe, stringResource(R.string.settings_language_appearance), stringResource(R.string.settings_language_sub), onClick = onOpenLanguage) {
                 RowValue(languageLabel(language))
                 RowChevron()
             }
@@ -454,6 +451,18 @@ fun SettingsContent(
                 ListRow(MikaIcons.Spark, label, stringResource(R.string.settings_personal_start_sub)) {
                     MikaSwitch(personalStart, change, Modifier.semantics { contentDescription = label })
                 }
+            }
+        }
+
+        GroupLabel(stringResource(R.string.settings_group_connect))
+        GroupCard {
+            ListRow(MikaIcons.Spark, stringResource(R.string.settings_model), stringResource(R.string.settings_model_sub), first = true, onClick = onOpenModels) {
+                RowValue(mainModel ?: stringResource(R.string.settings_not_set))
+                RowChevron()
+            }
+            ListRow(MikaIcons.Chats, stringResource(R.string.wechat_title), stringResource(R.string.wechat_settings_sub), onClick = onOpenWechat) {
+                WechatEntryStatus(wechatState, wechatBound)
+                RowChevron()
             }
             val (notifText, notifTone) = StatusCopy.notificationSummary(status.notificationOverview().summary)
             ListRow(MikaIcons.Bell, StatusCopy.NOTIFICATIONS, stringResource(R.string.settings_notif_sub), onClick = onOpenNotifications) {
