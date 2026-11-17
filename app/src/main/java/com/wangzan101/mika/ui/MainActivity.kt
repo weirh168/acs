@@ -621,7 +621,8 @@ private fun MikaRoot(
                 onOpenModels = { nav.push(Route.Models) },
                 autonomous = autonomous, onAutonomous = app.approvalControl::setAutonomous,
                 updateVersion = updateState.update?.version, onOpenAbout = { nav.push(Route.About) },
-                mcpServers = app.mcpServers)
+                mcpServers = app.mcpServers,
+                callsEnabled = app.calls.settings.state.collectAsState().value.enabled)
         }
         Route.Models -> ModelsScreen(store, onBack = back, onOpenSpeech = { nav.push(Route.SpeechModel) }, onOpenUsage = { nav.push(Route.Usage) })
         Route.Usage -> UsageScreen(app.usage, store, onBack = back, onOpenUrl = { openInBrowser(context, it) })
@@ -750,4 +751,5 @@ private fun com.wangzan101.mika.core.self.SelfScreen.route(): Route = when (this
     com.wangzan101.mika.core.self.SelfScreen.Screens -> Route.Screens
     com.wangzan101.mika.core.self.SelfScreen.About -> Route.About
 }
+
 
