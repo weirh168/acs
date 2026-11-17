@@ -1,5 +1,7 @@
 package com.wangzan101.mika.ui
 
+import com.wangzan101.mika.ui.components.SearchField
+
 import androidx.compose.ui.unit.dp
 
 import androidx.compose.foundation.layout.padding
@@ -435,62 +437,102 @@ fun SettingsContent(
             wechatConnected = wechatState == WechatConnectionState.Connected,
         )
 
+        // 搜索:只在三组内过滤;标题先转成文字,再按标题/副标题/别名匹配
+        var settingsQuery by remember { mutableStateOf("") }
+        val q = settingsQuery.trim()
+        fun hit(vararg texts: String): Boolean =
+            q.isEmpty() || texts.any { it.contains(q, ignoreCase = true) }
+
+        val tCalls = stringResource(R.string.calls_title)
+        val tPhoneOps = stringResource(R.string.settings_phone_ops)
+        val tDuringWork = stringResource(R.string.settings_during_work)
+        val tCapsule = CapsuleSettingsCopy.TITLE
+        val tLanguage = stringResource(R.string.settings_language_appearance)
+        val tPersonalStart = stringResource(R.string.settings_personal_start)
+        val tModel = stringResource(R.string.settings_model)
+        val tWechat = stringResource(R.string.wechat_title)
+        val tNotif = StatusCopy.NOTIFICATIONS
+        val anyShown = listOf(tCalls, tPhoneOps, tDuringWork, tCapsule, tLanguage, tPersonalStart, tModel, tWechat, tNotif)
+            .any { hit(it) }
+
+        SearchField(settingsQuery, { settingsQuery = it }, "搜索设置项", Modifier.testTag("settings-search"))
+        if (!anyShown) {
+            Text("没有匹配「" + settingsQuery + "」的设置", fontSize = 13.sp, color = MikaTheme.colors.ink3,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp))
+        }
+
         // 三组按「我想干什么」排,不按模块名排;AI 接打电话是核心能力,放第一行
         GroupLabel(stringResource(R.string.settings_group_ai))
         GroupCard {
-            ListRow(MikaIcons.Phone, stringResource(R.string.calls_title), stringResource(R.string.calls_entry_sub), first = true, onClick = onOpenCalls) {
-                // 彩色胶囊只表示健康;开关状态用灰字值
-                callsEnabled?.let { RowValue(if (it) stringResource(R.string.state_on) else stringResource(R.string.state_off)) }
-                RowChevron()
+            if (hit(tCalls, "打电话", "接电话")) {
+                ListRow(MikaIcons.Phone, tCalls, stringResource(R.string.calls_entry_sub), first = true, onClick = onOpenCalls) {
+                    // 彩色胶囊只表示健康;开关状态用灰字值
+                    callsEnabled?.let { RowValue(if (it) stringResource(R.string.state_on) else stringResource(R.string.state_off)) }
+                    RowChevron()
+                }
             }
             val phoneOpsReady = status.sdkInt >= Prerequisites.MIN_SDK &&
                 status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On
-            val phoneOpsLabel = stringResource(R.string.settings_phone_ops)
-            ListRow(MikaIcons.Phone, phoneOpsLabel, stringResource(R.string.settings_phone_ops_sub), onClick = onOpenPhoneOps) {
-                PhoneOpsPill(status)
-                // 没通时行内直接给动作,不用点进子页才知道要补什么
-                if (!phoneOpsReady && status.sdkInt >= Prerequisites.MIN_SDK) {
-                    TextButton(onClick = onOpenPhoneOps) {
-                        Text(stringResource(R.string.settings_fix_row), fontSize = 13.sp)
+            if (hit(tPhoneOps, "无障碍", "权限")) {
+                ListRow(MikaIcons.Phone, tPhoneOps, stringResource(R.string.settings_phone_ops_sub), onClick = onOpenPhoneOps) {
+                    PhoneOpsPill(status)
+                    // 没通时行内直接给动作,不用点进子页才知道要补什么
+                    if (!phoneOpsReady && status.sdkInt >= Prerequisites.MIN_SDK) {
+                        TextButton(onClick = onOpenPhoneOps) {
+                            Text(stringResource(R.string.settings_fix_row), fontSize = 13.sp)
+                        }
                     }
+                    RowChevron()
                 }
-                RowChevron()
             }
-            ListRow(MikaIcons.Moon, stringResource(R.string.settings_during_work), stringResource(R.string.settings_during_work_sub), onClick = onOpenDuringWork) { RowChevron() }
+            if (hit(tDuringWork, "节奏", "声音")) {
+                ListRow(MikaIcons.Moon, tDuringWork, stringResource(R.string.settings_during_work_sub), onClick = onOpenDuringWork) { RowChevron() }
+            }
         }
 
         GroupLabel("用起来顺手")
         GroupCard {
-            ListRow(MikaIcons.Message, CapsuleSettingsCopy.TITLE, CapsuleSettingsCopy.SUBTITLE, first = true, onClick = onOpenCapsule) {
-                RowValue(CapsuleSettingsCopy.label(capsuleMode))
-                RowChevron()
+            if (hit(tCapsule, "悬浮", "胶囊")) {
+                ListRow(MikaIcons.Message, tCapsule, CapsuleSettingsCopy.SUBTITLE, first = true, onClick = onOpenCapsule) {
+                    RowValue(CapsuleSettingsCopy.label(capsuleMode))
+                    RowChevron()
+                }
             }
-            ListRow(MikaIcons.Globe, stringResource(R.string.settings_language_appearance), stringResource(R.string.settings_language_sub), onClick = onOpenLanguage) {
-                RowValue(languageLabel(language))
-                RowChevron()
+            if (hit(tLanguage, "字体", "深浅色")) {
+                ListRow(MikaIcons.Globe, tLanguage, stringResource(R.string.settings_language_sub), onClick = onOpenLanguage) {
+                    RowValue(languageLabel(language))
+                    RowChevron()
+                }
             }
             onPersonalStart?.let { change ->
-                val label = stringResource(R.string.settings_personal_start)
-                ListRow(MikaIcons.Spark, label, stringResource(R.string.settings_personal_start_sub)) {
-                    MikaSwitch(personalStart, change, Modifier.semantics { contentDescription = label })
+                if (hit(tPersonalStart, "启动", "首屏")) {
+                    ListRow(MikaIcons.Spark, tPersonalStart, stringResource(R.string.settings_personal_start_sub)) {
+                        MikaSwitch(personalStart, change, Modifier.semantics { contentDescription = tPersonalStart })
+                    }
                 }
             }
         }
 
         GroupLabel(stringResource(R.string.settings_group_connect))
         GroupCard {
-            ListRow(MikaIcons.Spark, stringResource(R.string.settings_model), stringResource(R.string.settings_model_sub), first = true, onClick = onOpenModels) {
-                RowValue(mainModel ?: stringResource(R.string.settings_not_set))
-                RowChevron()
+            if (hit(tModel, "大模型", "服务商", "Token")) {
+                ListRow(MikaIcons.Spark, tModel, stringResource(R.string.settings_model_sub), first = true, onClick = onOpenModels) {
+                    RowValue(mainModel ?: stringResource(R.string.settings_not_set))
+                    RowChevron()
+                }
             }
-            ListRow(MikaIcons.Chats, stringResource(R.string.wechat_title), stringResource(R.string.wechat_settings_sub), onClick = onOpenWechat) {
-                WechatEntryStatus(wechatState, wechatBound)
-                RowChevron()
+            if (hit(tWechat, "微信")) {
+                ListRow(MikaIcons.Chats, tWechat, stringResource(R.string.wechat_settings_sub), onClick = onOpenWechat) {
+                    WechatEntryStatus(wechatState, wechatBound)
+                    RowChevron()
+                }
             }
             val (notifText, notifTone) = StatusCopy.notificationSummary(status.notificationOverview().summary)
-            ListRow(MikaIcons.Bell, StatusCopy.NOTIFICATIONS, stringResource(R.string.settings_notif_sub), onClick = onOpenNotifications) {
-                RowValue(notifText, notifTone)
-                RowChevron()
+            if (hit(tNotif, "弹窗", "通知")) {
+                ListRow(MikaIcons.Bell, tNotif, stringResource(R.string.settings_notif_sub), onClick = onOpenNotifications) {
+                    RowValue(notifText, notifTone)
+                    RowChevron()
+                }
             }
         }
 
@@ -791,6 +833,7 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
 
 
 
