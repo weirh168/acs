@@ -665,7 +665,7 @@ private fun EmptyState(
     val c = MikaTheme.colors
     val hour = remember(conversation) { LocalTime.now().hour }
     Column(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 52.dp)) {
+        Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 10.dp)) {
             Text(ChatCopy.greeting(hour), style = MikaType.LargeTitle, color = c.ink)
             Text(ChatCopy.EMPTY_PROMPT, Modifier.padding(top = 6.dp), style = EmptyLead, color = c.ink2)
         }
@@ -723,7 +723,7 @@ private fun EmptyState(
         var appPage by remember { mutableStateOf(0) }
         if (installed.isNotEmpty()) {
             androidx.compose.foundation.layout.Row(
-                Modifier.fillMaxWidth().padding(top = 26.dp, start = 8.dp, end = 8.dp),
+                Modifier.fillMaxWidth().padding(top = 16.dp, start = 8.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("直接打开", Modifier.weight(1f), style = EmptyLead, color = c.ink2)
@@ -785,7 +785,7 @@ private fun EmptyState(
         // 四种态:接过 / 还没接过 / 接听已关。没接上的提醒还没数据源,先不做
         val callsFlow = app?.calls?.settings?.state
         val callsOn = callsFlow?.collectAsState()?.value?.enabled ?: true
-        MikaCard(Modifier.padding(top = 20.dp)) {
+        MikaCard(Modifier.padding(top = 12.dp)) {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                 when {
                     !callsOn -> {
@@ -816,7 +816,7 @@ private fun EmptyState(
             val pageSize = 3
             val pages = (tasks.size + pageSize - 1) / pageSize
             androidx.compose.foundation.layout.Row(
-                Modifier.fillMaxWidth().padding(top = 20.dp, start = 8.dp, end = 8.dp),
+                Modifier.fillMaxWidth().padding(top = 14.dp, start = 8.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("试试这样说", Modifier.weight(1f), style = EmptyLead, color = c.ink2)
