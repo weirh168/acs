@@ -1081,3 +1081,27 @@ AI 通话卡 + 一键纠正两按钮、通知三键(人工接管/挂断/看文�
   每次用 `adb devices` 现查。
 - install 的失败经常只回一行空错误;必须打印最后一行并确认含 Success,否则会误判成"已安装"。
 - PowerShell 里给 adb 传参时,脚本内含中文的字符串拼接容易触发解析错误,用变量暂存输出再判断。
+
+## 首页（对话首屏）重构：已完成与待办（2026-11-17 17:40）
+
+已完成:
+- 示例卡片从开发者自测脚本换成日常事（7d056f6）
+  查我的快递，报取件码 / 给妈妈打电话，AI 代拨替我说明白 / 总结群聊，今天错过了什么 / 订明早闹钟
+
+待办（按建议顺序）:
+1. 顶部图标：ChatScreen.kt:421 TopBar，left=Menu，right 里 427 行 Paperclip(文件) + 428 行 New(新对话)。
+   稿子要求「菜单 / ACS / 搜索」，但没有搜索功能，直接去掉回形针会丢掉文件入口 —— 必须先有搜索再动，
+   否则是删功能。建议顺序：先做搜索，再替换右图标。
+2. 电话状态卡（稿子 P0 第一条，产品差异点）：需要当天通话统计 + 「暂停接听」「改响铃」两个动作。
+   数据在 app.calls（CallRuntime），首页在 ChatScreen，需要把 calls 状态传进来。
+   四种态：正常接过 / 还没接过 / 接听关闭 / 有没接上的。
+3. 直接打开（微信/小红书/支付宝/高德/抖音五个方块）：需要加载应用图标 + 启动；用 LauncherApps 或
+   PackageManager 取图标，点击走 Intent；注意无该应用时隐藏。
+4. 搜索条（搜对话、号码、任务）：最贵，跨 ConversationStore / 通话记录 / RunStore 三处索引，
+   且需要新的结果页。建议单独立项。
+5. 中部 300px 空白：ChatScreen 空态布局问题，需看 Column 排布；与 2、3 一起做更省事。
+
+相关文件:
+- app/src/main/java/com/wangzan101/mika/ui/ChatScreen.kt（顶部栏 421、空态与示例渲染）
+- app/src/main/java/com/wangzan101/mika/ui/ChatCopy.kt:30（示例列表定义，ExampleKind.Web 等）
+- app/src/main/res/values-zh/strings_chat.xml（示例文案）
