@@ -445,6 +445,14 @@ fun ChatScreen(
             )
         }
 
+        // 任务做完后停 2 秒,自动回到新对话的首页
+        val lastExchange = ui.exchanges.lastOrNull()
+        val runJustFinished = lastExchange?.status is ExchangeStatus.Done
+        LaunchedEffect(runJustFinished, lastExchange?.goal) {
+            if (!runJustFinished) return@LaunchedEffect
+            kotlinx.coroutines.delay(2000)
+            if (vm.canSwitch()) vm.newConversation()
+        }
         val composerCtx = LocalContext.current
         Composer(
             Modifier.align(Alignment.BottomCenter).behindMenu(menuOpen) { lift.value }.onSizeChanged { composerHeight = it.height },
