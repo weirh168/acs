@@ -662,13 +662,15 @@ private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, onPi
         }
         // 今天替你接了几通:这是产品的差异点,首屏先答「它在替我干活」
         val app = LocalContext.current.applicationContext as? MikaApp
-        val todayCalls = remember(app) {
-            runCatching {
-                val start = java.time.LocalDate.now()
-                    .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
-                app?.calls?.history?.value.orEmpty().count { it.startedAtMs >= start }
-            }.getOrDefault(0)
-        }
+        // 跟着通话记录实时变:记录没加载时是空,别把 0 当成结论
+        val callHistory by remember(app) {
+            app?.calls?.history ?: kotlinx.coroutines.flow.MutableStateFlow(emptyList())
+        }.collectAsState()
+        val todayCalls = runCatching {
+            val start = java.time.LocalDate.now()
+                .atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+            callHistory.count { it.startedAtMs >= start }
+        }.getOrDefault(0)
         if (todayCalls > 0) {
             MikaCard(Modifier.padding(top = 20.dp)) {
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
