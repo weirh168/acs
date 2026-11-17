@@ -17,6 +17,8 @@
     <string name="web_search_api_key">API 密钥（可选）</string>
     <string name="web_search_invalid_endpoint">请输入不带查询参数的 HTTP 或 HTTPS 网址。</string>
     <string name="web_search_action">搜索网页</string>
+    <string name="web_search_note_bocha">国内直连。到 bochaai.com 注册拿密钥，注册送试用额度。</string>
 </resources>
+
 
 

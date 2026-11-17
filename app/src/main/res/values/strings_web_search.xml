@@ -17,4 +17,6 @@
     <string name="web_search_api_key">API key (optional)</string>
     <string name="web_search_invalid_endpoint">Enter an HTTP or HTTPS URL without query parameters.</string>
     <string name="web_search_action">Search the web</string>
+    <string name="web_search_note_bocha">Direct from China. Get a key at bochaai.com; signup includes trial credit.</string>
 </resources>
+

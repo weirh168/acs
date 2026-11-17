@@ -46,6 +46,7 @@ internal object WebSearchCopy {
         WebSearchProvider.Exa -> "Exa"
         WebSearchProvider.Keirolabs -> "Keirolabs"
         WebSearchProvider.SearXNG -> "SearXNG"
+        WebSearchProvider.Bocha -> "博查 Bocha"
     }
 
     /** 选中这一家时,服务商下面那一行:它怎么用、要填什么。 */
@@ -56,6 +57,7 @@ internal object WebSearchCopy {
             WebSearchProvider.Exa -> R.string.web_search_note_exa
             WebSearchProvider.Keirolabs -> R.string.web_search_note_keirolabs
             WebSearchProvider.SearXNG -> R.string.web_search_note_searxng
+            WebSearchProvider.Bocha -> R.string.web_search_note_bocha
         },
     )
 

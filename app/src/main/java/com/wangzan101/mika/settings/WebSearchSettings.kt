@@ -2,6 +2,7 @@ package com.wangzan101.mika.settings
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.wangzan101.mika.core.search.BochaSearch
 import com.wangzan101.mika.core.search.ExaSearch
 import com.wangzan101.mika.core.search.JinaSearch
 import com.wangzan101.mika.core.search.KeirolabsSearch
@@ -89,6 +90,7 @@ class WebSearchSettings(
             WebSearchProvider.Jina -> JinaSearch(entry.apiKey)
             WebSearchProvider.Exa -> ExaSearch(entry.apiKey)
             WebSearchProvider.Keirolabs -> KeirolabsSearch(entry.apiKey)
+            WebSearchProvider.Bocha -> BochaSearch(entry.apiKey)
             WebSearchProvider.SearXNG -> SearxngSearch(checkNotNull(WebSearch.parseEndpoint(entry.endpoint)))
         }
     }
@@ -118,3 +120,4 @@ class WebSearchSettings(
         fun get(context: Context) = WebSearchSettings(context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE))
     }
 }
+
