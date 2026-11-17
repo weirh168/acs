@@ -145,6 +145,7 @@ import com.wangzan101.mika.ui.components.GlassBackdrop
 import com.wangzan101.mika.ui.components.GlassBar
 import com.wangzan101.mika.ui.components.MikaButton
 import com.wangzan101.mika.ui.components.MikaCard
+import com.wangzan101.mika.ui.components.SearchField
 import com.wangzan101.mika.ui.components.MikaDialog
 import com.wangzan101.mika.ui.components.PageBackground
 import com.wangzan101.mika.ui.components.TopBar
@@ -384,9 +385,9 @@ fun ChatScreen(
             ) {
                 if (ui.exchanges.isEmpty() && ui.blocked == null) {
                     item("empty") {
-                        EmptyState(ui.conversationId, recommendedTasks) { prompt ->
+                        EmptyState(ui.conversationId, recommendedTasks, onPick = { prompt ->
                             if (input.isEmpty()) vm.input(prompt) else pendingExample = prompt
-                        }
+                        }, onOpen = { id -> vm.openConversation(id) })
                     }
                 }
                 ui.exchanges.forEachIndexed { i, ex ->
@@ -656,13 +657,59 @@ private fun LazyListState.nearTail(thresholdPx: Int): Boolean {
 
 /** 问候、一句「想让 Mika 做什么？」和推荐任务。点一条把提示词填进输入框,改好了再发;一条都没有时不显示列表。 */
 @Composable
-private fun EmptyState(conversation: String?, tasks: List<RecommendedTask>, onPick: (String) -> Unit) {
+private fun EmptyState(
+    conversation: String?,
+    tasks: List<RecommendedTask>,
+    onPick: (String) -> Unit,
+    onOpen: (String) -> Unit = {},
+) {
     val c = MikaTheme.colors
     val hour = remember(conversation) { LocalTime.now().hour }
     Column(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 52.dp)) {
             Text(ChatCopy.greeting(hour), style = MikaType.LargeTitle, color = c.ink)
             Text(ChatCopy.EMPTY_PROMPT, Modifier.padding(top = 6.dp), style = EmptyLead, color = c.ink2)
+        }
+        // 搜对话:复用 ConversationStore.search(标题先出,正文后补)
+        val searchCtx = LocalContext.current
+        val convStore = remember(searchCtx) {
+            (searchCtx.applicationContext as? MikaApp)?.conversations
+        }
+        var query by remember { mutableStateOf("") }
+        var hits by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+        var searching by remember { mutableStateOf(false) }
+        LaunchedEffect(query, convStore) {
+            val q = query.trim()
+            if (q.isEmpty() || convStore == null) {
+                hits = emptyList(); searching = false; return@LaunchedEffect
+            }
+            searching = true
+            val cands = runCatching { convStore.list() }.getOrDefault(emptyList())
+            fun mapHits(list: List<String>) = list.mapNotNull { id ->
+                cands.firstOrNull { it.id == id }?.let { id to it.title }
+            }
+            hits = mapHits(convStore.search.titleMatches(q, cands).map { it.id })
+            kotlinx.coroutines.delay(180)
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching { convStore.search.search(q, cands) }.getOrNull()
+            }
+            if (result != null) hits = mapHits(result.hits.map { it.id })
+            searching = false
+        }
+        SearchField(query, { query = it }, "搜对话", Modifier.padding(top = 18.dp),)
+        if (query.isNotBlank()) {
+            Column(Modifier.padding(top = 10.dp)) {
+                if (hits.isEmpty()) {
+                    Text(if (searching) "搜索中…" else "没找到「" + query + "」相关的对话", Modifier.padding(start = 8.dp), style = EmptyLead, color = c.ink2)
+                } else {
+                    MikaCard {
+                        hits.take(8).forEachIndexed { i, (id, title) ->
+                            ExampleRow(MikaIcons.Message, title, first = i == 0) { onOpen(id) }
+                        }
+                    }
+                }
+            }
+            return@Column
         }
         // 直接打开:最高频的五个 App,点一下就走
         val quickCtx = LocalContext.current
@@ -1733,3 +1780,4 @@ private val CardBody = TextStyle(fontSize = 14.sp, lineHeight = 21.5.sp)
 private val PillText = TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
 private val FileName = TextStyle(fontSize = 14.5.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
 private val FileMeta = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp)
+
