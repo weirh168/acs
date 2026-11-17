@@ -441,6 +441,7 @@ fun ChatScreen(
             )
         }
 
+        val composerCtx = LocalContext.current
         Composer(
             Modifier.align(Alignment.BottomCenter).behindMenu(menuOpen) { lift.value }.onSizeChanged { composerHeight = it.height },
             backdrop = backdrop,
@@ -451,6 +452,15 @@ fun ChatScreen(
             hasHistory = ui.exchanges.isNotEmpty(),
             onSend = { vm.send(input, check) },
             onTeach = if (ui.composer == ComposerMode.Idle) ({ onOpenTeach(input.trim()) }) else null,
+            onOpenCalls = {
+                runCatching {
+                    composerCtx.startActivity(
+                        android.content.Intent(composerCtx, com.wangzan101.mika.ui.MainActivity::class.java)
+                            .putExtra(com.wangzan101.mika.ui.MainActivity.EXTRA_OPEN_CALLS, true)
+                            .addFlags(android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
+                    )
+                }
+            },
             onStop = vm::cancel,
             followUpMode = ui.followUpMode,
             queued = ui.queued,
@@ -1562,6 +1572,8 @@ internal fun Composer(
     attachBlocked: Boolean = false,
     /** 「＋」面板里的「教 Mika」。点了先收起面板。 */
     onTeach: (() -> Unit)? = null,
+    /** 输入框左边的电话图标:进「AI 接打电话」。为 null 时不显示。 */
+    onOpenCalls: (() -> Unit)? = null,
     attachments: List<PendingAttachment> = emptyList(),
     importing: Boolean = false,
     rejected: List<AttachmentFailure> = emptyList(),
@@ -1717,6 +1729,17 @@ internal fun Composer(
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(MikaIcons.Plus, label, Modifier.size(20.dp).graphicsLayer { rotationZ = turn }, tint = c.ink)
+                    }
+                }
+                if (onOpenCalls != null) {
+                    // 常规电话图标:绿色圆底 + 白色话筒
+                    Box(
+                        Modifier.size(MikaSize.IconButton)
+                            .background(Color(0xFF34C759), CircleShape).clip(CircleShape)
+                            .clickable(role = Role.Button) { onOpenCalls() },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(MikaIcons.Phone, "AI 接打电话", Modifier.size(18.dp), tint = Color.White)
                     }
                 }
                 Box(Modifier.weight(1f).padding(start = if (showAttach) 2.dp else 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)) {
