@@ -34,6 +34,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -824,6 +826,9 @@ private fun EmptyState(
                 }
             }
         }
+        val editCtx = LocalContext.current
+        var editingTask by remember { mutableStateOf<com.wangzan101.mika.settings.RecommendedTask?>(null) }
+        var draft by remember { mutableStateOf("") }
         if (tasks.isNotEmpty()) {
             // 点得多的排前面;点一次记一次
             val statsCtx = LocalContext.current
@@ -850,7 +855,10 @@ private fun EmptyState(
             val shown = ordered.drop(start).plus(ordered.take(start)).take(pageSize)
             MikaCard(Modifier.padding(top = 10.dp)) {
                 shown.forEachIndexed { i, task ->
-                    ExampleRow(MikaIcons.Message, task.title, first = i == 0) {
+                    ExampleRow(MikaIcons.Message, task.title, first = i == 0, onLongClick = {
+                        editingTask = task
+                        draft = task.title
+                    }) {
                         com.wangzan101.mika.settings.ExampleStats.hit(statsCtx, task.title)
                         statsTick++
                         onPick(task.prompt)
@@ -858,11 +866,47 @@ private fun EmptyState(
                 }
             }
         }
+        editingTask?.let { task ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { editingTask = null },
+                title = { Text("改这句话") },
+                text = {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = draft,
+                        onValueChange = { draft = it },
+                        singleLine = false,
+                        label = { Text("填进输入框的那句话") },
+                    )
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            val text = draft.trim()
+                            if (text.isNotEmpty()) {
+                                val store = (editCtx.applicationContext as? MikaApp)?.recommendedTasks
+                                store?.update(task.id, text, text)
+                            }
+                            editingTask = null
+                        },
+                    ) { Text("保存") }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { editingTask = null }) { Text("取消") }
+                },
+            )
+        }
     }
 }
 
 @Composable
-private fun ExampleRow(icon: ImageVector, text: String, first: Boolean, onClick: () -> Unit) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private fun ExampleRow(
+    icon: ImageVector,
+    text: String,
+    first: Boolean,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+) {
     val c = MikaTheme.colors
     Row(
         Modifier.fillMaxWidth()
@@ -870,7 +914,7 @@ private fun ExampleRow(icon: ImageVector, text: String, first: Boolean, onClick:
                 val y = 0.25.dp.toPx()
                 drawLine(c.hair, Offset(52.dp.toPx(), y), Offset(size.width, y), strokeWidth = 0.5.dp.toPx())
             })
-            .clickable(role = Role.Button, onClick = onClick)
+            .combinedClickable(role = Role.Button, onClick = onClick, onLongClick = onLongClick)
             .heightIn(min = 56.dp)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
