@@ -563,6 +563,14 @@ private fun CallReceivePage(
             first = true,
             onClick = onRules,
         ) { RowChevron() }
+        HorizontalDivider()
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("响铃多久后接", Modifier.weight(1f), fontSize = 15.sp, color = MikaTheme.colors.ink)
+            RingDelayChip(config.autoAnswerDelaySeconds, onDelay)
+        }
     }
     Spacer(Modifier.size(12.dp))
     if (state.aiActive || state.liveTranscript.isNotEmpty()) {
@@ -602,8 +610,6 @@ private fun CallReceivePage(
         onEditConfig { cfg -> cfg.copy(observeUntilMs = 0L) }
     }
     CallTodayCard(history, onHistory)
-    Spacer(Modifier.size(12.dp))
-    RingDelayChip(config.autoAnswerDelaySeconds, onDelay)
     Spacer(Modifier.size(12.dp))
     if (state.simOptions.size > 1) {
         GroupLabel(stringResource(R.string.calls_sims_title))
