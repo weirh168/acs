@@ -25,6 +25,8 @@ object QuickAppsStore {
         "com.netease.cloudmusic" to "网易云音乐",
         "tv.danmaku.bili" to "哔哩哔哩",
         "com.zhihu.android" to "知乎",
+        "com.larus.nova" to "豆包",
+        "com.deepseek.chat" to "DeepSeek",
     )
 
     private fun prefs(context: Context) = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
@@ -49,6 +51,18 @@ object QuickAppsStore {
         prefs(context).edit().putString(KEY, (current + packageName).joinToString(",")).apply()
     }
 
-    fun labelOf(packageName: String): String =
-        DEFAULTS.firstOrNull { it.first == packageName }?.second ?: packageName
+    /** 用户自己加一个 App:排到最前面,以后就在首页上。 */
+    fun pinToFront(context: Context, packageName: String, label: String) {
+        extras(context).let { if (label.isNotBlank()) it.edit().putString(packageName, label).apply() }
+        val current = order(context).toMutableList()
+        current.remove(packageName)
+        prefs(context).edit().putString(KEY, (listOf(packageName) + current).joinToString(",")).apply()
+    }
+
+    private fun extras(context: Context) = context.getSharedPreferences(FILE + "-labels", Context.MODE_PRIVATE)
+
+    fun labelOf(context: Context, packageName: String): String =
+        DEFAULTS.firstOrNull { it.first == packageName }?.second
+            ?: extras(context).getString(packageName, null)
+            ?: packageName
 }
