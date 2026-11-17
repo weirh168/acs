@@ -1233,34 +1233,41 @@ private fun CallTodayCard(history: List<CallRecord>, onHistory: () -> Unit) {
     val byAi = incoming.count { it.result.contains(AUTO_ANSWER_MARK) }
     val toYou = incoming.size - byAi
     val c = MikaTheme.colors
-    Column(Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(16.dp)).padding(16.dp)) {
+    // 紧凑版:整块比原来矮约四成,数字和说明挤在同一行,「查看记录」并入标题行
+    Column(Modifier.fillMaxWidth().background(c.surface, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.calls_today_label), fontSize = 11.sp, color = c.ink3, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(R.string.calls_today_view),
+                fontSize = 11.sp, color = c.accent,
+                modifier = Modifier
+                    .clickable(role = Role.Button) { onHistory() }
+                    .padding(horizontal = 2.dp, vertical = 2.dp)
+                    .testTag("call-today-history"),
+            )
+        }
         if (byAi == 0 && incoming.isEmpty()) {
-            Text(stringResource(R.string.calls_today_empty_title), fontSize = 16.sp, color = c.ink, fontWeight = FontWeight.Medium)
-            Text(stringResource(R.string.calls_today_empty_note), fontSize = 13.sp, color = c.ink3,
-                modifier = Modifier.padding(top = 4.dp))
+            Text(stringResource(R.string.calls_today_empty_title), fontSize = 13.sp, color = c.ink,
+                fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 2.dp))
         } else {
-            Text(stringResource(R.string.calls_today_label), fontSize = 13.sp, color = c.ink3)
-            Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 2.dp)) {
-                Text(byAi.toString(), fontSize = 40.sp, fontWeight = FontWeight.Bold, color = c.ink)
-                Text(stringResource(R.string.calls_today_ai_note), fontSize = 15.sp, color = c.ink,
-                    modifier = Modifier.padding(start = 8.dp, bottom = 6.dp))
+            Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 1.dp)) {
+                Text(byAi.toString(), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = c.ink)
+                Text(stringResource(R.string.calls_today_ai_note), fontSize = 12.sp, color = c.ink,
+                    modifier = Modifier.padding(start = 6.dp, bottom = 3.dp))
             }
-            Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 TodayChip(stringResource(R.string.calls_today_chip_ai, byAi))
                 TodayChip(stringResource(R.string.calls_today_chip_you, toYou))
                 TodayChip(stringResource(R.string.calls_today_chip_total, incoming.size))
             }
-        }
-        TextButton(onClick = onHistory, modifier = Modifier.align(Alignment.End).testTag("call-today-history")) {
-            Text(stringResource(R.string.calls_today_view), fontSize = 14.sp)
         }
     }
 }
 
 @Composable
 private fun TodayChip(text: String) {
-    Box(Modifier.background(MikaTheme.colors.fill, RoundedCornerShape(20.dp)).padding(horizontal = 12.dp, vertical = 6.dp)) {
-        Text(text, fontSize = 13.sp, color = MikaTheme.colors.ink2)
+    Box(Modifier.background(MikaTheme.colors.fill, RoundedCornerShape(20.dp)).padding(horizontal = 8.dp, vertical = 3.dp)) {
+        Text(text, fontSize = 11.sp, color = MikaTheme.colors.ink2)
     }
 }
 
