@@ -727,6 +727,7 @@ private fun LazyListState.nearTail(thresholdPx: Int): Boolean {
 // ---------- 空对话 ----------
 
 /** 问候、一句「想让 Mika 做什么？」和推荐任务。点一条把提示词填进输入框,改好了再发;一条都没有时不显示列表。 */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun EmptyState(
     conversation: String?,
@@ -840,21 +841,31 @@ private fun EmptyState(
                         }.getOrNull()
                     }
                     Column(
-                        Modifier.width(64.dp)
-                            .clickable(role = Role.Button) {
-                                runCatching {
-                                    pm.getLaunchIntentForPackage(pkg)?.let { quickCtx.startActivity(it) }
+                        // 点:打开 App;长按:把这个 App 换掉。
+                        // 用 combinedClickable:先前把 clickable 和 detectTapGestures 叠在一起,
+                        // 后者会吃掉点按手势,导致点了没反应。
+                        Modifier.width(64.dp).combinedClickable(
+                            role = Role.Button,
+                            onClick = {
+                                val intent = pm.getLaunchIntentForPackage(pkg)
+                                if (intent == null) {
+                                    android.widget.Toast
+                                        .makeText(quickCtx, "打不开这个 App", android.widget.Toast.LENGTH_SHORT)
+                                        .show()
+                                } else {
+                                    runCatching { quickCtx.startActivity(intent) }
+                                        .onFailure {
+                                            android.widget.Toast
+                                                .makeText(quickCtx, "打不开这个 App", android.widget.Toast.LENGTH_SHORT)
+                                                .show()
+                                        }
                                 }
-                            }
-                            // 长按:把这个 App 挪到最前面,顺序会记住
-                            .pointerInput(pkg) {
-                                detectTapGestures(
-                                    onLongPress = {
-                                        com.wangzan101.mika.settings.QuickAppsStore.rotateOut(quickCtx, pkg)
-                                        orderVersion++
-                                    },
-                                )
                             },
+                            onLongClick = {
+                                com.wangzan101.mika.settings.QuickAppsStore.rotateOut(quickCtx, pkg)
+                                orderVersion++
+                            },
+                        ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         icon?.let {
