@@ -205,6 +205,7 @@ fun SettingsScreen(
             },
             onBack = toHome,
             onManageMemories = { onOpenMemory?.invoke() },
+
             onClearAll = {
                 val app = context.applicationContext as com.wangzan101.mika.MikaApp
                 // 记忆:stripMemory(空集) 表示一条都不留;对话:逐个删
@@ -741,6 +742,8 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
+
 
 
 

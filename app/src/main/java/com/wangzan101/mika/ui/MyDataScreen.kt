@@ -15,6 +15,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -39,7 +42,7 @@ fun MyDataScreen(
     onManageLearned: () -> Unit = {},
     onManageLogins: () -> Unit = {},
     onManageConversations: () -> Unit = {},
-    onExport: () -> Unit = {},
+    onExport: (() -> Unit)? = null,
     onClearAll: () -> Unit = {},
 ) {
     var confirmClear by remember { mutableStateOf(false) }
@@ -66,7 +69,16 @@ fun MyDataScreen(
                 onClick = onManageConversations)
         }
         Column(Modifier.fillMaxWidth().padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            ListRow(null, "导出我的数据", "打包成文件，自己保存或发给客服", first = true, onClick = onExport) { RowChevron() }
+            val scope = rememberCoroutineScope()
+            val ctx = LocalContext.current
+            var exportedPath by remember { mutableStateOf<String?>(null) }
+            ListRow(null, "导出我的数据", exportedPath ?: "只导元数据：条数、标题、域名，不含对话正文", first = true, onClick = {
+                if (onExport != null) onExport() else scope.launch {
+                    exportedPath = "正在导出…"
+                    val file = com.wangzan101.mika.mydata.MyDataExporter.export(ctx)
+                    exportedPath = file?.let { "已导出：" + it.absolutePath } ?: "导出失败"
+                }
+            }) { RowChevron() }
         }
         Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
             ListRow(
@@ -112,5 +124,6 @@ private fun ClearMyDataDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
     )
 }
+
 
 
