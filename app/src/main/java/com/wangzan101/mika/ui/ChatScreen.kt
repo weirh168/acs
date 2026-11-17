@@ -445,13 +445,28 @@ fun ChatScreen(
             )
         }
 
-        // 任务做完后停 2 秒,自动回到新对话的首页
+        // 任务做完:先问一句,使用者确认后才回新对话首页
         val lastExchange = ui.exchanges.lastOrNull()
         val runJustFinished = lastExchange?.status is ExchangeStatus.Done
+        var askReturnHome by remember { mutableStateOf(false) }
         LaunchedEffect(runJustFinished, lastExchange?.goal) {
-            if (!runJustFinished) return@LaunchedEffect
-            kotlinx.coroutines.delay(2000)
-            if (vm.canSwitch()) vm.newConversation()
+            if (runJustFinished) askReturnHome = true
+        }
+        if (askReturnHome && runJustFinished) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { askReturnHome = false },
+                title = { Text("做完了") },
+                text = { Text("回到首页开始新对话？") },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = {
+                        askReturnHome = false
+                        if (vm.canSwitch()) vm.newConversation()
+                    }) { Text("回首页") }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { askReturnHome = false }) { Text("留在这里") }
+                },
+            )
         }
         val composerCtx = LocalContext.current
         Composer(
