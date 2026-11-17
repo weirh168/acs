@@ -427,7 +427,13 @@ fun SettingsContent(
 ) {
     val check = Prerequisites.check(status, hasMainModel = mainModel != null)
     PageScaffold(stringResource(R.string.settings_title), onBack) {
-        StatusSummary(check, onProblem, onOpenNotifications = onOpenNotifications)
+        StatusSummary(
+            check, onProblem, onOpenNotifications = onOpenNotifications,
+            callsEnabled = callsEnabled,
+            phoneOpsReady = status.sdkInt >= Prerequisites.MIN_SDK &&
+                status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On,
+            wechatConnected = wechatState == WechatConnectionState.Connected,
+        )
 
         // 三组按「我想干什么」排,不按模块名排;AI 接打电话是核心能力,放第一行
         GroupLabel(stringResource(R.string.settings_group_ai))
@@ -724,15 +730,32 @@ private fun sandboxValue(s: SandboxStatus): String = when (s) {
  * 焦点提醒改不了,只在手机操作页的「系统版本」一行里提示,不占这里。
  */
 @Composable
-private fun StatusSummary(check: Prerequisites.Check, onProblem: (Problem) -> Unit, onOpenNotifications: () -> Unit) {
+private fun StatusSummary(
+    check: Prerequisites.Check,
+    onProblem: (Problem) -> Unit,
+    onOpenNotifications: () -> Unit,
+    callsEnabled: Boolean? = null,
+    phoneOpsReady: Boolean = true,
+    wechatConnected: Boolean = false,
+) {
     // 通知被调低不在这里出卡片:下面的「通知」一行已经标了「有 N 项不会弹出」,
     // 顶栏只在真有别的毛病时占用(没有别的毛病时也不硬说「一切就绪」)。
     val problem = check.problems.firstOrNull { it != Problem.FocusMayLeak && it !is Problem.AttentionLowered }
     val onlyLoweredNotifications = problem == null && check.problems.any { it !is Problem.FocusMayLeak }
     when {
         onlyLoweredNotifications -> Unit
-        problem == null ->
-            StateCard(MikaIcons.Check, stringResource(R.string.all_ready), stringResource(R.string.settings_all_ready_detail), TileTone.Ok, Modifier.testTag("settings-status"))
+        problem == null -> {
+            // 一句人话说清「现在能干什么」,不让人滚到底才发现问题
+            val abilities = buildList {
+                add(if (phoneOpsReady) "能看屏幕" else "屏幕操作没通")
+                if (callsEnabled != null) add(if (callsEnabled) "能接电话" else "接电话已关")
+                if (wechatConnected) add("连着微信")
+            }
+            StateCard(
+                MikaIcons.Check, "AI 现在能用", abilities.joinToString(" · "),
+                TileTone.Ok, Modifier.testTag("settings-status"),
+            )
+        }
         else -> {
             val copy = StatusCopy.banner(problem)
             StateCard(
@@ -768,6 +791,8 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
+
 
 
 
