@@ -517,6 +517,8 @@ fun AdvancedSettingsContent(
         // 结论卡:先回答「通不通」,再让人改设置
         var probing by remember { mutableStateOf(false) }
         var probeLines by remember { mutableStateOf<List<Pair<String, String>>?>(null) }
+        // 最近几次失败的时间点:5 分钟内两次就给个主动提示
+        var failureTimes by remember { mutableStateOf<List<Long>>(emptyList()) }
         val probeScope = rememberCoroutineScope()
         val probeContext = LocalContext.current
         // 探测逻辑抽成函数:首次测量与「关掉代理再测一次」共用
@@ -571,6 +573,12 @@ fun AdvancedSettingsContent(
                 ) { Text(if (probing) "测着…" else "测一下", fontSize = 14.sp) }
             }
             // 有失败就给下一步:配了代理就建议先关掉,没配且是搜索失败就直接去改搜索设置
+            val recentFailures = failureTimes.count { System.currentTimeMillis() - it <= 5 * 60_000L }
+            if (recentFailures >= 2) {
+                NetProbeRetryRow("5 分钟内连着两次不通，代理可能有问题", if (proxy?.isNotBlank() == true) "先关掉代理" else "去改搜索设置") {
+                    if (proxy?.isNotBlank() == true) { onClearProxy(); runProbe() } else onOpenWebSearch()
+                }
+            }
             if (probeLines != null && !allOk) {
                 val searchFailed = probeLines?.any { it.first == "网页搜索" && !it.second.endsWith("秒") } == true
                 if (proxy?.isNotBlank() == true) {
@@ -721,6 +729,7 @@ private fun NetProbeRetryRow(text: String, action: String, onClick: () -> Unit) 
         }
     }
 }
+
 
 
 
