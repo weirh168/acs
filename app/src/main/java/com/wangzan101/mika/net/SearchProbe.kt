@@ -12,7 +12,7 @@ object SearchProbe {
     /** 探测用的固定查询:短、通用、结果稳定。 */
     const val QUERY = "mika"
 
-    suspend fun run(search: WebSearch, timeoutMs: Long = 8_000): ProbeResult {
+    suspend fun run(search: WebSearch, timeoutMs: Long = 20_000): ProbeResult {
         val start = System.currentTimeMillis()
         val result = withTimeoutOrNull(timeoutMs) {
             runCatching { search.search(QUERY, 1) }.getOrNull()
@@ -26,3 +26,4 @@ object SearchProbe {
         }
     }
 }
+
