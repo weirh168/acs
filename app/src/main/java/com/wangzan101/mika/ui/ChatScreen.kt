@@ -891,12 +891,12 @@ private fun EmptyState(
         val callsFlow = app?.calls?.settings?.state
         val callsOn = callsFlow?.collectAsState()?.value?.enabled ?: true
         Row(
-            Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+            Modifier.fillMaxWidth().padding(top = 12.dp).height(IntrinsicSize.Min),
             verticalAlignment = Alignment.Top,
         ) {
             Column(Modifier.weight(1f)) {
         // 点卡片进「AI 接打电话」看具体记录(走 Activity 的 open_calls 入口)
-        MikaCard(Modifier.padding(top = 12.dp).clickable(role = Role.Button) {
+        MikaCard(Modifier.clickable(role = Role.Button) {
             runCatching {
                 quickCtx.startActivity(
                     android.content.Intent(quickCtx, com.wangzan101.mika.ui.MainActivity::class.java)
