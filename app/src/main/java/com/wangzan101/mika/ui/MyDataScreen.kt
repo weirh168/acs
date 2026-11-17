@@ -15,7 +15,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wangzan101.mika.ui.theme.MikaTheme
@@ -35,6 +42,7 @@ fun MyDataScreen(
     onExport: () -> Unit = {},
     onClearAll: () -> Unit = {},
 ) {
+    var confirmClear by remember { mutableStateOf(false) }
     PageScaffold("它记得我什么", onBack) {
         Text(
             MyDataSummary.headline(counts),
@@ -63,8 +71,14 @@ fun MyDataScreen(
         Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
             ListRow(
                 null, "清空全部我的数据", "只删记忆与登录，不影响通话记录",
-                first = true, titleColor = MikaTheme.colors.bad, onClick = onClearAll,
+                first = true, titleColor = MikaTheme.colors.bad, onClick = { confirmClear = true },
             ) { RowChevron() }
+        }
+        if (confirmClear) {
+            ClearMyDataDialog(
+                onConfirm = { confirmClear = false; onClearAll() },
+                onDismiss = { confirmClear = false },
+            )
         }
         Text(
             "删掉后 AI 会重新认识你，不会影响已经接过的电话",
@@ -81,6 +95,22 @@ private fun DataRow(title: String, note: String, value: String, first: Boolean =
         RowValue(value)
         RowChevron()
     }
+}
+
+/** 清空不可逆:先问一句,再动手。 */
+@Composable
+private fun ClearMyDataDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("清空全部我的数据？") },
+        text = { Text("删掉后 AI 会重新认识你，不会影响已经接过的电话。") },
+        confirmButton = {
+            TextButton(onClick = onConfirm, modifier = Modifier.testTag("my-data-clear-confirm")) {
+                Text("清空", color = MikaTheme.colors.bad)
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+    )
 }
 
 
