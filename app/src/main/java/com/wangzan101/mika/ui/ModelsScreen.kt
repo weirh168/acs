@@ -603,6 +603,7 @@ private fun ModelRow(o: ModelOption, roles: List<ModelRole>, first: Boolean, onC
 @Composable
 private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, onUse: (ModelRole) -> Unit, onVision: (Boolean) -> Unit, onDismiss: () -> Unit) {
     val c = MikaTheme.colors
+    val context = androidx.compose.ui.platform.LocalContext.current
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = c.surface, shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)) {
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 8.dp).testTag("use-as")) {
             Text(model, Modifier.padding(horizontal = 16.dp), style = ModelIdStyle, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -612,7 +613,17 @@ private fun UseAsSheet(ui: ModelSetupUi, p: Provider, model: String, onUse: (Mod
                 RadioRow(
                     ModelsCopy.roleName(role), selected = on, first = i == 0,
                     subtitle = if (on) ModelsCopy.IN_USE else ModelsCopy.roleWhat(role),
-                    onClick = { onUse(role); onDismiss() },
+                    onClick = {
+                        val ctx = context
+                        if (!canPickModelNow(ctx) && !isAgnesModel(p.id, model)) {
+                            android.widget.Toast.makeText(
+                                ctx, "订阅会员后才能自己选模型，当前档位只能用 AGNES",
+                                android.widget.Toast.LENGTH_LONG,
+                            ).show()
+                        } else {
+                            onUse(role); onDismiss()
+                        }
+                    },
                 )
             }
             ui.options(p).firstOrNull { it.id == model }?.let { o ->

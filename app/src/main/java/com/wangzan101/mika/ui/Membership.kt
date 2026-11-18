@@ -125,3 +125,15 @@ fun MembershipDialog(onDismiss: () -> Unit) {
         }
     }
 }
+
+/** 当前能不能自己选模型:没授权或试用/10 元档都只能留在 AGNES。 */
+fun canPickModelNow(context: android.content.Context): Boolean {
+    val lic = LicenseStore(context).load() ?: return false
+    return lic.active() && lic.canPickModel()
+}
+
+/** 是不是 AGNES 系的模型(低档位唯一可用)。 */
+fun isAgnesModel(providerId: String, model: String): Boolean {
+    val t = (providerId + " " + model).lowercase()
+    return t.contains("agnes")
+}
