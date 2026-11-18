@@ -161,20 +161,19 @@ fun AboutScreen(
             Text(AboutCopy.DATA_NOTE, style = MikaType.Caption, color = c.ink2)
         }
 
-        Column(Modifier.fillMaxWidth().padding(top = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                buildAnnotatedString {
-                    val (before, after) = stringResource(R.string.about_released_under).split("%1\$s").let { it[0] to it.getOrElse(1) { "" } }
-                    append(before)
-                    withStyle(SpanStyle(color = c.accent)) { append(AboutCopy.LICENSE_LINK) }
-                    append(after)
-                },
-                Modifier.clip(RoundedCornerShape(6.dp)).clickable(onClick = onOpenLicense).padding(horizontal = 6.dp, vertical = 2.dp)
-                    .testTag("about-license"),
-                style = MikaType.Hint, color = c.ink3, textAlign = TextAlign.Center,
-            )
-            Text(AboutCopy.AUTHOR, Modifier.padding(top = 2.dp), style = MikaType.Hint, color = c.ink3)
-        }
+        // 页脚压成一行:许可证 · 作者 · 年份
+        Text(
+            buildAnnotatedString {
+                withStyle(SpanStyle(color = c.accent)) { append(AboutCopy.LICENSE_LINK) }
+                append(" · ")
+                append(AboutCopy.AUTHOR)
+            },
+            Modifier.fillMaxWidth().padding(top = 16.dp)
+                .clip(RoundedCornerShape(6.dp)).clickable(onClick = onOpenLicense)
+                .padding(horizontal = 6.dp, vertical = 2.dp)
+                .testTag("about-license"),
+            style = MikaType.Hint, color = c.ink3, textAlign = TextAlign.Center,
+        )
     }
 
     val close = { sheet = null }
