@@ -46,8 +46,22 @@ sealed interface LicenseResult {
  * 签名 = HMAC-SHA256(密钥, 前半段) 的前 8 位。
  */
 object LicenseCode {
-    /** 和 tools/make-license.ps1 里保持一致。改这里要同步改脚本。 */
-    private const val SECRET = "acs-license-v1-5f0c9e2a71b84d3c"
+    /**
+     * 和 tools/make-license.ps1 里保持一致。
+     * 保存形式是 XOR 混淆过的字节,避免 `strings` 直接搜到明文;
+     * 这只提高门槛,不是真正的防护(见 MOD-NOTES 里的安全边界)。
+     */
+    private val SECRET_MASK = intArrayOf(
+        59, 57, 41, 119, 54, 51, 57, 63, 52, 41, 63, 119, 44, 107, 119,
+        111, 60, 106, 57, 99, 63, 104, 59, 109, 107, 56, 98, 110, 62, 105, 57,
+    )
+
+    /** 运行时拼回密钥,用一次就丢,不常驻字符串常量池。 */
+    private fun secret(): String {
+        val chars = CharArray(SECRET_MASK.size)
+        for (i in SECRET_MASK.indices) chars[i] = (SECRET_MASK[i] xor 0x5A).toChar()
+        return String(chars)
+    }
 
     private val PATTERN = Regex("^([TMP])(\\d{8})([A-Z0-9]{4})([0-9A-F]{6})-([0-9A-F]{8})$")
 
@@ -57,13 +71,13 @@ object LicenseCode {
             context.contentResolver,
             android.provider.Settings.Secure.ANDROID_ID,
         ) ?: ""
-        val digest = MessageDigest.getInstance("SHA-256").digest((id + SECRET).toByteArray())
+        val digest = MessageDigest.getInstance("SHA-256").digest((id + secret()).toByteArray())
         return digest.joinToString("") { "%02x".format(it) }.uppercase().take(6)
     }
 
     fun sign(payload: String): String {
         val mac = Mac.getInstance("HmacSHA256")
-        mac.init(SecretKeySpec(SECRET.toByteArray(), "HmacSHA256"))
+        mac.init(SecretKeySpec(secret().toByteArray(), "HmacSHA256"))
         val out = mac.doFinal(payload.toByteArray())
         return out.joinToString("") { "%02x".format(it) }.uppercase().take(8)
     }
@@ -128,4 +142,43 @@ class LicenseStore(private val context: Context) {
     }
 
     fun clear() = prefs.edit().remove("code").apply()
+}
+
+/**
+ * 防逆向与防重打包的最基础一层:记录首次安装时签名证书的 SHA-256,之后每次比对。
+ * 别人改包重签后签名变了,这里就会判为「被改动过」,管理员入口直接消失。
+ * 局限:清数据可重置,查不到更早的证书。
+ */
+object Integrity {
+    private const val PREFS = "acs-integrity"
+    private const val KEY = "cert"
+
+    /** 当前签名的 SHA-256;取不到就返回空串。 */
+    fun certSha256(context: android.content.Context): String {
+        return try {
+            val info = context.packageManager.getPackageInfo(
+                context.packageName,
+                android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES,
+            )
+            val signers = info.signingInfo?.apkContentsSigners ?: return ""
+            if (signers.isEmpty()) return ""
+            val digest = MessageDigest.getInstance("SHA-256").digest(signers[0].toByteArray())
+            digest.joinToString("") { "%02x".format(it) }
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    /** 首次运行记下证书指纹;之后不一致就说明包被改过。 */
+    fun trusted(context: android.content.Context): Boolean {
+        val now = certSha256(context)
+        if (now.isEmpty()) return false
+        val prefs = context.getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+        val known = prefs.getString(KEY, null)
+        if (known == null) {
+            prefs.edit().putString(KEY, now).apply()
+            return true
+        }
+        return known == now
+    }
 }

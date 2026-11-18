@@ -150,8 +150,13 @@ fun isAgnesModel(providerId: String, model: String): Boolean {
 const val ADMIN_DEVICE = "BE1CF3"
 
 /** 当前设备是不是管理员机。 */
-fun isAdminDevice(context: android.content.Context): Boolean =
-    LicenseCode.deviceFingerprint(context) == ADMIN_DEVICE
+fun isAdminDevice(context: android.content.Context): Boolean {
+    // 三道门:设备指纹对得上、安装包签名没被改过、没有调试器附着
+    if (LicenseCode.deviceFingerprint(context) != ADMIN_DEVICE) return false
+    if (!com.wangzan101.mika.settings.Integrity.trusted(context)) return false
+    if (android.os.Debug.isDebuggerConnected()) return false
+    return true
+}
 
 /** 管理员口令。改这里即可换口令(明文写在 APK 内,只能挡住普通用户)。 */
 private const val ADMIN_PASSWORD = "acs-admin-2026"
