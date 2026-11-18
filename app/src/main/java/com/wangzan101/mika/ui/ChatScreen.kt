@@ -225,6 +225,11 @@ fun ChatScreen(
     val licCtx = androidx.compose.ui.platform.LocalContext.current
     var licenseGate by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        // 管理员机(本机)不受限制;其他设备必须有有效授权
+        if (com.wangzan101.mika.ui.isAdminDevice(licCtx)) {
+            licenseGate = false
+            return@LaunchedEffect
+        }
         val lic = com.wangzan101.mika.settings.LicenseStore(licCtx).load()
         licenseGate = lic == null || !lic.active()
     }

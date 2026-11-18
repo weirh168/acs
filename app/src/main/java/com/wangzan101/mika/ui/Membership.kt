@@ -136,6 +136,8 @@ fun MembershipDialog(forced: Boolean = false, onDismiss: () -> Unit) {
 
 /** 当前能不能自己选模型:没授权或试用/10 元档都只能留在 AGNES。 */
 fun canPickModelNow(context: android.content.Context): Boolean {
+    // 管理员机不设限:本机永远可以自选模型
+    if (isAdminDevice(context)) return true
     val lic = LicenseStore(context).load() ?: return false
     return lic.active() && lic.canPickModel()
 }
