@@ -447,7 +447,15 @@ fun ChatDrawer(
             NavEntry(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onPlans)
             NavEntry(MikaIcons.Heart, stringResource(R.string.memory_and_skills), onClick = onMemory)
             NavEntry(MikaIcons.Paperclip, stringResource(R.string.file_library_title), onClick = onFiles)
-            // 和上面几项隔开一点:这是把 Mika 整个停下来,不是换一页
+            // 会员:本地激活码。点开弹窗看设备码、填码解锁。
+            var membershipOpen by remember { mutableStateOf(false) }
+            NavEntry(MikaIcons.Heart, "会员", onClick = { membershipOpen = true })
+            // 管理员:在这台手机上生成激活码发给会员
+            var adminOpen by remember { mutableStateOf(false) }
+            NavEntry(MikaIcons.Gear, "管理员 · 生成激活码", onClick = { adminOpen = true })
+            if (adminOpen) AdminCodeDialog(isAdmin = true) { adminOpen = false }
+            if (membershipOpen) MembershipDialog { membershipOpen = false }
+            // 和上面几项隔开一点:这是把 ACS 整个停下来,不是换一页
             Box(Modifier.padding(top = 4.dp)) {
                 NavEntry(MikaIcons.Power, stringResource(R.string.quit_title), onClick = onQuit)
             }
@@ -566,15 +574,7 @@ fun ChatDrawer(
                     .padding(horizontal = 12.dp, vertical = 6.dp).testTag("drawer-footer"),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                // 会员:本地激活码。点开弹窗看设备码、填码解锁。
-            var membershipOpen by remember { mutableStateOf(false) }
-            NavEntry(MikaIcons.Heart, "会员", Modifier, onClick = { membershipOpen = true })
-            // 管理员:本机生成激活码(成员口令见 Membership.kt 的 ADMIN_PASSWORD)
-            var adminOpen by remember { mutableStateOf(false) }
-            NavEntry(MikaIcons.Gear, "管理员 · 生成激活码", Modifier, onClick = { adminOpen = true })
-            if (adminOpen) AdminCodeDialog(isAdmin = true) { adminOpen = false }
-            if (membershipOpen) MembershipDialog { membershipOpen = false }
-            NavEntry(MikaIcons.Gear, stringResource(R.string.settings_title), Modifier, onClick = onSettings)
+                NavEntry(MikaIcons.Gear, stringResource(R.string.settings_title), Modifier, onClick = onSettings)
                 NavEntry(MikaIcons.Info, AboutCopy.TITLE, Modifier, dot = aboutDot, onClick = onAbout)
             }
         }
