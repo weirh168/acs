@@ -569,6 +569,10 @@ fun ChatDrawer(
                 // 会员:本地激活码。点开弹窗看设备码、填码解锁。
             var membershipOpen by remember { mutableStateOf(false) }
             NavEntry(MikaIcons.Heart, "会员", Modifier, onClick = { membershipOpen = true })
+            // 管理员:本机生成激活码(成员口令见 Membership.kt 的 ADMIN_PASSWORD)
+            var adminOpen by remember { mutableStateOf(false) }
+            NavEntry(MikaIcons.Gear, "管理员 · 生成激活码", Modifier, onClick = { adminOpen = true })
+            if (adminOpen) AdminCodeDialog(isAdmin = true) { adminOpen = false }
             if (membershipOpen) MembershipDialog { membershipOpen = false }
             NavEntry(MikaIcons.Gear, stringResource(R.string.settings_title), Modifier, onClick = onSettings)
                 NavEntry(MikaIcons.Info, AboutCopy.TITLE, Modifier, dot = aboutDot, onClick = onAbout)

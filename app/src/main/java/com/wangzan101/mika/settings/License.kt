@@ -68,6 +68,20 @@ object LicenseCode {
         return out.joinToString("") { "%02x".format(it) }.uppercase().take(8)
     }
 
+    /**
+     * 管理员在本机生成激活码(和 tools/make-license.ps1 用同一套算法)。
+     * [device] 是目标设备的 6 位指纹。
+     */
+    fun generate(device: String, plan: LicensePlan, days: Int, now: Long = System.currentTimeMillis()): String {
+        val dev = device.trim().uppercase()
+        val expiry = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+            .format(java.util.Date(now + days * 86_400_000L))
+        val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        val rand = (1..4).map { alphabet.random() }.joinToString("")
+        val payload = "${plan.code}$expiry$rand$dev"
+        return "$payload-${sign(payload)}"
+    }
+
     fun verify(raw: String, context: Context, now: Long = System.currentTimeMillis()): LicenseResult {
         val code = raw.trim().uppercase().replace(" ", "")
         val m = PATTERN.matchEntire(code) ?: return LicenseResult.BadFormat

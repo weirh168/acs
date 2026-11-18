@@ -137,3 +137,101 @@ fun isAgnesModel(providerId: String, model: String): Boolean {
     val t = (providerId + " " + model).lowercase()
     return t.contains("agnes")
 }
+
+/** 管理员口令。改这里即可换口令(明文写在 APK 内,只能挡住普通用户)。 */
+private const val ADMIN_PASSWORD = "acs-admin-2026"
+
+/** 管理员:在本机按目标设备码生成激活码。 */
+@Composable
+fun AdminCodeDialog(isAdmin: Boolean, onDismiss: () -> Unit) {
+    val c = MikaTheme.colors
+    val context = LocalContext.current
+    var pwd by remember { mutableStateOf("") }
+    var unlocked by remember { mutableStateOf(isAdmin) }
+    var device by remember { mutableStateOf("") }
+    var plan by remember { mutableStateOf(LicensePlan.Trial) }
+    var days by remember { mutableStateOf("15") }
+    var result by remember { mutableStateOf<String?>(null) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        androidx.compose.material3.Surface(shape = RoundedCornerShape(18.dp), color = c.surface) {
+            Column(Modifier.padding(18.dp)) {
+                Text("管理员 · 生成激活码", fontSize = 16.sp, color = c.ink, fontWeight = FontWeight.Medium)
+
+                if (!unlocked) {
+                    Text("输入管理员口令", fontSize = 12.sp, color = c.ink2, modifier = Modifier.padding(top = 10.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = pwd, onValueChange = { pwd = it }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("admin-pwd"),
+                    )
+                    androidx.compose.material3.Button(
+                        onClick = { if (pwd == ADMIN_PASSWORD) unlocked = true else result = "口令不对" },
+                        modifier = Modifier.padding(top = 8.dp).testTag("admin-unlock"),
+                    ) { Text("进入", fontSize = 13.sp) }
+                } else {
+                    Text("会员发来的设置码（他会员页里的 6 位）", fontSize = 12.sp, color = c.ink2, modifier = Modifier.padding(top = 10.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = device, onValueChange = { device = it.uppercase() }, singleLine = true,
+                        placeholder = { Text("例如 BE1CF3", fontSize = 11.sp) },
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("admin-device"),
+                    )
+                    Row(Modifier.padding(top = 12.dp)) {
+                        LicensePlan.entries.forEach { p ->
+                            val label = when (p) {
+                                LicensePlan.Trial -> "试用"
+                                LicensePlan.Monthly -> "10元/月"
+                                LicensePlan.Pro -> "30元/月"
+                            }
+                            Text(
+                                label,
+                                fontSize = 12.sp,
+                                color = if (plan == p) c.surface else c.ink2,
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .background(if (plan == p) c.accent else c.greySoft, RoundedCornerShape(8.dp))
+                                    .clickable { plan = p; days = if (p == LicensePlan.Trial) "15" else "30" }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
+                    Text("天数", fontSize = 12.sp, color = c.ink2, modifier = Modifier.padding(top = 10.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = days, onValueChange = { days = it.filter { ch -> ch.isDigit() } }, singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("admin-days"),
+                    )
+                    androidx.compose.material3.Button(
+                        onClick = {
+                            val d = days.toIntOrNull() ?: 0
+                            result = if (device.length != 6 || d <= 0) {
+                                "设备码要 6 位，天数要大于 0"
+                            } else {
+                                LicenseCode.generate(device, plan, d)
+                            }
+                        },
+                        modifier = Modifier.padding(top = 10.dp).testTag("admin-generate"),
+                    ) { Text("生成", fontSize = 13.sp) }
+                }
+
+                result?.let {
+                    Text(it, fontSize = 12.sp, color = c.ink, modifier = Modifier.padding(top = 10.dp).testTag("admin-result"))
+                    if (it.length > 20) {
+                        Text(
+                            "复制", fontSize = 12.sp, color = c.accent,
+                            modifier = Modifier.padding(top = 4.dp).clickable {
+                                val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                cm.setPrimaryClip(android.content.ClipData.newPlainText("code", it))
+                                android.widget.Toast.makeText(context, "已复制", android.widget.Toast.LENGTH_SHORT).show()
+                            }.padding(vertical = 4.dp),
+                        )
+                    }
+                }
+
+                Text(
+                    "关闭", fontSize = 13.sp, color = c.accent,
+                    modifier = Modifier.align(Alignment.End).padding(top = 12.dp)
+                        .clickable { onDismiss() }.padding(horizontal = 10.dp, vertical = 6.dp),
+                )
+            }
+        }
+    }
+}
