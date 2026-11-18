@@ -6,9 +6,9 @@
 
 <div align="center">
 
-<img src="docs/media/logo.png" alt="Mika" width="88" />
+<img src="docs/media/logo.png" alt="ACS" width="88" />
 
-# Mika
+# ACS
 
 **An AI assistant on your phone: say what you need, and it works your apps and the web until it's done.**
 
