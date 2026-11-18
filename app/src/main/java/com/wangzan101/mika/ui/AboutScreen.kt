@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -326,6 +327,7 @@ private fun FeedbackOption(icon: ImageVector, title: String, sub: String, first:
 }
 
 /** 联系作者:一张微信二维码,扫了就能加。 */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun ContactAuthorSheet(onDismiss: () -> Unit) {
     val c = MikaTheme.colors
@@ -341,13 +343,21 @@ private fun ContactAuthorSheet(onDismiss: () -> Unit) {
                     fontSize = 12.sp, color = c.ink2,
                     modifier = Modifier.padding(top = 4.dp),
                 )
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                var saved by remember { mutableStateOf(false) }
+                // 长按二维码:存进相册并试着直接打开微信扫一扫
                 Image(
                     painter = androidx.compose.ui.res.painterResource(R.drawable.author_wechat_qr),
-                    contentDescription = "作者微信二维码",
-                    modifier = Modifier.padding(top = 12.dp).size(220.dp),
+                    contentDescription = "作者微信二维码，长按保存并打开微信扫一扫",
+                    modifier = Modifier.padding(top = 12.dp).size(220.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .combinedClickable(
+                            onClick = {},
+                            onLongClick = { saved = saveQrAndScan(ctx) },
+                        ),
                 )
                 Text(
-                    "也可以截图保存后从相册扫",
+                    if (saved) "已存到相册 · 正在打开微信扫一扫" else "长按二维码：存相册并打开微信扫一扫",
                     fontSize = 11.sp, color = c.ink3,
                     modifier = Modifier.padding(top = 10.dp),
                 )
@@ -362,4 +372,43 @@ private fun ContactAuthorSheet(onDismiss: () -> Unit) {
             }
         }
     }
+}
+/**
+ * 长按二维码:把图存进相册,再试着拉起微信扫一扫。
+ * 微信没有「直接加好友」的接口,能自动的只到「相册里有图 + 打开扫码页」这一步。
+ */
+private fun saveQrAndScan(context: android.content.Context): Boolean {
+    val ok = runCatching {
+        val bmp = android.graphics.BitmapFactory.decodeResource(
+            context.resources, R.drawable.author_wechat_qr,
+        )
+        val values = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "acs-author-qr.png")
+            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/png")
+            if (android.os.Build.VERSION.SDK_INT >= 29) {
+                put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/ACS")
+            }
+        }
+        val uri = context.contentResolver.insert(
+            android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values,
+        ) ?: return@runCatching false
+        context.contentResolver.openOutputStream(uri)?.use { out ->
+            bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out)
+        } ?: return@runCatching false
+        true
+    }.getOrDefault(false)
+    if (!ok) {
+        android.widget.Toast.makeText(context, "保存失败，可以直接截图", android.widget.Toast.LENGTH_SHORT).show()
+        return false
+    }
+    // 微信扫一扫(官方未公开,失败就提示手动打开)
+    val wechat = android.content.Intent("weixin://scanqrcode")
+        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+    val opened = runCatching { context.startActivity(wechat); true }.getOrDefault(false)
+    android.widget.Toast.makeText(
+        context,
+        if (opened) "已存相册，微信扫一扫里选「相册」" else "已存相册，请手动打开微信→扫一扫→相册",
+        android.widget.Toast.LENGTH_LONG,
+    ).show()
+    return true
 }
