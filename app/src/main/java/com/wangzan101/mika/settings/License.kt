@@ -7,9 +7,9 @@ import javax.crypto.spec.SecretKeySpec
 
 /** 会员档位。付费档位决定「能不能自己选模型」。 */
 enum class LicensePlan(val code: String) {
-    Trial("T"),      // 15 天免费
-    Monthly("M"),    // 10 元/月,只能用 AGNES
-    Pro("P"),        // 30 元/月,可自选模型
+    Trial("T"),
+    Monthly("M"),
+    Pro("P"),
 }
 
 /** 一个已激活的授权。 */
@@ -33,20 +33,33 @@ sealed interface LicenseResult {
     data object BadFormat : LicenseResult
     data object BadSignature : LicenseResult
     data object Expired : LicenseResult
+    /** 这枚码是发给另一台设备的。 */
+    data object WrongDevice : LicenseResult
 }
 
 /**
- * 本地授权:**激活码**方案,不需要服务器。
+ * 本地授权:激活码方案,不需要服务器。
  *
- * 码的格式:`{plan}{yyyyMMdd}{随机4位}-{签名前8位}`,例如 `P20261231A1B2-9F3C7D21`。
- * 签名 = HMAC-SHA256(secret, 前半段) 的前 8 个十六进制字符。
- * 说明:密钥编译进 APK,能挡住随手编造,但挡不住逆向。要真正防破解必须上服务端。
+ * 码格式:`{档位}{yyyyMMdd}{随机4位}{设备指纹6位}-{签名前8位}`
+ * 例:`P20261218ZS917A3F21-9F3C7D21`
+ * 设备指纹 = SHA-256(ANDROID_ID + 密钥) 的前 6 位,做到一码一设备。
+ * 签名 = HMAC-SHA256(密钥, 前半段) 的前 8 位。
  */
 object LicenseCode {
     /** 和 tools/make-license.ps1 里保持一致。改这里要同步改脚本。 */
     private const val SECRET = "acs-license-v1-5f0c9e2a71b84d3c"
 
-    private val PATTERN = Regex("^([TMP])(\\d{8})([A-Z0-9]{4})-([0-9A-F]{8})$")
+    private val PATTERN = Regex("^([TMP])(\\d{8})([A-Z0-9]{4})([0-9A-F]{6})-([0-9A-F]{8})$")
+
+    /** 本机指纹:6 位十六进制,激活码里带着它。 */
+    fun deviceFingerprint(context: Context): String {
+        val id = android.provider.Settings.Secure.getString(
+            context.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID,
+        ) ?: ""
+        val digest = MessageDigest.getInstance("SHA-256").digest((id + SECRET).toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }.uppercase().take(6)
+    }
 
     fun sign(payload: String): String {
         val mac = Mac.getInstance("HmacSHA256")
@@ -55,15 +68,17 @@ object LicenseCode {
         return out.joinToString("") { "%02x".format(it) }.uppercase().take(8)
     }
 
-    fun verify(raw: String, now: Long = System.currentTimeMillis()): LicenseResult {
+    fun verify(raw: String, context: Context, now: Long = System.currentTimeMillis()): LicenseResult {
         val code = raw.trim().uppercase().replace(" ", "")
         val m = PATTERN.matchEntire(code) ?: return LicenseResult.BadFormat
         val planChar = m.groupValues[1]
         val date = m.groupValues[2]
         val rand = m.groupValues[3]
-        val sig = m.groupValues[4]
-        val payload = "$planChar$date$rand"
+        val dev = m.groupValues[4]
+        val sig = m.groupValues[5]
+        val payload = "$planChar$date$rand$dev"
         if (sign(payload) != sig) return LicenseResult.BadSignature
+        if (deviceFingerprint(context) != dev) return LicenseResult.WrongDevice
         val plan = when (planChar) {
             "T" -> LicensePlan.Trial
             "M" -> LicensePlan.Monthly
@@ -85,18 +100,15 @@ class LicenseStore(private val context: Context) {
 
     fun load(): License? {
         val code = prefs.getString("code", null) ?: return null
-        return when (val r = LicenseCode.verify(code)) {
+        return when (val r = LicenseCode.verify(code, context)) {
             is LicenseResult.Ok -> r.license
-            LicenseResult.Expired -> LicenseCode.verify(code, 0L).let { old ->
-                if (old is LicenseResult.Ok) old.license else null
-            }
             else -> null
         }
     }
 
-    /** 激活:验签通过才写入。返回结果给界面显示原因。 */
+    /** 激活:验签 + 验设备通过才写入。 */
     fun activate(raw: String): LicenseResult {
-        val r = LicenseCode.verify(raw)
+        val r = LicenseCode.verify(raw, context)
         if (r is LicenseResult.Ok) prefs.edit().putString("code", r.license.code).apply()
         return r
     }
