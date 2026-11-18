@@ -116,23 +116,33 @@ fun AboutScreen(
 
         GroupCard {
             val v = AboutCopy.checkValue(update)
-            // 检查更新:右边依次是状态和「自动更新」开关,原来那一行已经合到这里
-            ListRow(
-                MikaIcons.Refresh, AboutCopy.CHECK,
-                if (update.hasUpdate) AboutCopy.CHECK_SUB_NEW else stringResource(R.string.about_auto_update_detail),
-                first = true,
-                onClick = {
-                    if (update.hasUpdate) sheet = AboutSheet.Update
-                    else if (update.status != CheckStatus.Checking) {
-                        waitingRound = update.manualRounds
-                        onCheck()
+            // 检查更新:横排一行(标题、版本、开关),不再分两行,省一半高度
+            Row(
+                Modifier.fillMaxWidth()
+                    .clickable(role = Role.Button) {
+                        if (update.hasUpdate) sheet = AboutSheet.Update
+                        else if (update.status != CheckStatus.Checking) {
+                            waitingRound = update.manualRounds
+                            onCheck()
+                        }
                     }
-                },
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                TrailingValue(v)
-                Box(Modifier.padding(start = 8.dp)) {
-                    MikaSwitch(autoUpdate, onAutoUpdate, Modifier.testTag("auto-update-switch"))
-                }
+                Icon(MikaIcons.Refresh, null, Modifier.size(20.dp), tint = MikaTheme.colors.ink2)
+                Text(
+                    AboutCopy.CHECK,
+                    fontSize = 15.sp, color = MikaTheme.colors.ink,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+                Text(
+                    v.text.orEmpty(),
+                    fontSize = 13.sp,
+                    color = if (update.hasUpdate) MikaTheme.colors.accent else MikaTheme.colors.ink3,
+                    maxLines = 1,
+                    modifier = Modifier.padding(start = 10.dp).weight(1f),
+                )
+                MikaSwitch(autoUpdate, onAutoUpdate, Modifier.testTag("auto-update-switch"))
             }
             ListRow(MikaIcons.Heart, "联系作者", "扫码加微信 · 破局有道", onClick = { sheet = AboutSheet.Contact }) { RowChevron() }
         }
