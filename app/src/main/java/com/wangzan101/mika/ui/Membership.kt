@@ -28,7 +28,7 @@ import com.wangzan101.mika.settings.LicenseStore
 
 /** 会员弹窗:当前授权、本机设备码、激活码输入。 */
 @Composable
-fun MembershipDialog(onDismiss: () -> Unit) {
+fun MembershipDialog(forced: Boolean = false, onDismiss: () -> Unit) {
     val c = MikaTheme.colors
     val context = LocalContext.current
     val store = remember(context) { LicenseStore(context) }
@@ -37,10 +37,16 @@ fun MembershipDialog(onDismiss: () -> Unit) {
     var message by remember { mutableStateOf<String?>(null) }
     val device = remember(context) { LicenseCode.deviceFingerprint(context) }
 
-    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+    androidx.compose.ui.window.Dialog(onDismissRequest = { if (!forced) onDismiss() }) {
         androidx.compose.material3.Surface(shape = RoundedCornerShape(18.dp), color = c.surface) {
             Column(Modifier.padding(18.dp)) {
-                Text("会员", fontSize = 16.sp, color = c.ink, fontWeight = FontWeight.Medium)
+                Text(if (forced) "需要激活才能使用" else "会员", fontSize = 16.sp, color = c.ink, fontWeight = FontWeight.Medium)
+                if (forced) {
+                    Text(
+                        "试用已结束或还没有激活。把下面的设备码发给作者，拿到激活码后填入即可继续使用。",
+                        fontSize = 12.sp, color = c.ink2, modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
 
                 val lic = license
                 val statusText = when {
@@ -112,15 +118,17 @@ fun MembershipDialog(onDismiss: () -> Unit) {
                     fontSize = 10.sp, color = c.ink3, modifier = Modifier.padding(top = 14.dp),
                 )
 
-                Text(
-                    "关闭",
-                    fontSize = 13.sp, color = c.accent,
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(top = 12.dp)
-                        .clickable { onDismiss() }
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                )
+                if (!forced) {
+                    Text(
+                        "关闭",
+                        fontSize = 13.sp, color = c.accent,
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(top = 12.dp)
+                            .clickable { onDismiss() }
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
+                }
             }
         }
     }
@@ -137,6 +145,13 @@ fun isAgnesModel(providerId: String, model: String): Boolean {
     val t = (providerId + " " + model).lowercase()
     return t.contains("agnes")
 }
+
+/** 只有这台手机(管理员机)显示「管理员 · 生成激活码」。换机时改这里。 */
+const val ADMIN_DEVICE = "BE1CF3"
+
+/** 当前设备是不是管理员机。 */
+fun isAdminDevice(context: android.content.Context): Boolean =
+    LicenseCode.deviceFingerprint(context) == ADMIN_DEVICE
 
 /** 管理员口令。改这里即可换口令(明文写在 APK 内,只能挡住普通用户)。 */
 private const val ADMIN_PASSWORD = "acs-admin-2026"

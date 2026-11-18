@@ -229,7 +229,8 @@ fun ChatScreen(
         licenseGate = lic == null || !lic.active()
     }
     if (licenseGate) {
-        com.wangzan101.mika.ui.MembershipDialog(onDismiss = { licenseGate = false })
+        // 强制:没有有效授权就用不了,窗口不可关闭
+        com.wangzan101.mika.ui.MembershipDialog(forced = true, onDismiss = {})
     }
     val recommendationStore = recommendations
         ?: (LocalContext.current.applicationContext as? MikaApp)?.recommendedTasks

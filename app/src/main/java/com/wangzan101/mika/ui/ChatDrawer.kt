@@ -451,9 +451,13 @@ fun ChatDrawer(
             var membershipOpen by remember { mutableStateOf(false) }
             NavEntry(MikaIcons.Heart, "会员", onClick = { membershipOpen = true })
             // 管理员:在这台手机上生成激活码发给会员
-            var adminOpen by remember { mutableStateOf(false) }
-            NavEntry(MikaIcons.Gear, "管理员 · 生成激活码", onClick = { adminOpen = true })
-            if (adminOpen) AdminCodeDialog(isAdmin = true) { adminOpen = false }
+            // 只有管理员机(本机)才有入口;分发到别的手机不会出现
+            val drawerCtx = androidx.compose.ui.platform.LocalContext.current
+            if (isAdminDevice(drawerCtx)) {
+                var adminOpen by remember { mutableStateOf(false) }
+                NavEntry(MikaIcons.Gear, "管理员 · 生成激活码", onClick = { adminOpen = true })
+                if (adminOpen) AdminCodeDialog(isAdmin = true) { adminOpen = false }
+            }
             if (membershipOpen) MembershipDialog { membershipOpen = false }
             // 和上面几项隔开一点:这是把 ACS 整个停下来,不是换一页
             Box(Modifier.padding(top = 4.dp)) {
