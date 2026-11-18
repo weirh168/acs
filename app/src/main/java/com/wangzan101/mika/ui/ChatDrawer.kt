@@ -566,7 +566,11 @@ fun ChatDrawer(
                     .padding(horizontal = 12.dp, vertical = 6.dp).testTag("drawer-footer"),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                NavEntry(MikaIcons.Gear, stringResource(R.string.settings_title), Modifier, onClick = onSettings)
+                // 会员:本地激活码。点开弹窗看设备码、填码解锁。
+            var membershipOpen by remember { mutableStateOf(false) }
+            NavEntry(MikaIcons.Heart, "会员", Modifier, onClick = { membershipOpen = true })
+            if (membershipOpen) MembershipDialog { membershipOpen = false }
+            NavEntry(MikaIcons.Gear, stringResource(R.string.settings_title), Modifier, onClick = onSettings)
                 NavEntry(MikaIcons.Info, AboutCopy.TITLE, Modifier, dot = aboutDot, onClick = onAbout)
             }
         }
