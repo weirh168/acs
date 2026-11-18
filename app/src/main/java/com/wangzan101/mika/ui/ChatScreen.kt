@@ -221,6 +221,16 @@ fun ChatScreen(
     /** 首页推荐任务。不传时用本机保存的那一份;测试传入单独的存储,避免改到用户的数据。 */
     recommendations: RecommendedTaskStore? = null,
 ) {
+    // 授权到期或从未激活:一进首页就把会员申请摆出来(每个进程只弹一次,关掉可继续看页面)
+    val licCtx = androidx.compose.ui.platform.LocalContext.current
+    var licenseGate by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        val lic = com.wangzan101.mika.settings.LicenseStore(licCtx).load()
+        licenseGate = lic == null || !lic.active()
+    }
+    if (licenseGate) {
+        com.wangzan101.mika.ui.MembershipDialog(onDismiss = { licenseGate = false })
+    }
     val recommendationStore = recommendations
         ?: (LocalContext.current.applicationContext as? MikaApp)?.recommendedTasks
     val recommendedTasksFlow = remember(recommendationStore) {
@@ -2062,4 +2072,3 @@ private val CardBody = TextStyle(fontSize = 14.sp, lineHeight = 21.5.sp)
 private val PillText = TextStyle(fontSize = 13.sp, lineHeight = 18.sp)
 private val FileName = TextStyle(fontSize = 14.5.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium)
 private val FileMeta = TextStyle(fontSize = 12.5.sp, lineHeight = 17.sp)
-
