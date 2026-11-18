@@ -1234,3 +1234,69 @@ cd mika-mod
 4. 定价文案从 `GET /pricing` 拉
 5. **隐私说明必须改写**：现在写的是「无服务器、不收集数据」，上线 A 方案后必须改成会收集手机号，否则是虚假声明
 
+## 本机配置清单（重装后照着恢复）（2026-11-18 14:50）
+
+### 模型（AGNES）
+
+| 项 | 值 | 恢复方式 |
+|---|---|---|
+| 服务商 | AGNES · OpenAI 兼容 | 界面「添加服务商」或恢复 `files/settings/providers.json` |
+| 接口地址 | `https://api.agnes-ai.cn/v1` | 同上 |
+| 主模型 | `agnes-3.0-flash` | 界面里改 |
+| 看图模型 | **用主模型**（`vision: true`） | 见下方「视觉」 |
+| 轻量模型 | 用主模型 | — |
+| API Key | 用户自己保管（`apk-…`，Keystore 加密存 `provider-keys.json`） | **重装必失效，必须重填** |
+
+### 视觉（看图 / 读截图）
+
+AGNES **本身支持视觉**，实测：发 1×1 红色 PNG 问颜色，`agnes-3.0-flash` 正确回答「红色」。
+
+之前配置里是关的（备份 `providers.json` 写着 `"vision":false` 且 `"uses":{"Vision":{"use":"none"}}`），
+所以早期判断成「模型不支持看图」是错的 —— 是配置没开。
+
+打开方式（改文件，重启生效）：
+
+```json
+// files/settings/providers.json
+"providers": [{ ..., "vision": true }],
+"uses": { "Main": {...}, "Vision": { "use": "main" }, "Light": "main" }
+```
+
+或界面操作：设置 → AI 引擎 → **看图模型 · 读屏时看截图** → 选 AGNES。
+
+生效标志：AI 引擎页「看图模型」显示 `用主模型`，不再是空。
+
+### 豆包流式语音识别（火山引擎）
+
+| 项 | 值 |
+|---|---|
+| 服务 | 豆包流式语音识别模型 2.0 · 火山引擎 · 小时版 |
+| 入口 | 设置 → AI 引擎 → 语音转文字 |
+| 凭据 | **AppID + Access Token**（火山引擎控制台 → 语音技术 → 应用管理） |
+| 状态 | 2026-11-18 用户配置完成，按住说话可用 |
+
+备份里**没有**语音配置：`appdata.tar` 只覆盖了 `files/`，语音凭据不在其中，重装后必须重新填。
+
+备选：Fun-ASR 实时语音识别（自建服务或阿里云百炼）。手机自带识别在这台机器上**没响应**，不要选。
+
+### 会员（本机）
+
+| 项 | 值 |
+|---|---|
+| 设备码 | `BE1CF3`（管理员机，`ADMIN_DEVICE` 常量） |
+| 授权 | 管理员机**免激活**，不受拦截、模型随便选 |
+| 发码入口 | 抽屉 → 管理员 · 生成激活码 |
+
+### 重装顺序（照着做）
+
+1. 装 APK
+2. 添加服务商 AGNES，填 `https://api.agnes-ai.cn/v1` + API Key
+3. 主模型选 `agnes-3.0-flash`
+4. 看图模型选 AGNES（或改 `providers.json` 的 `vision:true` + `Vision:main`）
+5. 语音转文字填火山 AppID + Access Token
+6. 确认抽屉里有「管理员 · 生成激活码」（设备码要等于 `BE1CF3`）
+
+### 教训
+
+**卸载/重装前先备份 `files/settings/`**：`providers.json` 是明文可以直接还原，`provider-keys.json` 是 Keystore 加密、重装即失效。
+
