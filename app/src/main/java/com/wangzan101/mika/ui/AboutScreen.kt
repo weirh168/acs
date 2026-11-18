@@ -1,6 +1,8 @@
 package com.wangzan101.mika.ui
 
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.sp
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -70,7 +72,7 @@ import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
 
 /** 关于页上点开的底部面板。 */
-private enum class AboutSheet { Update, Changelog, Feedback, Diagnostics }
+private enum class AboutSheet { Update, Changelog, Feedback, Diagnostics, Contact }
 
 /**
  * 关于 ACS:顶上图标、名字、一句话介绍、版本(Beta 标记、构建编号);下面是检查更新与更新记录、
@@ -138,6 +140,7 @@ fun AboutScreen(
         }
         GroupCard {
             ListRow(MikaIcons.Bug, AboutCopy.FEEDBACK, AboutCopy.FEEDBACK_SUB, first = true, onClick = { sheet = AboutSheet.Feedback }) { RowChevron() }
+            ListRow(MikaIcons.Heart, "联系作者", "扫码加微信 · 破局有道", onClick = { sheet = AboutSheet.Contact }) { RowChevron() }
         }
         GroupCard {
             ListRow(MikaIcons.Code, AboutCopy.REPO, AboutCopy.REPO_SUB, first = true, onClick = { onOpenUrl(MikaLinks.REPO) }) { ExternalMark() }
@@ -180,6 +183,7 @@ fun AboutScreen(
             onDismiss = close,
         )
         AboutSheet.Diagnostics -> DiagnosticsSheet(diagnostics, onDismiss = close)
+        AboutSheet.Contact -> ContactAuthorSheet(onDismiss = close)
         null -> Unit
     }
 }
@@ -316,3 +320,41 @@ private fun FeedbackOption(icon: ImageVector, title: String, sub: String, first:
     }
 }
 
+/** 联系作者:一张微信二维码,扫了就能加。 */
+@Composable
+private fun ContactAuthorSheet(onDismiss: () -> Unit) {
+    val c = MikaTheme.colors
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        androidx.compose.material3.Surface(shape = RoundedCornerShape(18.dp), color = c.surface) {
+            Column(
+                Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text("联系作者", fontSize = 15.sp, color = c.ink, fontWeight = FontWeight.Medium)
+                Text(
+                    "微信扫一扫，加「破局有道」",
+                    fontSize = 12.sp, color = c.ink2,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.author_wechat_qr),
+                    contentDescription = "作者微信二维码",
+                    modifier = Modifier.padding(top = 12.dp).size(220.dp),
+                )
+                Text(
+                    "也可以截图保存后从相册扫",
+                    fontSize = 11.sp, color = c.ink3,
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+                Text(
+                    "关闭",
+                    fontSize = 13.sp, color = c.accent,
+                    modifier = Modifier
+                        .padding(top = 12.dp)
+                        .clickable(role = Role.Button) { onDismiss() }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+        }
+    }
+}
