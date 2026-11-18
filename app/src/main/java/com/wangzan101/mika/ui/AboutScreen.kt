@@ -116,8 +116,11 @@ fun AboutScreen(
 
         GroupCard {
             val v = AboutCopy.checkValue(update)
+            // 检查更新:右边依次是状态和「自动更新」开关,原来那一行已经合到这里
             ListRow(
-                MikaIcons.Refresh, AboutCopy.CHECK, if (update.hasUpdate) AboutCopy.CHECK_SUB_NEW else AboutCopy.CHECK_SUB, first = true,
+                MikaIcons.Refresh, AboutCopy.CHECK,
+                if (update.hasUpdate) AboutCopy.CHECK_SUB_NEW else stringResource(R.string.about_auto_update_detail),
+                first = true,
                 onClick = {
                     if (update.hasUpdate) sheet = AboutSheet.Update
                     else if (update.status != CheckStatus.Checking) {
@@ -127,24 +130,17 @@ fun AboutScreen(
                 },
             ) {
                 TrailingValue(v)
-                RowChevron()
+                Box(Modifier.padding(start = 8.dp)) {
+                    MikaSwitch(autoUpdate, onAutoUpdate, Modifier.testTag("auto-update-switch"))
+                }
             }
-            ListRow(
-                MikaIcons.Refresh,
-                stringResource(R.string.about_auto_update),
-                stringResource(R.string.about_auto_update_detail),
-            ) {
-                MikaSwitch(autoUpdate, onAutoUpdate, Modifier.testTag("auto-update-switch"))
-            }
-            ListRow(MikaIcons.Lines, AboutCopy.CHANGELOG, AboutCopy.CHANGELOG_SUB, onClick = { sheet = AboutSheet.Changelog }) { RowChevron() }
-        }
-        GroupCard {
-            ListRow(MikaIcons.Bug, AboutCopy.FEEDBACK, AboutCopy.FEEDBACK_SUB, first = true, onClick = { sheet = AboutSheet.Feedback }) { RowChevron() }
             ListRow(MikaIcons.Heart, "联系作者", "扫码加微信 · 破局有道", onClick = { sheet = AboutSheet.Contact }) { RowChevron() }
         }
         GroupCard {
+            ListRow(MikaIcons.Bug, AboutCopy.FEEDBACK, AboutCopy.FEEDBACK_SUB, first = true, onClick = { sheet = AboutSheet.Feedback }) { RowChevron() }
+        }
+        GroupCard {
             ListRow(MikaIcons.Code, AboutCopy.REPO, AboutCopy.REPO_SUB, first = true, onClick = { onOpenUrl(MikaLinks.REPO) }) { ExternalMark() }
-            ListRow(MikaIcons.Book, AboutCopy.GUIDE, AboutCopy.GUIDE_SUB, onClick = { onOpenUrl(MikaLinks.README) }) { ExternalMark() }
         }
 
         Row(
