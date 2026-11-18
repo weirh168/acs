@@ -149,8 +149,8 @@ fun AdminCodeDialog(isAdmin: Boolean, onDismiss: () -> Unit) {
     var pwd by remember { mutableStateOf("") }
     var unlocked by remember { mutableStateOf(isAdmin) }
     var device by remember { mutableStateOf("") }
-    var plan by remember { mutableStateOf(LicensePlan.Trial) }
-    var days by remember { mutableStateOf("15") }
+    var plan by remember { mutableStateOf(LicensePlan.Monthly) }
+    var days by remember { mutableStateOf("30") }
     var result by remember { mutableStateOf<String?>(null) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
@@ -169,14 +169,14 @@ fun AdminCodeDialog(isAdmin: Boolean, onDismiss: () -> Unit) {
                         modifier = Modifier.padding(top = 8.dp).testTag("admin-unlock"),
                     ) { Text("进入", fontSize = 13.sp) }
                 } else {
-                    Text("会员发来的设置码（他会员页里的 6 位）", fontSize = 12.sp, color = c.ink2, modifier = Modifier.padding(top = 10.dp))
+                    Text("会员发来的设备码（他会员页里的 6 位）", fontSize = 12.sp, color = c.ink2, modifier = Modifier.padding(top = 10.dp))
                     androidx.compose.material3.OutlinedTextField(
                         value = device, onValueChange = { device = it.uppercase() }, singleLine = true,
                         placeholder = { Text("例如 BE1CF3", fontSize = 11.sp) },
                         modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("admin-device"),
                     )
                     Row(Modifier.padding(top = 12.dp)) {
-                        LicensePlan.entries.forEach { p ->
+                        listOf(LicensePlan.Monthly, LicensePlan.Pro).forEach { p ->
                             val label = when (p) {
                                 LicensePlan.Trial -> "试用"
                                 LicensePlan.Monthly -> "10元/月"
