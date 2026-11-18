@@ -2,7 +2,7 @@
 >
 > 本仓库是 ACS 的发布仓库：源码基于 [wangzan101/mika](https://github.com/wangzan101/mika)（Apache-2.0）修改而来，
 > 应用显示名、图标与对外链接均为 ACS。改动清单、构建与同步上游的做法见 [MOD-NOTES.md](MOD-NOTES.md)。
-> 下载与问题反馈：<https://github.com/weirh168/mika-mod/releases>
+> 下载与问题反馈：<https://github.com/weirh168/acs/releases>
 
 <div align="center">
 
