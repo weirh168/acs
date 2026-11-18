@@ -1920,7 +1920,8 @@ internal fun Composer(
                 VoiceFloat(vh, vState, title, backdrop, reduceMotion)
             }
             Box(Modifier.fillMaxWidth()) {
-            GlassBar(Modifier.fillMaxWidth().keepsKeyboard(), backdrop) {
+            // 比原来宽 10%:两侧各溢出约 20dp(屏幕边缘自然裁掉)
+            GlassBar(Modifier.fillMaxWidth(1.10f).offset(x = (-20).dp).keepsKeyboard(), backdrop) {
                 if (showAttach) {
                     val label = if (panel == Panel.Open) AttachCopy.CLOSE else AttachCopy.ADD
                     val blockedHint = stringResource(R.string.attach_blocked_running)
