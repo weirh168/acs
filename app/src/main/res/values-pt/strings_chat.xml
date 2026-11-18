@@ -6,7 +6,7 @@
     <string name="chat_greeting_evening">Boa noite</string>
     <string name="chat_greeting_night">Já é madrugada</string>
     <string name="chat_empty_prompt">O que o ACS deve fazer?</string>
-    <string name="chat_example_github_star">Abra https://github.com/weirh168/mika-mod e dê uma estrela ao projeto.</string>
+    <string name="chat_example_github_star">Abra https://github.com/weirh168/acs e dê uma estrela ao projeto.</string>
     <string name="chat_example_follow">Abra o X, pesquise Wang Zan (@wangzan101) e siga a conta.</string>
     <string name="chat_example_group_summary">Abra o WhatsApp e resuma as mensagens não lidas de hoje, destacando tudo o que precisa da minha resposta.</string>
     <string name="chat_example_alarms">Defina alarmes para amanhã às 9:40, 9:50 e 10:00.</string>

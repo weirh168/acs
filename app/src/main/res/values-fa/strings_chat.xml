@@ -233,7 +233,7 @@
     <string name="chat_placeholder_queue">کار بعدی را بنویسید…</string>
     <string name="voice_placeholder_queue">کار بعدی را بگویید…</string>
     <string name="steer_received_paused">متوجه شدم؛ هنگام ادامهٔ کار اعمال می‌شود</string>
-    <string name="chat_example_github_star">نشانی https://github.com/weirh168/mika-mod را باز کن و به پروژه ستاره بده.</string>
+    <string name="chat_example_github_star">نشانی https://github.com/weirh168/acs را باز کن و به پروژه ستاره بده.</string>
     <string name="drawer_search_clear">پاک کردن جست‌وجو</string>
     <string name="drawer_search_empty">هیچ گفتگویی با «%1$s» مطابقت ندارد</string>
     <string name="drawer_search_empty_hint">در عنوان‌ها و متن گفتگوها جست‌وجو می‌کند</string>
