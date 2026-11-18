@@ -1127,3 +1127,110 @@ AI 通话卡 + 一键纠正两按钮、通知三键(人工接管/挂断/看文�
 - 任务：`RunStore`（见 RunStatsScreen 的用法）
 
 顺带：电话卡第三态（接听已关 → 灰卡）逻辑已写但未真机验证；要验需关总开关后**停在对话首页**再 dump。
+
+## 会员体系（B 方案：本地激活码）（2026-11-18 12:30）
+
+### 背景与选型
+
+需求原文：「手机号登录 + 短信验证 + 15 天免费 → 10 元/月仅 AGNES → 30 元/月可自选模型 + 管理员调价」。
+
+**没有服务器就没有真实会员**，所以拆成两条路：
+
+| 方案 | 内容 | 状态 |
+|---|---|---|
+| **A：服务器版** | 手机号 + 短信 + 支付 + 后台调价 | 只写了接口契约 `docs/license-api.md`，未实现 |
+| **B：本地激活码** | 管理员发码，用户输码解锁，**一码绑一台设备** | ✅ 已实现并真机验证 |
+
+### B 方案的码结构
+
+```
+T20261203VXJYBE1CF3-E45F423C
+│└──┬──┘└┬┘└─┬─┘ └──┬──┘
+│ 到期日  随机4位 设备指纹6位  签名8位
+档位(T 试用 / M 10元 / P 30元订阅)
+```
+
+- 设备指纹 = `SHA-256(ANDROID_ID + 密钥)` 前 6 位，大写十六进制
+- 签名 = `HMAC-SHA256(密钥, 档位+到期日+随机+指纹)` 前 8 位
+- 密钥写死在 `LicenseCode.SECRET` 与 `tools/make-license.ps1`，**改一处必须同步另一处**
+
+### 代码位置
+
+| 文件 | 作用 |
+|---|---|
+| `settings/License.kt` | `LicensePlan` / `License` / `LicenseCode`（验签+指纹）/ `LicenseStore`（prefs `acs-license`） |
+| `ui/Membership.kt` | 会员弹窗：状态、剩余天数、本机设备码、激活码输入；`canPickModelNow()`、`isAgnesModel()` |
+| `ui/ChatDrawer.kt` | 抽屉「会员」入口（设置在它下面），点开弹窗，**不改路由表** |
+| `ui/ModelsScreen.kt` | `UseAsSheet` 里加门控：非 Pro 且非 agnes 模型 → Toast 拦截 |
+| `tools/make-license.ps1` | 管理员生成激活码，必须传 `-Device <6位码>` |
+| `docs/license-api.md` | A 方案接口契约 |
+
+### 三档权限
+
+| 档位 | 生成参数 | AGNES 模型 | 其他模型 |
+|---|---|---|---|
+| 未激活 | — | ❌ | ❌ |
+| 15 天试用 | `-Plan T -Days 15` | ✅ | ❌ Toast |
+| 10 元/月 | `-Plan M -Days 30` | ✅ | ❌ Toast |
+| 30 元订阅 | `-Plan P -Days 30` | ✅ | ✅ |
+
+### 真机验证记录（2026-11-18 12:08）
+
+用户实际流程，全部用 uiautomator dump 取证：
+
+1. 抽屉出现「会员」→ 点开
+2. 弹窗显示 `本机设备码 BE1CF3`
+3. 生成码 `T20261203VXJYBE1CF3-E45F423C`（工具输出含到期日与设备码）
+4. 输入后点「激活」→ 状态从 `未激活` 变 `试用中`，且显示 `剩余 16 天 · 仅 AGNES 模型`、`激活成功`
+5. `run-as cat shared_prefs/acs-license.xml` 确认写入 `T20261203VXJYBE1CF3-E45F423C`
+
+### 踩过的坑
+
+1. **软键盘挡住「激活」按钮**：`input text` 后键盘弹出，`input tap` 点到的是键盘。要先点标题让输入框失焦、键盘收起再点按钮。
+2. **旧包误判**：抽屉没有「会员」时，第一反应是代码没生效，实际是 `adb install` 静默失败。装机务必校验输出含 `Success`。
+3. **`Text+clickable` 点不动**：改成 `material3.Button` 并加 `testTag("activate-button")` 后正常。
+4. **传参顺序错**：`MikaRoot` 形参顺序是 `requestedBrowser, requestedModels, onModelsOpened, onBrowserOpened`，位置实参写反会编译报类型不匹配。
+
+### 已知弱点和上限
+
+- **密钥在 APK 里**：能挡随手编造，挡不住逆向。真要防破解必须上服务端。
+- **无法自动计费**：10/30 元要手动收款再发码。
+- **无法在线调价**：价格是文案，改价要发版。
+- **换机需重新发码**：旧码在新设备报「这枚码属于另一台设备」。
+- **试用可被清除**：删 App 数据即重置。
+
+### 未完成的验证
+
+- **拦截提示未真机确认**：本机 AI 引擎只有一个服务商 AGNES，8 个模型全是 `agnes-*`，触发不了「非 AGNES」分支。需要在 AI 引擎里加一个非 AGNES 服务商（随便填假 Key 也行），再点它的模型，应弹「订阅会员后才能自己选模型，当前档位只能用 AGNES」。
+- **换机拒绝未实测**：需第二台设备。
+
+### 调试入口（新增，2026-11-18 12:30）
+
+```bash
+adb shell am start -n com.wangzan101.mika.mod/com.wangzan101.mika.ui.MainActivity --ez open_models true
+```
+
+直达 AI 引擎页，跳过抽屉和滚动，便于验证模型门控。同类入口：`--ez open_calls true`、`--ez open_browser true`、`--es open_conversation <id>`。
+
+### 管理员操作手册
+
+```powershell
+cd mika-mod
+# 1. 让用户先打开「会员」页，把 6 位设备码发过来
+# 2. 生成对应档位(15 天试用 / 10 元月 / 30 元订阅)
+.\tools\make-license.ps1 -Plan T -Days 15 -Device BE1CF3
+# 3. 把整串激活码发给用户，用户输入后点「激活」
+```
+
+批量发同一设备多张码：`-Count 5`。
+
+### 下一步（A 方案）
+
+准备好服务器、短信服务商、支付商户号后，按 `docs/license-api.md` 对接。关键改造点：
+
+1. `Membership.kt` 增加手机号登录，激活码降级为离线兜底
+2. 权益来源改为「服务端为准 + 本地缓存 24 小时」
+3. `ModelsScreen` 门控改读服务端 `canPickModel` 与 `allowedModels`
+4. 定价文案从 `GET /pricing` 拉
+5. **隐私说明必须改写**：现在写的是「无服务器、不收集数据」，上线 A 方案后必须改成会收集手机号，否则是虚假声明
+
