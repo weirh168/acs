@@ -76,6 +76,7 @@ internal object TapOcr : PhoneTool {
             "index" to int("Which matching line to tap, 0-based, when the same text appears several times (default 0). Read `total` in the result to see how many matched.", 0, TAP_OCR_INDEX_MAX),
             "waitMs" to int("Keep re-reading the screen while nothing matches, up to this many milliseconds, 0-$TAP_OCR_WAIT_MAX (default 0 = read once). Use it right after a tap, a page load or an animation.", 0, TAP_OCR_WAIT_MAX),
             "_forceWaitMs" to int("Debug builds only: ignore the first read on purpose to exercise the wait loop (release builds ignore it).", 0, TAP_OCR_WAIT_MAX),
+            "confirmed" to bool("Set only after the user explicitly agreed to perform this irreversible action."),
         ),
         listOf("text"))
 
@@ -122,6 +123,11 @@ internal object TapOcr : PhoneTool {
                 "only ${hits.size} line(s) matched '$wanted'; index was $index (0-based).")
         }
         val hit = hits[index]
+        // 付款/发送/提交/删除这类动作:没经过用户确认就不点
+        if (!a.bool("confirmed", false)) {
+            val risky = com.wangzan101.mika.core.uistate.RiskyActions.hits(hit.text)
+            if (risky != null) return fail("needs_user_confirm", com.wangzan101.mika.core.uistate.RiskyActions.askUser(risky))
+        }
         val s = ctx.lastOrSnapshot()
         val cx = (hit.bounds[0] + hit.bounds[2]) / 2
         val cy = (hit.bounds[1] + hit.bounds[3]) / 2

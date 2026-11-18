@@ -1,11 +1,14 @@
 package com.wangzan101.mika.core.uistate.tools
 
+import com.wangzan101.mika.core.uistate.RiskyActions
 import com.wangzan101.mika.core.uistate.ScreenFamily
 import com.wangzan101.mika.core.risk.GateTarget
 import com.wangzan101.mika.core.prompt.Feedback
 import com.wangzan101.mika.core.uistate.ScreenSnapshot
 import com.wangzan101.mika.core.tool.ArgError
 import com.wangzan101.mika.core.tool.Args
+import com.wangzan101.mika.core.tool.bool
+import com.wangzan101.mika.core.tool.fail
 import com.wangzan101.mika.core.tool.COORD
 import com.wangzan101.mika.core.tool.LOCATED_REF
 import com.wangzan101.mika.core.tool.REF
@@ -54,6 +57,7 @@ internal class Tap(f: ScreenFamily) : ScreenTool(f, "tap") {
             "target" to str("Short label of what is being tapped (coordinate taps)."),
             DESCRIBED_ELEMENT to str(DESCRIBE_TAP), DESCRIBED_ROLE to str(DESCRIBE_ROLE),
             "clicks" to int("1 taps once (default), 2 double-taps.", 1, 2),
+            "confirmed" to bool("Set only after the user explicitly agreed to perform this irreversible action."),
         )) }
 
     override suspend fun execute(a: Args, ctx: ToolContext): ToolExecution {
@@ -71,6 +75,21 @@ internal class Tap(f: ScreenFamily) : ScreenTool(f, "tap") {
         } else {
             if (x == null) throw ArgError("x", "required with y when no ref is given")
             if (y == null) throw ArgError("y", "required with x when no ref is given")
+        }
+        // 付款/发送/提交/删除这类动作:没经过用户确认就不点
+        val confirmed = a.bool("confirmed", false)
+        if (!confirmed) {
+            // ref 点击时从这一屏的快照里取元素文字,拿不到再退回 target / 描述
+            val refName = if (ref != null) {
+                runCatching {
+                    ctx.lastOrSnapshot().elements.firstOrNull { it.ref == ref.first }?.name
+                }.getOrNull()
+            } else {
+                null
+            }
+            val label = refName?.takeIf { it.isNotBlank() } ?: target ?: a.str(DESCRIBED_ELEMENT)
+            val hit = RiskyActions.hits(label)
+            if (hit != null) return fail("needs_user_confirm", RiskyActions.askUser(hit))
         }
         val twice = clicks == 2
         if (ref != null) {
