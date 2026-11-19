@@ -193,6 +193,8 @@ data class RoleChoices(
     val main: String? = null,
     val vision: RoleChoice = RoleChoice.Off,
     val light: RoleChoice = RoleChoice.SameAsMain,
+    /** 生图模型:画图/配图时用;不需要时用 Off。 */
+    val image: RoleChoice = RoleChoice.Off,
     /** 按用途保存,同一个模型可在不同用途选不同档位;「用主模型」连同它的档位一起跟随。 */
     val reasoningEfforts: Map<ModelRole, String> = emptyMap(),
 ) {
@@ -201,6 +203,7 @@ data class RoleChoices(
         ModelRole.Main -> main?.let(RoleChoice::Model)
         ModelRole.Vision -> vision
         ModelRole.Light -> light
+        ModelRole.Image -> image
     }
 
     /** 这个用途实际用的配置 id:「用主模型」取主模型的;不用、或主模型还没选时为 null。 */
@@ -224,6 +227,7 @@ data class RoleChoices(
         ModelRole.Main -> (choice as? RoleChoice.Model)?.let { copy(main = it.configId) }
         ModelRole.Vision -> copy(vision = choice)
         ModelRole.Light -> if (choice == RoleChoice.Off) null else copy(light = choice)
+        ModelRole.Image -> copy(image = choice)
     })?.let { next ->
         if (get(role) == choice) next else next.copy(reasoningEfforts = reasoningEfforts - role)
     }
