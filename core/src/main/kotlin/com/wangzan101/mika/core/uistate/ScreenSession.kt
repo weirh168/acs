@@ -72,6 +72,9 @@ internal class ScreenSession(
     private val modelElementsLimit get() = if (surface.id == "phone") Int.MAX_VALUE else MAX_ELEMENTS
     val screen: ScreenPort get() = surface.screen
     private var textOnlyDepth = 0
+    /** 上一屏 observe 的指纹和编号:同一屏再读一次就不重复塞整棵树(省 token)。 */
+    private var lastObserveHash: String? = null
+    private var lastObserveSnapshotId: String? = null
 
     /** 复合手机命令内部只留文字与状态,图片需要时再由模型请求。 */
     suspend fun <T> textOnly(block: suspend () -> T): T {
@@ -156,8 +159,32 @@ internal class ScreenSession(
     /** 此刻重新读一屏,不登记编号、不改模型手里的读屏;读不到为 null。 */
     suspend fun peek(): ScreenSnapshot? = screenAttempt { screen.peek() }
 
+    /** 一屏的指纹:界面在动、网页、或读不到元素时返回 null(那就不做复用)。 */
+    private fun hashOf(s: ScreenSnapshot): String? {
+        if (s.changedDuringRead || s.web != null) return null
+        if (s.elements.isEmpty()) return null
+        return s.elements.joinToString("\u0001") { e -> e.ref + "|" + e.role + "|" + e.name + "|" + e.bounds.joinToString(",") }
+    }
+
     suspend fun observe(withImage: Boolean, adaptiveImage: Boolean = false, recordFrame: Boolean = true, forceOcr: Boolean = false): ToolExecution {
+        // 同一屏重复读:不再塞一遍元素表,直接告诉模型「没变,沿用上一屏的编号」
+        if (!withImage && !adaptiveImage && !forceOcr) {
+            peek()?.let { p ->
+                val h = hashOf(p)
+                val prevId = lastObserveSnapshotId
+                if (h != null && h == lastObserveHash && prevId != null) {
+                    return ToolExecution(okObj {
+                        put("ok", true)
+                        put("unchanged", true)
+                        put("currentApp", p.packageName ?: p.unreadableApp)
+                        put("snapshotId", prevId)
+                        put("hint", "屏幕内容和上一屏一样,元素编号沿用上一屏的;不要重复读,直接做下一步。")
+                    })
+                }
+            }
+        }
         val s = snapshot()
+        hashOf(s)?.let { lastObserveHash = it; lastObserveSnapshotId = s.snapshotId }
         val read = readTree(s, forceOcr)
         val tree = read.tree
         val ocr = read.ocr
