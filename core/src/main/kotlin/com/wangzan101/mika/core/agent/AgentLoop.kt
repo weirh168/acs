@@ -562,11 +562,11 @@ class AgentLoop(
             }
             val rawText = reply.parts.filterIsInstance<Part.Text>().joinToString("") { it.text }.trim()
             // 兜底:有的模型把工具调用写成文本(<acs_draw prompt="…">),这里当成真正的调用执行
-            val pseudo = PseudoDraw.parse(rawText)
+            val pseudo = PseudoTool.parse(rawText)
             val text = progressText(if (pseudo != null) pseudo.left else rawText)
             val parts = if (pseudo != null) {
                 reply.parts.filterNot { it is Part.Text } + Part.Text(pseudo.left) +
-                    Part.ToolCall("pseudo-draw-" + step, "acs_draw", pseudo.argsJson)
+                    Part.ToolCall("pseudo-" + pseudo.name + "-" + step, pseudo.name, pseudo.argsJson)
             } else reply.parts
             val cleanParts = cleanReplyParts(parts, text)
             history += Message(Role.Assistant, cleanParts, Author.Mika).also { caller.noteReply(it, used, reply.usage) }

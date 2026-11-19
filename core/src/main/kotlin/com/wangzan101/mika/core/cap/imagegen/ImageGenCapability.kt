@@ -84,3 +84,65 @@ internal class AcsDraw(private val generate: suspend (prompt: String) -> ImageGe
 
 /** 这次任务有生图能力时，工具里这样拿到它。 */
 internal val ToolContext.imageGen: ImageGenCapability? get() = this[ImageGenCapability.KEY]
+
+const val VIDEO_GEN = "video_gen"
+
+/** 生视频:和生图同一套注入方式;平台没放行时由实现返回一句人话。 */
+internal class VideoGenCapability(
+    private val make: (suspend (prompt: String) -> ImageGenResult)?,
+) : Capability {
+    override val id = VIDEO_GEN
+
+    override fun status(): CapabilityStatus =
+        if (make == null) CapabilityStatus.Unavailable("no video model") else CapabilityStatus.Available
+
+    override fun tools(): List<AgentTool> = if (make == null) emptyList() else listOf(AcsVideo(make))
+
+    override fun sections(env: PromptEnv): List<String> = listOf(VIDEO_SECTION)
+
+    companion object {
+        val KEY = CapabilityKey<VideoGenCapability>(VIDEO_GEN)
+
+        private const val VIDEO_SECTION = "## 做视频\n" +
+            "用户要做视频、生成一段视频时，必须真正调用工具 acs_video，参数 prompt 传用户的原话。\n" +
+            "不要把调用写进回答正文（出现尖括号或标签算失败）。\n" +
+            "工具会说 AGNES 没放行，并给出走 App 的做法。这时直接照做，按这个固定流程，不要摸索:\n" +
+            "1) 打开即梦(Dreamina)；没登录就交给用户登录，别自己乱点。\n" +
+            "2) 点底部中间的「+」进入创作，选「视频」或「AI 视频」。\n" +
+            "3) 把用户的描述填进输入框，原话照抄，不要自己加设定。\n" +
+            "4) 点「生成」，然后等它出片（可以每隔几秒看一眼进度）。\n" +
+            "5) 出片后在「我的」或「作品」里找到这条视频，告诉用户在哪、能不能播。\n" +
+            "即梦装不了或不好用时，再试剪映的「图文成片」。"
+    }
+}
+
+internal class AcsVideo(private val make: suspend (prompt: String) -> ImageGenResult) : AgentTool {
+    override val name = "acs_video"
+    override val verb = Verb.WriteFile
+    override val label = "做视频"
+    override val risk = Risk.Read
+    override val offScreen = true
+
+    override val def = ToolDef(
+        name,
+        "生成一段视频并存到手机相册。用户要做视频、生成一小段动画时调用它。",
+        mapOf("prompt" to str("要做什么视频,用用户的原话。")),
+        listOf("prompt"),
+    )
+
+    override suspend fun execute(a: Args, ctx: ToolContext): ToolExecution {
+        val prompt = a.str("prompt", max = 500)?.trim().orEmpty()
+        if (prompt.isEmpty()) return fail("missing_prompt", "prompt 不能为空")
+        val result = try {
+            make(prompt)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            return fail("video_failed", e.message ?: "生视频失败")
+        }
+        return ToolExecution(buildJsonObject {
+            put("ok", true)
+            put("result", result.message)
+        })
+    }
+}

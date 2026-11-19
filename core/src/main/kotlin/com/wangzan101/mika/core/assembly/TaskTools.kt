@@ -104,6 +104,8 @@ fun toolDispatcher(
     imageOps: ImageOps? = vision?.ops,
     /** 生图:给描述,返回一句结果(保存路径);为空时不提供 acs_draw。 */
     imageGen: (suspend (prompt: String) -> com.wangzan101.mika.core.cap.imagegen.ImageGenResult)? = null,
+    /** 生视频:同 imageGen 的形状;为空时不提供 acs_video。 */
+    videoGen: (suspend (prompt: String) -> com.wangzan101.mika.core.cap.imagegen.ImageGenResult)? = null,
     /** 开局约束允许的能力；旧调用方不传时仍得到今天的工具。 */
     runSpec: RunSpec = RunSpec(RunId("legacy"), "legacy", "legacy"),
     /** 这次任务接上的所有外部 MCP 端点(不分来源,调用方在一处拼好);每个成为一个能力,按 serverId 区分。 */
@@ -154,6 +156,10 @@ fun toolDispatcher(
         object : CapabilityProvider {
             override val id = com.wangzan101.mika.core.cap.imagegen.IMAGE_GEN
             override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.imagegen.ImageGenCapability(imageGen)
+        },
+        object : CapabilityProvider {
+            override val id = com.wangzan101.mika.core.cap.imagegen.VIDEO_GEN
+            override fun open(spec: RunSpec) = com.wangzan101.mika.core.cap.imagegen.VideoGenCapability(videoGen)
         },
         object : CapabilityProvider {
             override val id = SANDBOX
@@ -216,7 +222,8 @@ fun recordedTools(): ToolIndex = legacyNames().let { legacy -> ToolIndex(allTool
 
 /** Mika 所有可能提供的工具,按发给模型的顺序。 */
 internal fun allTools(): List<AgentTool> =
-    com.wangzan101.mika.core.cap.imagegen.ImageGenCapability({ com.wangzan101.mika.core.cap.imagegen.ImageGenResult("", null) }).tools() + GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools
+    com.wangzan101.mika.core.cap.imagegen.ImageGenCapability({ com.wangzan101.mika.core.cap.imagegen.ImageGenResult("", null) }).tools() +
+    com.wangzan101.mika.core.cap.imagegen.VideoGenCapability({ com.wangzan101.mika.core.cap.imagegen.ImageGenResult("", null) }).tools() + GeneralGroup.tools + PhoneCapability.tools() + WebGroup.tools + SandboxGroup.tools + RootGroup.tools + com.wangzan101.mika.core.calls.callAgentTools
 
 /** Mika 所有可能提供的工具的声明。 */
 fun knownTools(): ToolIndex = ToolIndex(allTools())
