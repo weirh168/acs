@@ -1132,7 +1132,7 @@ private fun LazyListScope.exchange(
     fun steer(n: SteerNote) {
         n.finished?.takeIf(String::isNotBlank)?.let { done ->
             item("a$index-${n.id}") {
-                JumpHighlight(highlightKey == "a$index-${n.id}", reduceMotion) { FinishedReply(done, "a$index-${n.id}") }
+                JumpHighlight(highlightKey == "a$index-${n.id}", reduceMotion) { FinishedReply(done, conversationId, "a$index-${n.id}") }
             }
         }
         n.interrupted?.takeIf(String::isNotBlank)?.let { cut ->
@@ -1152,7 +1152,7 @@ private fun LazyListScope.exchange(
     waiting.forEach(::steer)
     item("r$index") {
         JumpHighlight(highlightKey == "r$index", reduceMotion) {
-            StatusCard(ex.status, stage, vm, ex.recordedRun, loadSource, openSource, "r$index", recover)
+            StatusCard(ex.status, stage, vm, ex.recordedRun, conversationId, loadSource, openSource, "r$index", recover)
         }
     }
     // 这一轮结束后留在后台运行的那一页:还开着是绿色一行(能关),关了是一句原因
@@ -1254,10 +1254,40 @@ private fun DraftText(text: String, generating: Boolean) {
 
 /** 插话交给模型之前已经说完的回复:和回答一样的底和字,长按一样能复制、引用、选择文字。 */
 @Composable
-private fun FinishedReply(text: String, key: String) {
+private fun FinishedReply(text: String, conversationId: String?, key: String) {
+    // 回答里带「附件:」那一行时(比如画图工具生成的图),把它画成可以点开的图片,而不是一行文字
+    // 模型常把附件的写法改写成别的样子(只留 <code>draw_xxx.png</code>):这里认文件名补回附件行,
+    // 让画好的图照样在对话里显示出来。
+    val withLines = remember(text) {
+        if (text.contains("附件:")) text
+        else {
+            val names = Regex("""draw_[0-9]{6,}\.png""").findAll(text).map { it.value }.toList()
+            (listOf(text) + names.map { "附件:/workspace/inbox/" + it + "(1 MB)" }).joinToString("\n")
+        }
+    }
+    val attached = remember(withLines) { AttachmentMessage.parse(withLines) }
+    val words = remember(attached, text) { if (attached.hasAttachments) attached.words else text }
     Box(Modifier.padding(bottom = 4.dp)) {
-        AnswerArea(key, text, Modifier.fillMaxWidth().answerSurface()) {
-            MarkdownText(text, AnswerText.copy(color = MikaTheme.colors.ink), streaming = false)
+        Column(Modifier.fillMaxWidth()) {
+            if (attached.hasAttachments) {
+                BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterStart) {
+                    val scope = rememberCoroutineScope()
+                    val context = LocalContext.current
+                    SentAttachments(attached, conversationId, maxWidth * 0.8f) { item ->
+                        val id = conversationId ?: return@SentAttachments
+                        scope.launch {
+                            if (!AttachFiles.openSent(context, id, item.path)) {
+                                Toast.makeText(context, AttachCopy.GONE, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            }
+            if (words.isNotBlank()) {
+                AnswerArea(key, words, Modifier.fillMaxWidth().answerSurface()) {
+                    MarkdownText(words, AnswerText.copy(color = MikaTheme.colors.ink), streaming = false)
+                }
+            }
         }
     }
 }
@@ -1547,7 +1577,7 @@ fun takeoverReasonLabel(reason: String): Int? = when (reason) {
 /** 一问一答此刻的状态:要你做的事是一张白卡([NeedCard]),结果直接排在背景上。 */
 @Composable
 private fun StatusCard(
-    status: ExchangeStatus, stage: Takeover.Stage, vm: ChatViewModel, runId: String?,
+    status: ExchangeStatus, stage: Takeover.Stage, vm: ChatViewModel, runId: String?, conversationId: String?,
     loadSource: suspend (String) -> EvidenceSource?, openSource: (String?, String?) -> Unit,
     /** 回答的长按菜单认这一条用的(见 [MessageArea])。 */
     key: String,
@@ -1610,7 +1640,33 @@ private fun StatusCard(
                             Text(line, style = MikaType.Caption, fontWeight = FontWeight.SemiBold, color = MikaTheme.colors.ink2)
                         }
                     }
-                    MarkdownText(status.answer, AnswerText.copy(color = MikaTheme.colors.ink))
+                    // 回答里带「附件:」或者提到 draw_xxx.png 时,把图直接显示出来(画图工具生成的图)
+                    val withLines = remember(status.answer) {
+                        if (status.answer.contains("附件:")) status.answer
+                        else {
+                            val names = Regex("draw_[0-9]{6,}[.]png").findAll(status.answer).map { it.value }.toList()
+                            (listOf(status.answer) + names.map { "附件:/workspace/inbox/" + it + "(1 MB)" }).joinToString("\n")
+                        }
+                    }
+                    val attachedDone = remember(withLines) { AttachmentMessage.parse(withLines) }
+                    val words = remember(attachedDone, status.answer) {
+                        if (attachedDone.hasAttachments) attachedDone.words else status.answer
+                    }
+                    if (attachedDone.hasAttachments) {
+                        val ctxImg = LocalContext.current
+                        val scopeImg = rememberCoroutineScope()
+                        BoxWithConstraints(Modifier.fillMaxWidth().padding(bottom = 8.dp), contentAlignment = Alignment.CenterStart) {
+                            SentAttachments(attachedDone, conversationId, maxWidth * 0.85f) { item ->
+                                val id = conversationId ?: return@SentAttachments
+                                scopeImg.launch {
+                                    if (!AttachFiles.openSent(ctxImg, id, item.path)) {
+                                        Toast.makeText(ctxImg, AttachCopy.GONE, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    MarkdownText(words, AnswerText.copy(color = MikaTheme.colors.ink))
                     // 来源:旧记录里模型写的依据文字,或运行记录里代码记下的来源;都没有就不显示
                     if (status.evidence != null || runId != null) SourceChip(status.evidence, runId, loadSource, openSource)
                 }

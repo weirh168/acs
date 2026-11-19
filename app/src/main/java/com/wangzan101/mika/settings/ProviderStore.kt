@@ -1115,10 +1115,12 @@ class ProviderStore(
         baseUrl = o.str("baseUrl"),
         model = o.str("model"),
         capabilities = Capabilities(
-            toolCalls = o["toolCalls"]!!.jsonPrimitive.boolean,
-            vision = o["vision"]!!.jsonPrimitive.boolean,
-            contextTokens = o["contextTokens"]!!.jsonPrimitive.int,
-            reasoning = o["reasoning"]!!.jsonPrimitive.boolean,
+            // 缺字段用默认值,不要因为一条不完整就整条丢掉配置:
+            // 以前生图/生视频配置就是这么在重启时被判定成坏数据清掉的。
+            toolCalls = o["toolCalls"]?.jsonPrimitive?.booleanOrNull ?: true,
+            vision = o["vision"]?.jsonPrimitive?.booleanOrNull ?: false,
+            contextTokens = o["contextTokens"]?.jsonPrimitive?.intOrNull ?: 64000,
+            reasoning = o["reasoning"]?.jsonPrimitive?.booleanOrNull ?: false,
             groundingVerified = o["groundingVerified"]?.jsonPrimitive?.boolean ?: false,
             promptCaching = PromptCaching.of(o["promptCaching"]?.jsonPrimitive?.content),
         ),

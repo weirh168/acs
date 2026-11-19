@@ -993,6 +993,8 @@ class TaskRun(
                 (service.application as? MikaApp)?.let { app -> com.wangzan101.mika.self.AndroidSelfPort(app, conversationId, key) }
             } else null
             val tools = toolDispatcher(accessedPhone, model.capabilities.vision, catalog, recordFrames = true, vision = vision?.let { VisionService(it, BitmapImageOps) },
+                // 生图:acs_draw 的落地实现(取配置、调 API、存相册)
+                imageGen = { prompt -> com.wangzan101.mika.cap.ImageDraw.draw(service.application as MikaApp, conversationId, prompt) },
                 phoneCalls = (service.application as MikaApp).callPort.takeIf {
                     !conditionCheck && (service.application as MikaApp).calls.settings.state.value.enabled
                 },
