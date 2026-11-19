@@ -102,7 +102,9 @@ internal object LaunchApp : PhoneTool {
         // 换了 App,之前被拒的付款申报就不是这次的了
         ctx.refusedPay = null
         // 暖启动:要开的 App 已经在前台,就不再拉起一次(省掉开屏,少一轮往返)
-        if (!cold && user == null) {
+        // cold 只在「从没在本任务里打开过」时才真的重启:断点续跑时不会又过一遍开屏
+        val maySkip = user == null && (!cold || ctx.appOpened)
+        if (maySkip) {
             val front = runCatching { ctx.phone.screen.foregroundPackages() }.getOrNull()
             if (front != null && front.contains(p)) {
                 ctx.appOpened = true
