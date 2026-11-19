@@ -1528,3 +1528,53 @@ adb shell "settings put secure accessibility_enabled 1"
 ### 记住
 
 **以后每次 adb install -r 之后都要做这一步**,否则以为装好了其实手机操作全废。
+
+## AI 接电话:必须用「直连电话音频」(DIRECT)（2026-11-19 21:50）
+
+重装/换机后 AI 接电话不出声,十有八九是音频通道选错了。实测结论:
+
+| 通道 | 结果 | 说明 |
+|---|---|---|
+| **DIRECT(直连电话音频)** | ✅ **能用** | 电话助手是 shell 身份,`RECORD_AUDIO` / `CAPTURE_AUDIO_OUTPUT` 都有,直接把 PCM 挂到通话设备 |
+| REDIRECT(重定向电话音频) | ❌ 接得起来但双方都没声音 | 依赖 Android 13 的 PSTN 拦截 API,这台机器上走不通 |
+
+### 四道门(缺一不接)
+
+重装后按顺序确认,前三条在「接听」页 / 「设置」里都能看到:
+
+1. **实时语音凭据**:设置 › AI 声音 › 添加实时语音配置,填 **API Key**(火山控制台 › 语音技术 › 应用管理)。
+   - ⚠️ `AppID + Access Token` 是旧版用法;只拿到 UUID 时优先当 **API Key** 填,填错会提示「凭据或服务权限无效」。
+   - ⚠️ 别用「沿用语音转文字里的豆包凭据」:多次重装后 Keystore 密钥变了,旧密文解不开,复用会静默拿到空值。
+2. **音频通道 = DIRECT**:设置 › 高级设置 › 音频通道与诊断 › 通话音频通道 › 「直连电话音频」。
+3. **双向音频验证**:同页勾「已实测本机通话双方均能听到声音」(写 `audio_verified_build=<本机指纹>`)。
+   - ⚠️ **切换音频通道会重置这项验证**,必须重新勾一次,否则开关灰着打不开。
+4. **自动接听 ON + 接听范围**:接听范围选「接听所有来电」,再打开「自动接听来电」。
+   - 打开后 `dumpsys activity services | grep CallStandbyService` 能看到前台服务、界面显示「待命中 · 符合规则的来电等待 N 秒后接听」。
+
+### 相关 prefs(排查用)
+
+`/data/data/com.wangzan101.mika.mod/shared_prefs/mika_call_settings.xml`
+
+```
+audio_mode                 = DIRECT        # 关键
+audio_verified_build       = <Build.FINGERPRINT>
+auto_answer                = true
+allow_all                  = true
+observe_until_ms           = 0             # >0 表示还在观察期(会限制接听)
+background_standby_authorized = true
+```
+
+凭据在 `mika_call_voice_profiles.xml` 的 `encrypted_profiles_v1`(加密,不能手改)。
+
+### 重装后排障顺序
+
+1. 界面显示「AI 电话 尚未就绪」→ 设置 › 设备与权限 ›「检查并准备」(需要电话助手在跑)
+2. 「请先配置实时语音凭据」→ 按上面第 1 条重填 API Key 并**测试连接**
+3. 开关灰着 → 按第 2、3 条确认通道为 DIRECT 且重新验证双向音频
+4. 接得起来但没声音 → 九成是 REDIRECT,改回 DIRECT
+
+### 走不通的方案(别浪费时间)
+
+- 通话伴侣 + `MANAGE_ONGOING_CALLS`:荣耀只给默认电话应用,`cmd role add-role-holder DIALER` 直接 Failed;`pm grant` 报 `not a changeable permission type`。
+- 免提外放 + 麦克风回采:通话中第三方麦克风被系统置零(实测波形峰值 0)、播放进不了上行,双向都不通。
+- 用手机本身当"录音机"转写:同上,录音全是数字静音;能转的只有系统电话 App 自己的录音(`/sdcard/Sounds/CallRecord/*.m4a`)。
