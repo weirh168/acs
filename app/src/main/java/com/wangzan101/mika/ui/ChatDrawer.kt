@@ -447,9 +447,13 @@ fun ChatDrawer(
             NavEntry(MikaIcons.Clock, stringResource(R.string.drawer_plans), onClick = onPlans)
             NavEntry(MikaIcons.Heart, stringResource(R.string.memory_and_skills), onClick = onMemory)
             NavEntry(MikaIcons.Paperclip, stringResource(R.string.file_library_title), onClick = onFiles)
-            // 会员:本地激活码。点开弹窗看设备码、填码解锁。
+            // 会员:只有普通设备才有;管理员机(本机)不需要会员,入口直接不显示
+            val drawerCtx0 = androidx.compose.ui.platform.LocalContext.current
+            val isAdmin0 = isAdminDevice(drawerCtx0)
             var membershipOpen by remember { mutableStateOf(false) }
-            NavEntry(MikaIcons.Heart, "会员", onClick = { membershipOpen = true })
+            if (!isAdmin0) {
+                NavEntry(MikaIcons.Heart, "会员", onClick = { membershipOpen = true })
+            }
             // 管理员:在这台手机上生成激活码发给会员
             // 只有管理员机(本机)才有入口;分发到别的手机不会出现
             val drawerCtx = androidx.compose.ui.platform.LocalContext.current

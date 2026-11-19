@@ -101,6 +101,18 @@ internal object LaunchApp : PhoneTool {
         }
         // 换了 App,之前被拒的付款申报就不是这次的了
         ctx.refusedPay = null
+        // 暖启动:要开的 App 已经在前台,就不再拉起一次(省掉开屏,少一轮往返)
+        if (!cold && user == null) {
+            val front = runCatching { ctx.phone.screen.foregroundPackages() }.getOrNull()
+            if (front != null && front.contains(p)) {
+                ctx.appOpened = true
+                return ToolExecution(buildJsonObject {
+                    put("ok", true)
+                    put("alreadyOpen", true)
+                    put("hint", "已经在 $p 里,接着当前画面做下一步;不要从头重来,也不用再调 open。")
+                })
+            }
+        }
         suspend fun open() = if (user != null) ctx.phone.screen.openAppCopy(p, user, cold) else ctx.phone.screen.openApp(p, cold)
         var opened = open()
         // 别的任务正用着、模型要了等:等它放开再开一次;互相等(谁也等不到)、等到时限仍被占着,照实说

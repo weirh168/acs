@@ -131,6 +131,9 @@ class AppAccessScreenPort(
         return inner.openApp(packageName, cold)
     }
 
+    /** 直接问下面那个端口;拿不到就 null,由调用方当作「不知道」。 */
+    override suspend fun foregroundPackages(): List<String?>? = inner.foregroundPackages()
+
     override suspend fun openAppCopy(packageName: String, userId: Int, cold: Boolean): ActionResult {
         target(packageName)
         return inner.openAppCopy(packageName, userId, cold)

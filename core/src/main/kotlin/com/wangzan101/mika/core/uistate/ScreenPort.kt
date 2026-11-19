@@ -300,6 +300,12 @@ interface ScreenPort {
     suspend fun openApp(packageName: String, cold: Boolean = false): ActionResult
 
     /**
+     * 此刻前台是哪些 App 的窗口(包名;读不到根节点的为 null)。用来判断「要开的 App 已经在前台」,
+     * 免得每轮都重新拉起、重走开屏。不支持的端口返回 null(调用方按没有信息处理)。
+     */
+    suspend fun foregroundPackages(): List<String?>? = null
+
+    /**
      * 打开装在另一份用户 [userId] 里的那份 [packageName](分身、工作资料,见 [appCopies]);其余同 [openApp]。
      * 那份用户不能用、或那里没装这个 App 时失败 copy_not_found。不支持的端口返回 unsupported。
      */

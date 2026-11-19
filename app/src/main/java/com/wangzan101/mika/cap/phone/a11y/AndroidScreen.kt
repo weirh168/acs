@@ -1208,6 +1208,9 @@ class AndroidScreen(
      */
     override suspend fun openApp(packageName: String, cold: Boolean): ActionResult = open(packageName, null, cold)
 
+    /** 前台 App 的窗口包名;空屏时为空列表。 */
+    override suspend fun foregroundPackages(): List<String?>? = runCatching { accessPackages() }.getOrNull()
+
     /**
      * 打开装在另一份用户 [userId] 里的那份(调用方先按 [appCopies] 核对过):内置助手启动前再按同一规则核一次那份用户能不能用,
      * 不能用为 copy_not_found;占用、冷启动都只看这一份。[userId] 就是 Mika 自己的用户时等于 [openApp]。
