@@ -572,6 +572,9 @@ private fun hasModelContextControl(ui: ModelSetupUi, role: ModelRole): Boolean =
 private fun ModelContextControl(ui: ModelSetupUi, role: ModelRole,
     onSave: (String, ModelContextSettings) -> Boolean, modifier: Modifier = Modifier,
 ) {
+    // 「上下文与压缩」这一行先隐藏:参数属于进阶调整,默认值对绝大多数人够用,
+    // 留在主界面反而让四个用途的卡片变长、显乱。要调的人以后从这里放开即可。
+    if (true) return
     if (ui.roles[role] !is RoleChoice.Model) return
     val cfg = ui.configFor(role) ?: return
     val saved = ui.providerOf(cfg)?.contextSettings?.get(cfg.model) ?: ModelContextSettings()

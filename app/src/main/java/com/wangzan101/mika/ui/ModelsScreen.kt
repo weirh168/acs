@@ -875,7 +875,7 @@ object ModelsCopy {
         return when (val choice = ui.roles[role]) {
             null -> RoleLine(UNSET, if (ui.providers.isEmpty()) MAIN_ADD_FIRST else MAIN_PICK, unset = true)
             RoleChoice.SameAsMain -> RoleLine(SAME_AS_MAIN, main?.model ?: MAIN_NOT_PICKED)
-            RoleChoice.Off -> RoleLine(OFF, OFF_NOTE)
+            RoleChoice.Off -> RoleLine(OFF, if (role == ModelRole.Image) "不画图" else OFF_NOTE)
             is RoleChoice.Model -> ui.configs.firstOrNull { it.id == choice.configId }?.let(::modelLine)
                 ?: RoleLine(UNSET, MAIN_PICK, unset = true)
         }
