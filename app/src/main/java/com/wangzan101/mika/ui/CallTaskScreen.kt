@@ -205,16 +205,68 @@ internal fun CallTaskScreen(
                 Text(stringResource(R.string.calls_task_number_hint))
             }) else null,
         )
+        // 说话代替打字:点一下开始录,最长 10 秒自动结束,识别出来的文字接在已有内容后面
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        var listening by remember { mutableStateOf(false) }
+        var transcribing by remember { mutableStateOf(false) }
         OutlinedTextField(
             draft.goal, { draft.goal = it }, enabled = editable,
             label = { Text(stringResource(R.string.calls_task_goal)) },
             placeholder = { Text(stringResource(R.string.calls_task_goal_example)) },
             modifier = Modifier.fillMaxWidth().testTag("call-task-goal"), minLines = 2, maxLines = 3,
             isError = goalLength > maxGoal,
+            trailingIcon = {
+                if (editable) {
+                    IconButton(
+                        enabled = !listening && !transcribing,
+                        modifier = Modifier.testTag("call-task-dictate"),
+                        onClick = {
+                            listening = true
+                            scope.launch {
+                                val wav = withContext(Dispatchers.IO) {
+                                    com.wangzan101.mika.voice.Dictation.record(maxMs = 10_000, stop = { false })
+                                }
+                                listening = false
+                                if (wav == null) {
+                                    android.widget.Toast
+                                        .makeText(context, "没听到说话,再试一次", android.widget.Toast.LENGTH_SHORT)
+                                        .show()
+                                    return@launch
+                                }
+                                transcribing = true
+                                val text = transcribeWav(context, wav)
+                                transcribing = false
+                                val clean = text.trim()
+                                when {
+                                    clean.isEmpty() -> android.widget.Toast
+                                        .makeText(context, "没听到说话,再试一次", android.widget.Toast.LENGTH_SHORT).show()
+                                    clean.startsWith("识别失败") -> android.widget.Toast
+                                        .makeText(context, clean, android.widget.Toast.LENGTH_SHORT).show()
+                                    else -> {
+                                        val base = draft.goal.trimEnd()
+                                        draft.goal = (if (base.isEmpty()) clean else base + "\n" + clean).take(maxGoal)
+                                    }
+                                }
+                            }
+                        },
+                    ) {
+                        Icon(
+                            if (listening) MikaIcons.Stop else MikaIcons.Mic,
+                            contentDescription = if (listening) "正在录音" else "说话输入",
+                            tint = if (listening) MikaTheme.colors.warn else MikaTheme.colors.ink3,
+                        )
+                    }
+                }
+            },
             supportingText = {
                 Text(
-                    if (goalLength > maxGoal) stringResource(R.string.calls_task_limit, goalLength, maxGoal)
-                    else "说清这次要办成什么,AI 照着谈 · " + goalLength + "/" + maxGoal,
+                    when {
+                        listening -> "正在听你说…最长 10 秒,说完会自动转成文字"
+                        transcribing -> "识别中…"
+                        goalLength > maxGoal -> stringResource(R.string.calls_task_limit, goalLength, maxGoal)
+                        else -> "说清这次要办成什么,AI 照着谈 · " + goalLength + "/" + maxGoal + " · 也可点麦克风说"
+                    },
                 )
             },
         )
@@ -654,6 +706,21 @@ private fun normaliseDialNumber(raw: String): String {
 
 
 
+
+/** 把一段刚录的 WAV 交给当前选定的语音识别模型,返回文字。 */
+private suspend fun transcribeWav(context: android.content.Context, wav: ByteArray): String = runCatching {
+    val app = context.applicationContext as com.wangzan101.mika.MikaApp
+    val spec = com.wangzan101.mika.voice.SpeechResolver.resolve(
+        app.speech.choice.value,
+        com.wangzan101.mika.voice.SystemSpeech.capability(context, app.speech.systemSilent.value),
+        app.providers.providers.value,
+    )
+    if (spec !is com.wangzan101.mika.voice.SpeechEngineSpec.Provider) {
+        return@runCatching "语音转文字当前不是服务商模型,先去设置里选一个支持文件转写的模型。"
+    }
+    com.wangzan101.mika.voice.Transcriber(okhttp3.OkHttpClient())
+        .transcribe(spec.provider, app.providers.providerKey(spec.provider.id), spec.model, spec.method, wav, "zh")
+}.getOrElse { e -> "识别失败:" + (e.message ?: e.javaClass.simpleName) }
 
 /** 取最新一条系统通话录音,解码后交给语音识别,返回要显示的文字。 */
 private suspend fun transcribeLatestRecording(context: android.content.Context): String = runCatching {

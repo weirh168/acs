@@ -611,25 +611,55 @@ private fun CallReceivePage(
     }
     CallTodayCard(history, onHistory)
     Spacer(Modifier.size(12.dp))
+    // 和「拨出卡」一个形态:一行标题 + 选中值 + 箭头,点开再勾
     if (state.simOptions.size > 1) {
+        var simPicker by rememberSaveable { mutableStateOf(false) }
+        val allSameCarrier = state.simOptions.map { it.label.substringBefore(" · ") }.distinct().size == 1
+        val chosen = if (config.autoAnswerSimIds.isEmpty() || config.autoAnswerSimIds.size == state.simOptions.size)
+            state.simOptions.map { it.id } else config.autoAnswerSimIds.toList()
+        val summary = when {
+            chosen.isEmpty() -> "不接"
+            chosen.size == state.simOptions.size -> if (allSameCarrier)
+                state.simOptions.first().label.substringBefore(" · ") else
+                state.simOptions.map { it.label.substringBefore(" · ") }.distinct().joinToString("、")
+            chosen.size == 1 -> state.simOptions.firstOrNull { it.id == chosen.first() }?.label ?: "1 张卡"
+            else -> state.simOptions.filter { it.id in chosen }.joinToString("、") { it.label }
+        }
         GroupLabel(stringResource(R.string.calls_sims_title))
         GroupCard(Modifier.testTag("call-sims")) {
-            state.simOptions.forEachIndexed { index, sim ->
-                if (index > 0) HorizontalDivider()
-                val on = config.autoAnswerSimIds.isEmpty() || sim.id in config.autoAnswerSimIds
-                Row(
-                    Modifier.fillMaxWidth().toggleable(on, role = Role.Switch) {
-                        val current = if (config.autoAnswerSimIds.isEmpty()) state.simOptions.map { it.id }.toSet()
-                        else config.autoAnswerSimIds
-                        val next = if (on) current - sim.id else current + sim.id
-                        onEditConfig { cfg -> cfg.copy(autoAnswerSimIds = if (next.isEmpty() || next.size == state.simOptions.size) emptySet() else next) }
-                    }.heightIn(min = 52.dp).padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(sim.label, fontSize = 15.sp, color = MikaTheme.colors.ink, modifier = Modifier.weight(1f))
-                    Switch(on, null)
-                }
-            }
+            ListRow(MikaIcons.Phone, "接听卡", summary, first = true, onClick = { simPicker = true }) { RowChevron() }
+        }
+        if (simPicker) {
+            AlertDialog(
+                onDismissRequest = { simPicker = false },
+                title = { Text("接听卡") },
+                text = {
+                    Column {
+                        state.simOptions.forEach { sim ->
+                            val on = config.autoAnswerSimIds.isEmpty() ||
+                                config.autoAnswerSimIds.size == state.simOptions.size ||
+                                sim.id in config.autoAnswerSimIds
+                            Row(
+                                Modifier.fillMaxWidth().toggleable(on, role = Role.Checkbox) {
+                                    val current = if (config.autoAnswerSimIds.isEmpty() ||
+                                        config.autoAnswerSimIds.size == state.simOptions.size)
+                                        state.simOptions.map { it.id }.toSet() else config.autoAnswerSimIds
+                                    val next = if (on) current - sim.id else current + sim.id
+                                    onEditConfig { cfg ->
+                                        cfg.copy(autoAnswerSimIds = if (next.size == state.simOptions.size) emptySet() else next)
+                                    }
+                                }.padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(on, null)
+                                Text(sim.label, fontSize = 15.sp, modifier = Modifier.padding(start = 8.dp))
+                            }
+                        }
+                        Text("只勾一张时,另一个卡打来的电话交给你自己接", fontSize = 12.sp, color = MikaTheme.colors.ink3)
+                    }
+                },
+                confirmButton = { TextButton(onClick = { simPicker = false }) { Text("完成") } },
+            )
         }
         Spacer(Modifier.size(12.dp))
     }
