@@ -1491,3 +1491,40 @@ python /opt/draw.py "一只小花猫" [1024x1024]
 1. 先以为要写原生工具 —— 其实沙箱脚本就够,不用改 App 代码。
 2. 脚本方案一开始要用户在提示词里塞 API 地址和 Key,一次烧了 27 万 token;固化成技能后同样的事只需几千 token。
 3. 界面选了生图模型 ≠ 能画图 —— 还要有可调用的工具/脚本,两者缺一不可。
+
+## 每次装新版 APK 后必须重开无障碍(2026-11-19 12:10)
+
+### 现象
+
+安装新版后,设置页显示「**无障碍服务没有运行**」,手机操作类任务全部不可用
+(读屏、点击、打开 App、用 App 生视频/查快递都失效)。
+
+### 不是 bug
+
+```
+settings get secure enabled_accessibility_services
+  → 服务仍在启用列表里 ✅
+dumpsys accessibility | grep "Bound services"
+  → Bound services 里没有 ACS ❌   ← 真正的问题
+```
+
+荣耀/华为在 App 更新(进程被杀)后**不会自动把无障碍服务绑回去**。列表里有、实际没连上。
+
+### 修法(命令行,已验证)
+
+```bash
+adb shell "settings put secure enabled_accessibility_services 'com.hihonor.awareness/com.hihonor.awareness.server.pageanalysis.AccessibleInfoStuck'"
+sleep 2
+adb shell "settings put secure enabled_accessibility_services 'com.hihonor.awareness/com.hihonor.awareness.server.pageanalysis.AccessibleInfoStuck:com.wangzan101.mika.mod/com.wangzan101.mika.a11y.MikaAccessibilityService'"
+adb shell "settings put secure accessibility_enabled 1"
+```
+
+等于「关掉再打开」,系统会重新绑定。验证看 `Bound services` 里出现 `label=ACS`。
+
+### 手动做法
+
+设置 → 无障碍 → ACS → 关 → 开(或者点设置页那个「去处理」)。
+
+### 记住
+
+**以后每次 adb install -r 之后都要做这一步**,否则以为装好了其实手机操作全废。

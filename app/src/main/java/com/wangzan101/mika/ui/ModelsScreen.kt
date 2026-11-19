@@ -189,6 +189,7 @@ internal fun fixedChoices(role: ModelRole): List<RoleChoice> = when (role) {
     ModelRole.Vision -> listOf(RoleChoice.SameAsMain, RoleChoice.Off)
     ModelRole.Light -> listOf(RoleChoice.SameAsMain)
     ModelRole.Image -> listOf(RoleChoice.Off)
+    ModelRole.Video -> listOf(RoleChoice.Off)
 }
 
 /**
@@ -831,6 +832,7 @@ object ModelsCopy {
         ModelRole.Vision -> tr(R.string.role_vision)
         ModelRole.Light -> tr(R.string.role_light)
         ModelRole.Image -> "生图模型"
+        ModelRole.Video -> "生视频模型"
     }
 
     /** 这个用途做什么。 */
@@ -839,6 +841,7 @@ object ModelsCopy {
         ModelRole.Vision -> tr(R.string.role_vision_what)
         ModelRole.Light -> tr(R.string.role_light_what)
         ModelRole.Image -> "画图、配图时用"
+        ModelRole.Video -> "做视频时用"
     }
 
     fun roleLabel(role: ModelRole) = "${roleName(role)} · ${roleWhat(role)}"
@@ -849,6 +852,7 @@ object ModelsCopy {
         ModelRole.Vision -> tr(R.string.role_vision_hint)
         ModelRole.Light -> tr(R.string.role_light_hint)
         ModelRole.Image -> "让 ACS 画图时用这个模型;选「不用」就不画图。"
+        ModelRole.Video -> "让 ACS 做视频时用这个模型;选「不用」就不做视频。"
     }
 
     /** 第四个用途「语音转文字」不在 [ModelRole] 里(它不是对话模型),卡片的名字、图标、右边两行在这里。 */
@@ -866,6 +870,7 @@ object ModelsCopy {
         ModelRole.Vision -> MikaIcons.Eye
         ModelRole.Light -> MikaIcons.Leaf
         ModelRole.Image -> MikaIcons.Spark
+        ModelRole.Video -> MikaIcons.Spark
     }
 
     /** 用途卡上写什么:选了模型写模型名和服务商;「用主模型」写主模型是谁;「不用」写只靠文字读屏。 */
@@ -875,7 +880,7 @@ object ModelsCopy {
         return when (val choice = ui.roles[role]) {
             null -> RoleLine(UNSET, if (ui.providers.isEmpty()) MAIN_ADD_FIRST else MAIN_PICK, unset = true)
             RoleChoice.SameAsMain -> RoleLine(SAME_AS_MAIN, main?.model ?: MAIN_NOT_PICKED)
-            RoleChoice.Off -> RoleLine(OFF, if (role == ModelRole.Image) "不画图" else OFF_NOTE)
+            RoleChoice.Off -> RoleLine(OFF, if (role == ModelRole.Image) "不画图" else if (role == ModelRole.Video) "不做视频" else OFF_NOTE)
             is RoleChoice.Model -> ui.configs.firstOrNull { it.id == choice.configId }?.let(::modelLine)
                 ?: RoleLine(UNSET, MAIN_PICK, unset = true)
         }

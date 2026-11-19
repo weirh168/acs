@@ -29,4 +29,4 @@ enum class PromptCaching(val wire: String) {
     }
 }
 
-enum class ModelRole { Main, Vision, Light, Image }
+enum class ModelRole { Main, Vision, Light, Image, Video }
