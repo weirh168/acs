@@ -254,11 +254,12 @@ class OperationGuardsTest {
         g2.result("end_not_done", obj("""{"ok":false,"counts_as_failure":false}"""))
         assertTrue(g2.result("phone_tap", fail).isEmpty())
     }
-    @Test fun unrecoverableFailureWarnsOnceStopsAtThree() {
+    @Test fun unrecoverableFailureStopsAtOnce() {
         val denied = obj("""{"ok":false,"error":"denied","recoverable":false}""")
         val g = OperationGuards()
         val v = (1..3).map { g.result("phone_tap", denied).single() }
-        assertEquals(listOf(Severity.Warn, Severity.Warn, Severity.Stop), v.map { it.severity })
+        // 第一次不可恢复的失败就停
+        assertEquals(listOf(Severity.Stop, Severity.Stop, Severity.Stop), v.map { it.severity })
         assertEquals(3, v.last().evidence["unrecoverable"]!!.jsonPrimitive.int)
         assertEquals("denied", (v.last().evidence["recent"] as kotlinx.serialization.json.JsonArray).last().jsonObject["error"]!!.jsonPrimitive.content)
     }

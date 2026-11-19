@@ -96,7 +96,10 @@ internal object GuardRules {
 
     /** 连续失败 [consecutive] 次、其中不可恢复 [unrecoverable] 次时该给的级别;不到为 null。 */
     fun failures(consecutive: Int, unrecoverable: Int): Severity? = when {
-        consecutive >= FAILURE_LADDER.last() || unrecoverable >= UNRECOVERABLE_LADDER.last() -> Severity.Stop
+        // 不可恢复的失败(文件读不了、没权限、格式不支持)重试多少次结果都一样:一次就交回给人,
+        // 不要拿用户的时间和 token 去反复试同一条死路。
+        unrecoverable >= 1 -> Severity.Stop
+        consecutive >= FAILURE_LADDER.last() -> Severity.Stop
         consecutive >= FAILURE_LADDER.first() || unrecoverable >= UNRECOVERABLE_LADDER.first() -> Severity.Warn
         else -> null
     }

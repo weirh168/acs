@@ -55,7 +55,8 @@ class GuardRulesTest {
     @Test fun failures() {
         assertNull(GuardRules.failures(1, 0))
         assertEquals(Severity.Warn, GuardRules.failures(2, 0))
-        assertEquals(Severity.Warn, GuardRules.failures(1, 1))
+        // 不可恢复的失败一次就停:重试同一条死路没有意义
+        assertEquals(Severity.Stop, GuardRules.failures(1, 1))
         assertEquals(Severity.Warn, GuardRules.failures(7, 0))
         assertEquals(Severity.Stop, GuardRules.failures(8, 0))
         assertEquals(Severity.Stop, GuardRules.failures(3, 3))
