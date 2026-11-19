@@ -1751,8 +1751,11 @@ class CallRuntime(private val app: MikaApp) {
                 service.callCapablePhoneAccounts.mapNotNull { handle ->
                     val id = subscription(handle) ?: return@mapNotNull null
                     val sim = subscriptionService?.getActiveSubscriptionInfo(id) ?: return@mapNotNull null
-                    CarrierSim(CallSim("sim-$id", sim.displayName?.toString()?.take(80)
-                        ?.ifBlank { null } ?: "SIM ${sim.simSlotIndex + 1}", handle == preferred), handle)
+                    // 两张同名运营商的卡要分得清:名字后面补「卡 1 / 卡 2」
+                    val slot = sim.simSlotIndex + 1
+                    val carrier = sim.displayName?.toString()?.take(60)?.ifBlank { null }
+                    val label = if (carrier == null) "卡 $slot" else "$carrier · 卡 $slot"
+                    CarrierSim(CallSim("sim-$id", label, handle == preferred), handle)
                 }.distinctBy { it.info.id }
             }.getOrDefault(emptyList())
         }

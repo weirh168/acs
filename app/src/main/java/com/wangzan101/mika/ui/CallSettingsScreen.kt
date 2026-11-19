@@ -57,6 +57,7 @@ fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = nul
     initialHistoryCallId: String? = null,
     updateAvailable: Boolean = false, focusRequest: Int = 0) {
     var instructionsOpen by rememberSaveable { mutableStateOf(false) }
+    var exceptionsOpen by rememberSaveable { mutableStateOf(false) }
     var voiceProfilesOpen by rememberSaveable { mutableStateOf(false) }
     var handledFocusRequest by rememberSaveable { mutableIntStateOf(0) }
     val workspaceState = rememberSaveableStateHolder()
@@ -69,11 +70,16 @@ fun CallSettingsScreen(runtime: CallRuntime, onInstructions: (() -> Unit)? = nul
         }
     }
     when {
+        exceptionsOpen -> {
+            val cfg by runtime.settings.state.collectAsState()
+            CallExceptionsScreen(cfg, { next -> runtime.settings.save(next) }) { exceptionsOpen = false }
+        }
         voiceProfilesOpen -> CallVoiceProfilesScreen(runtime) { voiceProfilesOpen = false }
         instructionsOpen -> CallInstructionsScreen(runtime) { instructionsOpen = false }
         else -> workspaceState.SaveableStateProvider("call-workspace") {
             CallSettingsWorkspace(runtime, taskDraft, onBack, onInstructions ?: { instructionsOpen = true },
-                { voiceProfilesOpen = true }, standalone, onHelperSetup, onAbout, updateAvailable, focusRequest, initialHistoryCallId)
+                { voiceProfilesOpen = true }, standalone, onHelperSetup, onAbout, updateAvailable, focusRequest, initialHistoryCallId,
+                onExceptions = { exceptionsOpen = true })
         }
     }
 }
@@ -85,6 +91,7 @@ private fun CallSettingsWorkspace(
     standalone: Boolean, onHelperSetup: () -> Unit, onAbout: () -> Unit, updateAvailable: Boolean,
     focusRequest: Int,
     initialHistoryCallId: String?,
+    onExceptions: () -> Unit = {},
 ) {
     val config by runtime.settings.state.collectAsState()
     val state by runtime.state.collectAsState()
@@ -186,7 +193,7 @@ private fun CallSettingsWorkspace(
 
     PageBackground(Modifier.testTag("call-settings")) {
         Column(Modifier.fillMaxSize().navigationBarsPadding().imePadding()) {
-            if (standalone) TopBar(stringResource(R.string.app_name), MikaIcons.Gear, ::openDeviceSettings,
+            if (standalone) TopBar(stringResource(R.string.app_name), null, {},
                 stringResource(R.string.calls_tab_settings), right = {
                     BarIconButton(MikaIcons.Info, stringResource(R.string.about_check), onAbout, badge = updateAvailable)
                 })
@@ -398,7 +405,7 @@ private fun CallSettingsWorkspace(
 private enum class CallDialog { Rules, Bypass, Credentials, Profile }
 
 private enum class CallWorkspaceTab(val label: Int) {
-    Receive(R.string.calls_nav_receive), Task(R.string.calls_nav_task),
+    Task(R.string.calls_nav_task), Receive(R.string.calls_nav_receive),
     Settings(R.string.calls_tab_settings), History(R.string.calls_tab_history),
 }
 
@@ -539,27 +546,73 @@ private fun CallReceivePage(
     onDelay: (Int) -> Unit = {},
     onEditConfig: ((CallConfig) -> CallConfig) -> Unit = {},
     onToggleEnabled: (Boolean) -> Unit = {},
+    onExceptions: () -> Unit = {},
 ) {
     var scopeOpen by rememberSaveable { mutableStateOf(false) }
     var importantOpen by rememberSaveable { mutableStateOf(false) }
     var pauseOpen by rememberSaveable { mutableStateOf(false) }
     val liveContext = LocalContext.current
-    // 总开关(AI 电话)在接听页;设置页只负责它能不能正常工作
-    GroupCard {
-        ListRow(MikaIcons.Phone, stringResource(R.string.calls_enable),
-            stringResource(if (config.enabled) R.string.calls_enabled_summary else R.string.calls_system_default),
-            first = true) {
-            MikaSwitch(config.enabled, onToggleEnabled, enabled = controlsEnabled || config.enabled,
-                modifier = Modifier.testTag("call-enabled"))
+    // 免提代接:不需要通话伴侣权限,有接听+读状态权限就能用
+    // 结论卡:一句话说清「现在接不接」,只留一个开关;能不能用收到底部一行里
+    GroupCard(Modifier.testTag("call-status-card")) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconTile(MikaIcons.Phone, if (config.autoAnswer) TileTone.Ok else TileTone.Neutral)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    if (config.autoAnswer) "AI 在替你接电话" else "AI 没在接电话",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    when {
+                        !ready -> "先把「这台手机能用的功能」里的几项处理完"
+                        !config.audioVerified -> "打过一次测试电话后就能开"
+                        history.isEmpty() -> "今天还没有需要 AI 接的电话"
+                        else -> "今天 " + history.size + " 通 · 都记在通话记录里"
+                    },
+                    style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3,
+                )
+            }
+            // 免提代接实测:能接起,但系统不允许第三方把声音送进通话,
+            // 对方听不到 AI 说话 —— 所以不放开关在这里,免得接起来却是静音。
+            if (!ready || !config.audioVerified) {
+                TextButton(onClick = onSetup, modifier = Modifier.testTag("call-auto-answer-setup")) {
+                    Text("去开启", fontSize = 13.sp)
+                }
+            } else {
+                MikaSwitch(
+                    config.autoAnswer,
+                    { on ->
+                        // 打开时先把服务准备好(原来那个「AI 电话」开关做的事),再置自动接听
+                        if (on) {
+                            onToggleEnabled(true)
+                            onToggle(true)
+                        } else onToggle(false)
+                    },
+                    modifier = Modifier.testTag("call-auto-answer"),
+                    enabled = controlsEnabled,
+                )
+            }
         }
+        HorizontalDivider()
+        ListRow(
+            MikaIcons.Gear,
+            "这台手机能用的功能",
+            if (ready && config.audioVerified) "全部正常" else stringResource(readinessSummary(config, ready)),
+            onClick = onSetup,
+        ) { RowChevron() }
     }
+    // 隐私说明:这类产品最担心的一句话,放在状态卡下面而不是页尾
+    FooterNote("录音不上传、不离开手机。AI 接听时才联网,挂断后只发文字总结")
     Spacer(Modifier.size(12.dp))
     // 接听范围提到最上面:普通人最想改的就是「AI 接谁的电话」
     GroupCard(Modifier.testTag("call-scope-card")) {
         ListRow(
             MikaIcons.Phone,
-            "接听范围",
-            rulesSummary(config),
+            "AI 接陌生号码,你接熟人",
+            "改规则 · 例外 " + (config.bypassIncomingNumbers.size + config.allowedIncomingNumbers.size) + " 个",
             first = true,
             onClick = onRules,
         ) { RowChevron() }
@@ -609,108 +662,103 @@ private fun CallReceivePage(
     if (CallPolicy.observing(config)) ObserveBanner(CallPolicy.observeDaysLeft(config)) {
         onEditConfig { cfg -> cfg.copy(observeUntilMs = 0L) }
     }
-    CallTodayCard(history, onHistory)
+    if (history.isNotEmpty()) CallTodayCard(history, onHistory)
     Spacer(Modifier.size(12.dp))
+    // 在哪些 SIM 上自动接:和「拨出卡」一样做成一行,点开多选,不再一卡一个开关
     if (state.simOptions.size > 1) {
-        GroupLabel(stringResource(R.string.calls_sims_title))
-        GroupCard(Modifier.testTag("call-sims")) {
-            state.simOptions.forEachIndexed { index, sim ->
-                if (index > 0) HorizontalDivider()
-                val on = config.autoAnswerSimIds.isEmpty() || sim.id in config.autoAnswerSimIds
-                Row(
-                    Modifier.fillMaxWidth().toggleable(on, role = Role.Switch) {
-                        val current = if (config.autoAnswerSimIds.isEmpty()) state.simOptions.map { it.id }.toSet()
-                        else config.autoAnswerSimIds
-                        val next = if (on) current - sim.id else current + sim.id
-                        onEditConfig { cfg -> cfg.copy(autoAnswerSimIds = if (next.isEmpty() || next.size == state.simOptions.size) emptySet() else next) }
-                    }.heightIn(min = 52.dp).padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(sim.label, fontSize = 15.sp, color = MikaTheme.colors.ink, modifier = Modifier.weight(1f))
-                    Switch(on, null)
-                }
+        var simPicker by rememberSaveable { mutableStateOf(false) }
+        val chosen = if (config.autoAnswerSimIds.isEmpty()) state.simOptions.map { it.id }.toSet()
+        else config.autoAnswerSimIds
+        // 和「拨出卡」一个形态:左边说是什么,右边说用哪张
+        val summary = when {
+            chosen.isEmpty() -> "不接"
+            chosen.size == state.simOptions.size -> {
+                val names = state.simOptions.map { it.label.substringBefore(" · ") }.distinct()
+                if (names.size == 1) names.first() else names.joinToString("、")
             }
+            else -> state.simOptions.filter { it.id in chosen }
+                .joinToString("、") { it.label.substringBefore(" · ") }.let { name ->
+                    if (state.simOptions.map { it.label.substringBefore(" · ") }.distinct().size == 1)
+                        name + " · 卡 " + state.simOptions.indexOfFirst { it.id in chosen }.plus(1)
+                    else name
+                }
+        }
+        GroupCard(Modifier.testTag("call-sims")) {
+            ListRow(
+                MikaIcons.Phone, "接听卡", summary, first = true,
+                onClick = { simPicker = true },
+            ) { RowChevron() }
+        }
+        if (simPicker) {
+            AlertDialog(
+                onDismissRequest = { simPicker = false },
+                title = { Text("接听卡") },
+                text = {
+                    Column {
+                        state.simOptions.forEach { sim ->
+                            val on = if (config.autoAnswerSimIds.isEmpty() || config.autoAnswerSimIds.size == state.simOptions.size) true
+                            else sim.id in config.autoAnswerSimIds
+                            Row(
+                                Modifier.fillMaxWidth().toggleable(on, role = Role.Checkbox) {
+                                    val current = if (config.autoAnswerSimIds.isEmpty() || config.autoAnswerSimIds.size == state.simOptions.size)
+                                        state.simOptions.map { it.id }.toSet() else config.autoAnswerSimIds
+                                    val next = if (on) current - sim.id else current + sim.id
+                                    onEditConfig { cfg ->
+                                        cfg.copy(autoAnswerSimIds = if (next.size == state.simOptions.size) emptySet() else next)
+                                    }
+                                }.padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(on, null)
+                                Text(sim.label, fontSize = 15.sp, modifier = Modifier.padding(start = 8.dp))
+                            }
+                        }
+                        Text(
+                            "只勾一张时,另一个卡打来的电话交给你自己接",
+                            fontSize = 12.sp, color = MikaTheme.colors.ink3,
+                        )
+                    }
+                },
+                confirmButton = { TextButton(onClick = { simPicker = false }) { Text("完成") } },
+            )
         }
         Spacer(Modifier.size(12.dp))
     }
-    GroupLabel(stringResource(R.string.calls_exceptions))
+    // 例外名单:原来两行各占一张卡、多半是 0 个,现在一个入口进子页
     GroupCard(Modifier.testTag("call-exceptions")) {
-        ExceptionRow(stringResource(R.string.calls_who_i_answer),
-            stringResource(R.string.calls_who_i_answer_note, config.bypassIncomingNumbers.size),
-            "call-exceptions-bypass", onBypass)
-        HorizontalDivider()
-        ExceptionRow(stringResource(R.string.calls_who_ai_answers),
-            stringResource(R.string.calls_who_ai_answers_note, config.allowedIncomingNumbers.size),
-            "call-exceptions-allow", onRules)
+        val total = config.bypassIncomingNumbers.size + config.allowedIncomingNumbers.size
+        ListRow(
+            MikaIcons.Phone, "例外 " + total + " 个",
+            "这几个号码单独处理 · 我自己接 / 必须 AI 接", first = true, onClick = onExceptions,
+        ) { RowChevron() }
     }
     Spacer(Modifier.size(12.dp))
-    val autoLabel = stringResource(R.string.calls_auto_answer)
-    val canTurnOn = ready && config.audioVerified && state.phase == CallPhase.IDLE &&
-        CallPolicy.answersSomeCallers(config)
-    GroupCard {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconTile(MikaIcons.Bell, when (state.autoAnswerStage) {
-                CallAutoAnswerStage.STANDBY -> TileTone.Ok
-                CallAutoAnswerStage.PAUSED, CallAutoAnswerStage.BLOCKED -> TileTone.Warn
-                else -> TileTone.Neutral
-            })
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(autoLabel, style = MaterialTheme.typography.titleMedium)
-                Text(autoAnswerSummary(config, state), style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3)
-            }
-            MikaSwitch(
-                config.autoAnswer, onToggle,
-                modifier = Modifier.testTag("call-auto-answer").semantics { contentDescription = autoLabel },
-                enabled = controlsEnabled && (config.autoAnswer || canTurnOn),
-            )
-        }
-        if (!ready || !config.audioVerified) {
-            HorizontalDivider()
-            ListRow(MikaIcons.Gear, stringResource(R.string.calls_device_and_permissions),
-                stringResource(if (!ready) R.string.calls_needs_setup else R.string.calls_verify_note),
-                onClick = onSetup) { RowChevron() }
-        }
-        if (config.autoAnswer) {
+    if (config.autoAnswer) {
+        GroupCard {
             CallBackgroundStandbyRow(config, state, canStartStandby, onStartStandby, onSetup.takeIf { standbyNeedsSetup })
         }
+        Spacer(Modifier.size(12.dp))
     }
 
-    GroupLabel(stringResource(R.string.calls_rules))
-    GroupCard(Modifier.testTag("call-incoming-rules")) {
-        val paused = state.autoAnswerStage == CallAutoAnswerStage.PAUSED
-        CallFoldRow(MikaIcons.Clock, stringResource(R.string.calls_rule_pause), pauseOpen,
-            "call-rules-pause", subtitle = if (paused) autoAnswerSummary(config, state) else null) { pauseOpen = !pauseOpen }
-        if (pauseOpen) {
-            if (!config.autoAnswer && !paused) {
-                FooterNote(stringResource(R.string.calls_pause_enable_first))
-            } else Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (paused) {
-                    TextButton(onClick = onResume, enabled = controlsEnabled,
-                        modifier = Modifier.weight(1f).testTag("call-resume-auto")) {
-                        Text(stringResource(R.string.calls_auto_resume))
-                    }
-                } else {
-                    TextButton(onClick = { onPause(30) }, enabled = controlsEnabled,
-                        modifier = Modifier.weight(1f).testTag("call-pause-30")) {
-                        Text(stringResource(R.string.calls_auto_pause_30))
-                    }
-                    TextButton(onClick = { onPause(120) }, enabled = controlsEnabled,
-                        modifier = Modifier.weight(1f).testTag("call-pause-120")) {
-                        Text(stringResource(R.string.calls_auto_pause_120))
-                    }
-                }
+    // 暂停提成一等按钮:想临时不接不用再翻折叠
+    val pausedNow = state.autoAnswerStage == CallAutoAnswerStage.PAUSED
+    GroupCard(Modifier.testTag("call-rules-pause")) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (pausedNow) {
+                Text("已暂停 · 来电由你自己接", style = MaterialTheme.typography.titleSmall)
+                CallPrimaryButton(stringResource(R.string.calls_auto_resume), controlsEnabled, onResume, Modifier.testTag("call-resume-auto"))
+            } else {
+                CallPrimaryButton("暂停 1 小时", controlsEnabled && config.autoAnswer, { onPause(60) }, Modifier.testTag("call-pause-60"))
+                Text("暂停期间来电你自己接", style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3)
             }
         }
     }
+    Spacer(Modifier.size(12.dp))
     GroupCard {
         ListRow(MikaIcons.Doc, stringResource(R.string.calls_instructions_entry), first = true, onClick = onInstructions) {
             RowChevron()
         }
     }
-    FooterNote(stringResource(R.string.calls_privacy_note))
 }
 
 @Composable
@@ -807,7 +855,8 @@ private fun CallPreferencesPage(
             CallPermissionRows(device, state.shellConnected, canConfigure, onHelperSetup)
             CallReadinessActions(config, state, ready, profile, canConfigure, stopBusy, device.readiness,
                 onPrepare, onStop, onCredentials)
-            val canVerify = canConfigure && (ready || config.audioVerified)
+            // 只要还没验证过就允许自己确认(不再依赖 ready),否则用户会卡在无法开启
+            val canVerify = canConfigure
             Row(
                 Modifier.fillMaxWidth().toggleable(config.audioVerified, enabled = canVerify, role = Role.Checkbox,
                     onValueChange = onVerifyAudio).padding(horizontal = 16.dp, vertical = 8.dp).heightIn(min = 48.dp),
@@ -816,8 +865,10 @@ private fun CallPreferencesPage(
                 Checkbox(config.audioVerified, onCheckedChange = null, enabled = canVerify)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(stringResource(R.string.calls_audio_verified), style = MaterialTheme.typography.bodyMedium)
-                    if (!config.audioVerified) Text(stringResource(R.string.calls_verify_note),
-                        style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3)
+                    if (!config.audioVerified) Text(
+                        "打一通测试电话,两边都能听见就勾上这里",
+                        style = MaterialTheme.typography.bodySmall, color = MikaTheme.colors.ink3,
+                    )
                 }
             }
             state.audioDetail?.let { FooterNote(it) }

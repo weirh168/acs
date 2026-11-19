@@ -446,6 +446,11 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
     }
 
     override fun onCreate() {
+        // 免提代接开着就随 App 起服务(只监听响铃,不占资源)
+        if (com.wangzan101.mika.calls.AcousticAnswer.enabled(this)) {
+            runCatching { com.wangzan101.mika.calls.AcousticAnswerService.start(this) }
+        }
+
         super.onCreate()
         // 调试探针：仅调试包允许 phone_tap_ocr 的 _forceWaitMs（用于验证等待循环）
         com.wangzan101.mika.core.cap.phone.PhoneDebug.allowForceWait = BuildConfig.DEBUG

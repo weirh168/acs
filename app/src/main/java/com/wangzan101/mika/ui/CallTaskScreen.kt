@@ -31,6 +31,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -113,14 +116,43 @@ internal fun CallTaskScreen(
     /** 手动拨号前打个标记,好让通话记录标成「你自己拨的」。 */
     onBeforeManualDial: (String) -> Unit = {},
 ) {
-    var questionsOpen by rememberSaveable { mutableStateOf(false) }
-    var contextOpen by rememberSaveable { mutableStateOf(false) }
-    var constraintsOpen by rememberSaveable { mutableStateOf(false) }
+    var extrasOpen by rememberSaveable { mutableStateOf(false) }
     var showSims by rememberSaveable { mutableStateOf(false) }
     var review by remember { mutableStateOf<CallTaskSubmission?>(null) }
     // 谁说话:AI 代拨 / 我自己拨。记住上次选择,但每次进入都在分段控件上明确显示
-    var manual by rememberSaveable { mutableStateOf(false) }
+    // 默认「我自己拨」:这个页签首先是个拨号盘,AI 代拨是附加能力
+    var manual by rememberSaveable { mutableStateOf(true) }
     var transcribeAlso by rememberSaveable { mutableStateOf(false) }
+    // 打开「通话后转成文字」后,通话一结束就自动把最近那条系统录音转成文字
+    val autoCtx = LocalContext.current
+    var autoText by remember { mutableStateOf<String?>(null) }
+    var autoBusy by remember { mutableStateOf(false) }
+    var lastPhase by remember { mutableStateOf(state.phase) }
+    LaunchedEffect(state.phase, transcribeAlso) {
+        val prev = lastPhase
+        lastPhase = state.phase
+        if (transcribeAlso && prev != com.wangzan101.mika.calls.CallPhase.IDLE && state.phase == com.wangzan101.mika.calls.CallPhase.IDLE) {
+            autoBusy = true
+            autoText = withContext(Dispatchers.IO) { transcribeLatestRecording(autoCtx) }
+            autoBusy = false
+        }
+    }
+    if (autoBusy) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("通话已结束") },
+            text = { Text("正在把这段通话转成文字…") },
+            confirmButton = {},
+        )
+    }
+    autoText?.let { text ->
+        AlertDialog(
+            onDismissRequest = { autoText = null },
+            title = { Text("通话录音转文字") },
+            text = { Text(text, maxLines = 20) },
+            confirmButton = { TextButton(onClick = { autoText = null }) { Text("关闭") } },
+        )
+    }
     var pickingContact by remember { mutableStateOf(false) }
     val number = CallPolicy.outgoingNumber(draft.number)
     val goalLength = draft.goal.trim().length
@@ -144,7 +176,8 @@ internal fun CallTaskScreen(
     if (manual) {
         CallManualDialBody(
             number = draft.number, onNumber = { draft.number = it }, editable = editable,
-            parsed = number, simLabel = sim?.label ?: preferred?.label,
+            parsed = number,
+            simLabel = sim?.label ?: preferred?.label ?: state.simOptions.firstOrNull()?.label,
             sims = state.simOptions, chosenSim = draft.simOverride,
             defaultSimId = config.defaultOutgoingSimId, onBeforeDial = onBeforeManualDial,
             onSim = { draft.simOverride = it },
@@ -178,9 +211,12 @@ internal fun CallTaskScreen(
             placeholder = { Text(stringResource(R.string.calls_task_goal_example)) },
             modifier = Modifier.fillMaxWidth().testTag("call-task-goal"), minLines = 2, maxLines = 3,
             isError = goalLength > maxGoal,
-            supportingText = if (goalLength > maxGoal) ({
-                Text(stringResource(R.string.calls_task_limit, goalLength, maxGoal))
-            }) else null,
+            supportingText = {
+                Text(
+                    if (goalLength > maxGoal) stringResource(R.string.calls_task_limit, goalLength, maxGoal)
+                    else "说清这次要办成什么,AI 照着谈 · " + goalLength + "/" + maxGoal,
+                )
+            },
         )
     }
     Spacer(Modifier.height(8.dp))
@@ -201,45 +237,43 @@ internal fun CallTaskScreen(
             onClick = if (editable) ({ showSims = true }) else null) { RowChevron() }
     }
 
+    // 三个可选项合成一处:原来各占一行,页面上全是「可选」,真正必填的反而被淹没
+    val extrasFilled = listOf(draft.questions, draft.context, draft.constraints).count { it.isNotBlank() }
     GroupCard {
-        CallFoldRow(MikaIcons.Doc, stringResource(R.string.calls_task_questions), questionsOpen, "call-task-questions-fold",
-            subtitle = stringResource(if (draft.questions.isBlank()) R.string.calls_task_optional else R.string.calls_task_filled)) {
-            questionsOpen = !questionsOpen
+        CallFoldRow(
+            MikaIcons.Doc, "更多交代", extrasOpen, "call-task-extras-fold",
+            subtitle = if (extrasFilled == 0) "可选 · 要问清的问题 / 补充情况 / 不能承诺什么"
+            else "已填 " + extrasFilled + " 项",
+        ) { extrasOpen = !extrasOpen }
+        if (extrasOpen) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    draft.questions, { draft.questions = it }, enabled = editable,
+                    label = { Text(stringResource(R.string.calls_task_questions)) },
+                    placeholder = { Text(stringResource(R.string.calls_task_questions_hint)) },
+                    modifier = Modifier.fillMaxWidth().testTag("call-task-questions"),
+                    minLines = 2, maxLines = 4,
+                    isError = badQuestions,
+                    supportingText = if (badQuestions) ({
+                        Text(stringResource(R.string.calls_task_questions_limit, CallTaskBrief.MAX_QUESTIONS, CallTaskBrief.MAX_QUESTION_CHARS))
+                    }) else null,
+                )
+                CallTaskLongField(
+                    draft.context, { draft.context = it }, stringResource(R.string.calls_task_context),
+                    editable, contextLength, CallTaskBrief.MAX_CONTEXT_CHARS, "call-task-context",
+                )
+                CallTaskLongField(
+                    draft.constraints, { draft.constraints = it }, stringResource(R.string.calls_task_constraints),
+                    editable, constraintsLength, CallTaskBrief.MAX_CONSTRAINT_CHARS, "call-task-constraints",
+                )
+            }
         }
-        if (questionsOpen) OutlinedTextField(
-            draft.questions, { draft.questions = it }, enabled = editable,
-            label = { Text(stringResource(R.string.calls_task_questions)) },
-            placeholder = { Text(stringResource(R.string.calls_task_questions_hint)) },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 8.dp).testTag("call-task-questions"),
-            minLines = 2, maxLines = 4,
-            isError = badQuestions,
-            supportingText = if (badQuestions) ({
-                Text(stringResource(R.string.calls_task_questions_limit, CallTaskBrief.MAX_QUESTIONS, CallTaskBrief.MAX_QUESTION_CHARS))
-            }) else null,
-        )
-        HorizontalDivider()
-        CallFoldRow(MikaIcons.Doc, stringResource(R.string.calls_task_context), contextOpen, "call-task-context-fold",
-            subtitle = stringResource(if (draft.context.isBlank()) R.string.calls_task_optional else R.string.calls_task_filled)) {
-            contextOpen = !contextOpen
-        }
-        if (contextOpen) CallTaskLongField(
-            draft.context, { draft.context = it }, stringResource(R.string.calls_task_context),
-            editable, contextLength, CallTaskBrief.MAX_CONTEXT_CHARS, "call-task-context",
-        )
-        HorizontalDivider()
-        CallFoldRow(MikaIcons.Key, stringResource(R.string.calls_task_constraints), constraintsOpen, "call-task-constraints-fold",
-            subtitle = stringResource(if (draft.constraints.isBlank()) R.string.calls_task_optional else R.string.calls_task_filled)) {
-            constraintsOpen = !constraintsOpen
-        }
-        if (constraintsOpen) CallTaskLongField(
-            draft.constraints, { draft.constraints = it }, stringResource(R.string.calls_task_constraints),
-            editable, constraintsLength, CallTaskBrief.MAX_CONSTRAINT_CHARS, "call-task-constraints",
-        )
     }
 
     if (!ready) {
-        OutlinedButton(onClick = onSetup, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.calls_device_and_permissions))
+        GroupCard {
+            ListRow(MikaIcons.Gear, stringResource(R.string.calls_device_and_permissions),
+                "打电话前需要先开通权限", first = true, onClick = onSetup) { RowChevron() }
         }
     }
     CallPrimaryButton(
@@ -386,8 +420,9 @@ private fun CallDialModeSwitch(manual: Boolean, onChange: (Boolean) -> Unit) {
             .padding(4.dp).testTag("call-dial-mode"),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        ModeHalf(stringResource(R.string.calls_mode_ai), !manual, "call-mode-ai") { onChange(false) }
+        // 左边放「我自己拨」:和系统拨号盘一致,拨出是用户主动的动作
         ModeHalf(stringResource(R.string.calls_mode_manual), manual, "call-mode-manual") { onChange(true) }
+        ModeHalf(stringResource(R.string.calls_mode_ai), !manual, "call-mode-ai") { onChange(false) }
     }
 }
 
@@ -449,7 +484,9 @@ private fun CallManualDialBody(
             ) {
                 Text(stringResource(R.string.calls_outgoing_sim), fontSize = 15.sp, color = MikaTheme.colors.ink)
                 Spacer(Modifier.weight(1f))
-                Text(simLabel ?: stringResource(R.string.calls_task_pick_sim), fontSize = 14.sp,
+                Text(
+                    simLabel ?: if (sims.isEmpty()) "跟随系统默认卡" else stringResource(R.string.calls_task_pick_sim),
+                    fontSize = 14.sp,
                     color = MikaTheme.colors.ink3)
                 Spacer(Modifier.size(6.dp))
                 Icon(MikaIcons.Chevron, null, tint = MikaTheme.colors.ink3, modifier = Modifier.size(18.dp))
@@ -462,20 +499,38 @@ private fun CallManualDialBody(
             CallTaskSimDialog(options = sims, preferred = defaultSimId, selectedOverride = chosenSim,
                 onChoose = { pickingSim = false; onSim(it) }, onDismiss = { pickingSim = false })
         }
+        // 通话后转成文字:系统不允许第三方 App 录通话声音,只有 ACS 作为「默认电话应用」
+        // 时才拿得到通话音频通路。这里按实际能否录音来决定开不开,不能开就给一键去开通。
+        val telecom = context.getSystemService(android.telecom.TelecomManager::class.java)
+        val isDefaultDialer = telecom?.defaultDialerPackage == context.packageName
+        val canTranscribe = isDefaultDialer && android.os.Build.VERSION.SDK_INT >= 29
         GroupCard {
-            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().padding(16.dp).clickable(enabled = !canTranscribe) {
+                    runCatching {
+                        context.startActivity(Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.calls_manual_transcribe), fontSize = 15.sp, color = MikaTheme.colors.ink)
                     Text(
-                        stringResource(
-                            if (android.os.Build.VERSION.SDK_INT >= 29) R.string.calls_manual_transcribe_blocked
-                            else R.string.calls_manual_transcribe_note,
-                        ),
+                        if (transcribe) "通话结束后自动转写最近一次录音"
+                        else if (canTranscribe) "打开后,通话结束自动整理成文字"
+                        else "打开后,通话结束自动转写系统录音 ›",
                         fontSize = 13.sp, color = MikaTheme.colors.ink3,
                     )
                 }
-                Switch(transcribe, { onTranscribe(it) }, enabled = false, modifier = Modifier.testTag("call-manual-transcribe"))
+                Switch(
+                    transcribe, { onTranscribe(it) },
+                    enabled = editable,
+                    modifier = Modifier.testTag("call-manual-transcribe"),
+                )
             }
+            HorizontalDivider()
+            Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp)) { CallRecordingTranscribe() }
         }
         FooterNote(stringResource(R.string.calls_manual_note))
         Spacer(Modifier.size(8.dp))
@@ -516,11 +571,22 @@ private fun CallManualDialBody(
 @Composable
 private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
-    val contacts = remember { ContactsList.load(context) }
+    // 没授权时能在这里直接补;授权后重新读一次通讯录
+    var reload by remember { mutableIntStateOf(0) }
+    val contacts = remember(reload) { ContactsList.load(context) }
+    val contactPermission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { reload++ }
     var query by rememberSaveable { mutableStateOf("") }
     val shown = remember(query, contacts) {
         if (query.isBlank()) contacts
-        else contacts.filter { it.second.contains(query, true) || normaliseDialNumber(it.first).contains(query, true) }
+        else {
+            val digits = query.filter(Char::isDigit)
+            contacts.filter { (number, name) ->
+                name.contains(query, true) ||
+                    (digits.isNotEmpty() && normaliseDialNumber(number).filter(Char::isDigit).contains(digits))
+            }
+        }
     }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -532,8 +598,20 @@ private fun CallContactPickerDialog(onPick: (String) -> Unit, onDismiss: () -> U
                 Text("共 " + contacts.size + " 个号码" + if (query.isBlank()) "" else "，匹配 " + shown.size + " 个",
                     fontSize = 12.sp, color = MikaTheme.colors.ink3)
                 if (contacts.isEmpty()) {
-                    Text(stringResource(R.string.calls_list_no_contacts), fontSize = 13.sp,
-                        color = MikaTheme.colors.ink3)
+                    val missing = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.READ_CONTACTS,
+                    ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    Text(
+                        if (missing) "读不到通讯录:还没给「通讯录」权限"
+                        else stringResource(R.string.calls_list_no_contacts),
+                        fontSize = 13.sp, color = MikaTheme.colors.ink3,
+                    )
+                    if (missing) {
+                        TextButton(
+                            onClick = { contactPermission.launch(android.Manifest.permission.READ_CONTACTS) },
+                            modifier = Modifier.testTag("contacts-grant"),
+                        ) { Text("授权读取通讯录", fontSize = 13.sp) }
+                    }
                 }
                 LazyColumn(Modifier.heightIn(max = 380.dp).fillMaxWidth()) {
                     items(shown) { entry ->
@@ -576,3 +654,77 @@ private fun normaliseDialNumber(raw: String): String {
 
 
 
+
+/** 取最新一条系统通话录音,解码后交给语音识别,返回要显示的文字。 */
+private suspend fun transcribeLatestRecording(context: android.content.Context): String = runCatching {
+    val app = context.applicationContext as com.wangzan101.mika.MikaApp
+    val item = com.wangzan101.mika.voice.CallRecordings.latest(context)
+        ?: return@runCatching "没找到通话录音:可能是没给「所有文件访问权限」,或系统自动录音没开。点下面的按钮去授权。"
+    val wav = com.wangzan101.mika.voice.CallRecordings.toWav(context, item.uri)
+        ?: return@runCatching "这条录音解不开:" + item.name
+    val choice = app.speech.choice.value
+    val spec = com.wangzan101.mika.voice.SpeechResolver.resolve(
+        choice,
+        com.wangzan101.mika.voice.SystemSpeech.capability(context, app.speech.systemSilent.value),
+        app.providers.providers.value,
+    )
+    if (spec !is com.wangzan101.mika.voice.SpeechEngineSpec.Provider) {
+        return@runCatching "语音转文字当前不是服务商模型,先去设置里选一个支持文件转写的模型。"
+    }
+    val text = com.wangzan101.mika.voice.Transcriber(okhttp3.OkHttpClient())
+        .transcribe(spec.provider, app.providers.providerKey(spec.provider.id), spec.model, spec.method, wav, "zh")
+    if (text.isBlank()) "（这段录音里没识别到说话）" else text
+}.getOrElse { e -> "转写失败:" + (e.message ?: e.javaClass.simpleName) }
+
+/**
+ * 「通话后转成文字」的可执行版本：系统不让第三方录通话声音,但系统自己录的通话录音在
+ * /sdcard/Sounds/CallRecord 里,这里取最新一条,解码成 WAV,交给语音识别服务转文字。
+ */
+@Composable
+private fun CallRecordingTranscribe() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var result by remember { mutableStateOf<String?>(null) }
+    var message by remember { mutableStateOf<String?>(null) }
+
+    Column(Modifier.fillMaxWidth()) {
+    TextButton(
+        onClick = {
+            if (busy) return@TextButton
+            busy = true
+            message = null
+            scope.launch {
+                val outcome = withContext(Dispatchers.IO) { transcribeLatestRecording(context) }
+                busy = false
+                result = outcome
+            }
+        },
+        enabled = !busy,
+        modifier = Modifier.testTag("call-transcribe-latest"),
+    ) {
+        Text(if (busy) "正在转写…" else "转写最近一次通话录音", fontSize = 13.sp)
+    }
+    message?.let { Text(it, fontSize = 12.sp, color = MikaTheme.colors.ink3) }
+    TextButton(
+        onClick = {
+            runCatching {
+                context.startActivity(
+                    Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        android.net.Uri.parse("package:" + context.packageName))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
+        },
+        modifier = Modifier.testTag("call-transcribe-grant"),
+    ) { Text("授予文件访问权限", fontSize = 13.sp) }
+    }
+    result?.let { text ->
+        AlertDialog(
+            onDismissRequest = { result = null },
+            title = { Text("通话录音转文字") },
+            text = { Text(text, maxLines = 20) },
+            confirmButton = { TextButton(onClick = { result = null }) { Text("关闭") } },
+        )
+    }
+}
