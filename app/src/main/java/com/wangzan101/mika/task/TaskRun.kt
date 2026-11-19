@@ -332,7 +332,15 @@ class TaskRun(
         val t = takeover
         when {
             t != null -> scope.launch { t.cancel() }
-            running != null -> inbox.cancel()
+            running != null -> {
+                inbox.cancel()
+                // 宽限 3 秒:先走协议取消;模型还在等网络请求时不能再干等,
+                // 超时就取消协程,保证 finally 里的收尾(关 App、释放虚拟屏)一定跑到
+                scope.launch {
+                    delay(3_000)
+                    if (!ended) job?.cancel()
+                }
+            }
             else -> {
                 // 刚从队里放出来、协程还没挂上时点的取消:挂上时立即取消
                 cancelRequested = true
