@@ -1300,3 +1300,56 @@ AGNES **本身支持视觉**，实测：发 1×1 红色 PNG 问颜色，`agnes-3
 
 **卸载/重装前先备份 `files/settings/`**：`providers.json` 是明文可以直接还原，`provider-keys.json` 是 Keystore 加密、重装即失效。
 
+## 坑：看图模型不能选 image-* 生成模型（2026-11-19 10:40）
+
+### 现象
+
+发一张发票截图问「附件金额多少钱」，模型反复调 `处理文件` 7 次、烧 17 万 token、
+7 分 36 秒都读不出来，最后只能手动停止，回答「尚未确认附件中的具体金额内容」。
+
+### 根因
+
+`core/.../cap/sandbox/SandboxTools.kt:275-278` 里：
+
+```kotlin
+IMAGE_TYPES[ext]?.let { type ->
+    if (!visionEnabled) return notText(path, size, type,
+        "This is an image, and the current model cannot view images.")
+    if (size > MAX_IMAGE) return fail("file_too_large", ...)
+    return ToolExecution(okObj { ... }, image = g.read(0, size.toInt()))
+}
+```
+
+**图片附件能不能「看见」，取决于 `visionEnabled`**。它由「看图模型」那一条配置的
+`vision` 标志推导：`vision:false` → 读图工具直接拒读 → 模型拿不到内容 → 盲目重试。
+
+当时配置是：看图模型指向 `agnes-2.5-flash`（`vision:false`），甚至一度指到
+`agnes-image-2.5-flash`（那是**文生图**模型，根本不理解图片）。
+
+### 正确配置
+
+| 项 | 必须是 |
+|---|---|
+| 看图模型 | `agnes-3.0-flash`（实测：红图 → 答「红色」）或 `agnes-2.5-pro` |
+| 该 provider 的 `vision` | `true` |
+| **不能选** | `agnes-image-2.1-flash` / `agnes-image-2.5-flash`（生成模型，不是理解模型） |
+
+`providers.json` 里对应两处：
+
+```json
+"providers": [{ "model": "agnes-3.0-flash", "vision": true }],
+"uses": { "Vision": { "use": "model", "config": "<agnes-3.0-flash 的 id>" } }
+```
+
+### 教训
+
+1. **`image-*` 是生图模型，不是看图模型**。名字像，能力完全不重叠，混淆了会得到「配置看起来对、功能 100% 不可用」的结果。
+2. 视觉链路是否生效，看 `visionEnabled` 这个开关，不看界面上有没有选模型。
+3. 读不了图时，旧版本会重试到 8 次才停；现在（`9652a9c`）不可恢复的失败**第 1 次就停并交给用户**。
+
+### 以后要加「生图/生视频」时
+
+AGNES 的生成模型是：`agnes-image-2.1-flash`、`agnes-image-2.5-flash`（文生图）、
+`agnes-video-2.5`、`agnes-video-2.5-flash`（文生视频）。它们是**新增用途**（生成），
+不是替换「看图模型」，别混用。
+
