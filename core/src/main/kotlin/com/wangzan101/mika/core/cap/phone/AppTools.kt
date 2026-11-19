@@ -113,6 +113,17 @@ internal object LaunchApp : PhoneTool {
                 })
             }
         }
+        // 用户自己那块主屏上正开着这个 App:不擅自接管,先问一句
+        if (!cold && user == null) {
+            val onUser = runCatching { ctx.phone.screen.userForegroundPackages() }.getOrNull()
+            if (onUser != null && onUser.contains(p)) {
+                return ToolExecution(buildJsonObject {
+                    put("ok", false)
+                    put("reason", "open_on_user_screen")
+                    put("hint", "$p 正开在用户手机的主屏上。不要自己在后台另开一份去操作;先问用户:是在他现在这个界面上继续,还是让 ACS 在后台单独开一份。")
+                })
+            }
+        }
         suspend fun open() = if (user != null) ctx.phone.screen.openAppCopy(p, user, cold) else ctx.phone.screen.openApp(p, cold)
         var opened = open()
         // 别的任务正用着、模型要了等:等它放开再开一次;互相等(谁也等不到)、等到时限仍被占着,照实说

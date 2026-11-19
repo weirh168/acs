@@ -305,6 +305,9 @@ interface ScreenPort {
      */
     suspend fun foregroundPackages(): List<String?>? = null
 
+    /** 用户自己那块主屏上此刻是哪些 App。和 [foregroundPackages](任务屏)不是一回事,别混用。 */
+    suspend fun userForegroundPackages(): List<String?>? = null
+
     /**
      * 打开装在另一份用户 [userId] 里的那份 [packageName](分身、工作资料,见 [appCopies]);其余同 [openApp]。
      * 那份用户不能用、或那里没装这个 App 时失败 copy_not_found。不支持的端口返回 unsupported。
