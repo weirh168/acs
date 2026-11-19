@@ -249,6 +249,9 @@ data class RoleChoices(
             main = main?.takeIf { it in valid },
             vision = if (vision.gone()) RoleChoice.Off else vision,
             light = if (light.gone()) RoleChoice.SameAsMain else light,
+            // 生图、生视频也要跟着检查,否则每次启动都会被重建成默认的「不用」
+            image = if (image.gone()) RoleChoice.Off else image,
+            video = if (video.gone()) RoleChoice.Off else video,
             reasoningEfforts = reasoningEfforts.filterKeys { role -> (get(role) as? RoleChoice.Model)?.configId in valid },
         )
     }
@@ -969,6 +972,21 @@ class ProviderStore(
             _providers.value = root["services"]?.jsonArray?.mapNotNull { runCatching { providerOf(it.jsonObject) }.getOrNull() }.orEmpty()
             _configs.value = root["providers"]?.jsonArray?.mapNotNull { runCatching { configOf(it.jsonObject) }.getOrNull() }.orEmpty()
             val uses = root["uses"]?.jsonObject
+            // 生图/生视频这类用途引用的配置,如果解析时被跳过了,按原始 JSON 补回来,
+            // 否则 keepOnly 会把这条用途退回「不用」,用户每次重启都要重选。
+            if (uses != null) {
+                val have = _configs.value.map { it.id }.toSet()
+                val referenced = uses.values.mapNotNull {
+                    (it as? JsonObject)?.get("config")?.jsonPrimitive?.content
+                }
+                root["providers"]?.jsonArray?.forEach { e ->
+                    val o = runCatching { e.jsonObject }.getOrNull() ?: return@forEach
+                    val id = o["id"]?.jsonPrimitive?.content ?: return@forEach
+                    if (id in referenced && id !in have) {
+                        runCatching { configOf(o) }.getOrNull()?.let { _configs.value = _configs.value + it }
+                    }
+                }
+            }
             _roles.value = if (uses != null) choicesOf(uses) else migrateRoles(root["roles"]?.jsonObject)
         }
         if (keyFile.isFile) runCatching {
@@ -1111,9 +1129,10 @@ class ProviderStore(
 
     private fun configOf(o: JsonObject) = ProviderConfig(
         id = o.str("id"),
-        kind = ProviderConfig.Kind.valueOf(o.str("kind")),
-        baseUrl = o.str("baseUrl"),
-        model = o.str("model"),
+        kind = runCatching { ProviderConfig.Kind.valueOf(o.str("kind")) }
+            .getOrElse { ProviderConfig.Kind.OpenAiCompat },
+        baseUrl = o["baseUrl"]?.jsonPrimitive?.content.orEmpty(),
+        model = o["model"]?.jsonPrimitive?.content.orEmpty(),
         capabilities = Capabilities(
             // 缺字段用默认值,不要因为一条不完整就整条丢掉配置:
             // 以前生图/生视频配置就是这么在重启时被判定成坏数据清掉的。
