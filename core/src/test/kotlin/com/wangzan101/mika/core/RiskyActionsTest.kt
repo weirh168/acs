@@ -20,6 +20,12 @@ class RiskyActionsTest {
         assertEquals("注销", RiskyActions.hits("注销账号"))
     }
 
+    @Test fun callingAlsoAsks() {
+        assertEquals("拨打", RiskyActions.hits("拨打"))
+        assertEquals("呼叫", RiskyActions.hits("呼叫 张三"))
+        assertEquals("视频通话", RiskyActions.hits("视频通话"))
+    }
+
     @Test fun socialActionsAlsoAsk() {
         assertEquals("关注", RiskyActions.hits("关注"))
         assertEquals("点赞", RiskyActions.hits("点赞"))
