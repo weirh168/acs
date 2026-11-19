@@ -403,7 +403,7 @@ object AcousticAnswer {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getInt(DELAY, 3) * 1000
 
     fun greeting(context: Context): String =
-        "您好,我是 ACS 电话助手。机主现在不方便接听,请直接说出您的姓名和事情,我会转告。"
+        "您好,我是小乐电话助手。机主现在不方便接听,请直接说出您的姓名和事情,我会转告。"
 
     /** 能不能用:需要负责接听和读状态的权限。 */
     fun available(context: Context): Boolean =

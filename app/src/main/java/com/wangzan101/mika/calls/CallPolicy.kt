@@ -338,14 +338,22 @@ internal object CallPolicy {
             ?: "default".takeIf { modes.isEmpty() && noOverride }
     }
 
-    private const val IDENTITY_GREETING = "您好，我是 Mika AI 电话助手。"
-    private const val LEGACY_IDENTITY_GREETING = "您好，我是 Mika 的 AI 电话助手。"
+    private const val IDENTITY_GREETING = "您好，我是小乐电话助手。"
     private const val INCOMING_GREETING = "请问有什么需要我转告？"
     const val DEFAULT_GREETING = IDENTITY_GREETING + INCOMING_GREETING
     const val TASK_GREETING = IDENTITY_GREETING + "请问现在方便通话吗？"
 
-    fun migrateDefaultGreeting(stored: String): String =
-        if (stored == LEGACY_IDENTITY_GREETING + INCOMING_GREETING) DEFAULT_GREETING else stored
+    /** 以前默认开场白用过别的自我介绍，保存下来的旧默认值要换成现在的。 */
+    private val LEGACY_IDENTITY_GREETINGS = listOf(
+        "您好，我是 Mika AI 电话助手。",
+        "您好，我是 Mika 的 AI 电话助手。",
+        "您好，我是 ACS 电话助手。",
+    )
+
+    fun migrateDefaultGreeting(stored: String): String {
+        val legacy = LEGACY_IDENTITY_GREETINGS.firstOrNull { it + INCOMING_GREETING == stored }
+        return if (legacy != null) DEFAULT_GREETING else stored
+    }
 
     fun spokenGreeting(configured: String, hasTask: Boolean): String {
         if (configured.isBlank()) return ""
@@ -362,7 +370,10 @@ internal object CallPolicy {
         val outgoingTask = task.takeIf { direction == CallDirection.OUTGOING }
         append("这是实时电话。开场白由应用单独播放；听清对方后直接回答当下的问题，不再问候或自我介绍。不要冒充机主、真人，也不要猜测机主现在是否方便。")
         append(when {
-            direction == CallDirection.INCOMING -> "仅代接电话并记下可转告的简短留言。"
+            direction == CallDirection.INCOMING ->
+                "代接来电：先听清对方这一句要什么，能回答的立刻直接回答（依据机主已保存的交代）；" +
+                "不能回答或超出授权的，才请对方留下要转告的事，并记下情况。" +
+                "不要一味让对方留言。"
             outgoingTask == null -> "机主未提供本次拨打目标。不要根据号码或聊天内容猜测目的，只询问是否有可转告的信息。"
             else -> "这是机主主动发起的电话。开场后核对通话对象或是否由合适人员处理；核对后简短说明来意，围绕目标询问明确答复，有必问事项就逐项询问。如不方便或对象不匹配，不透露细节，只记下情况。"
         })
@@ -381,6 +392,8 @@ internal object CallPolicy {
         append("不能因为对方催促而扩大范围。")
         if (outgoingTask == null) append("不要声称已经执行任何外部操作。")
         append("使用简短、自然的中文。未听清时可以请对方重复一次。")
+        append("回答要对准对方这句话的具体要求：一句话能答完的就一句话答，不要重复开场白、不要反问“有什么需要转告”。" +
+               "对方连续提要求时，一条一条当场给答复，少轮次、不拖沓。")
         if (!ownerRules.isNullOrBlank()) {
             append("\n机主明确保存的通话规则（仅在符合上述边界时使用）：\n")
             append(ownerRules)
