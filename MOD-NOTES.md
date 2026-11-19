@@ -1442,3 +1442,52 @@ POST https://api.agnes-ai.cn/v1/video/generations     ← 注意是单数 video
 
 `acs_draw` 工具内(下一轮实现):调 API 前先把 prompt 过一遍增强函数。
 
+## 画图技能（生图,2026-11-19 11:45 已验证）
+
+### 现状:说一句就画
+
+```
+用户:画一只小花猫
+ACS:运行 draw.py → 提示词增强 → 调 AGNES → 存盘
+      回复「已保存到 Download/Mika/draw_<时间戳>.png」
+```
+
+### 装了哪些东西
+
+| 路径 | 作用 |
+|---|---|
+| `files/sandbox/rootfs/opt/draw.py` | 固定脚本,沙箱内 `/opt/draw.py` 可直接调用 |
+| `files/sandbox/skills/skills/draw/SKILL.md` | 技能说明,让模型知道「画图时用这个」 |
+| `files/sandbox/skills/skills/draw/scripts/draw.py` | 技能目录里的同一份脚本 |
+| `files/sandbox/skills/skills/draw/scripts/manifest.json` | 声明 runnable,供技能索引识别 |
+
+### 脚本行为
+
+```
+python /opt/draw.py "一只小花猫" [1024x1024]
+```
+
+1. 提示词自动增强:用户没说风格 → 补「高清摄影风格,自然光,浅景深,细节丰富,构图讲究」;说了风格(水彩/插画/logo 等)→ 尊重原话,不叠加摄影词
+2. 调 `POST https://api.agnes-ai.cn/v1/images/generations`,model = `agnes-image-2.5-flash`
+3. 下载 PNG → 存 `/workspace/inbox/draw_<时间戳>.png`
+4. 输出:增强后提示词、保存路径、大小、源图 URL
+
+### 配置前提(缺一不可)
+
+1. AI 引擎 → 生图模型 指向 `agnes-image-2.5-flash`(provider 的 Key 必须存在,否则配置会被自动回退成「不用」)
+2. 沙箱「允许脚本联网」开着(默认 true,见 `SandboxState.networkAllowed`)
+
+### 重装后怎么恢复
+
+```
+1. AI 引擎里选生图模型 = agnes-image-2.5-flash(会用已有 AGNES Key)
+2. 把 draw.py 放回 files/sandbox/rootfs/opt/draw.py
+3. 建 files/sandbox/skills/skills/draw/{SKILL.md,scripts/{draw.py,manifest.json}}
+4. 说「画一只猫」验证
+```
+
+### 走过的弯路(别重犯)
+
+1. 先以为要写原生工具 —— 其实沙箱脚本就够,不用改 App 代码。
+2. 脚本方案一开始要用户在提示词里塞 API 地址和 Key,一次烧了 27 万 token;固化成技能后同样的事只需几千 token。
+3. 界面选了生图模型 ≠ 能画图 —— 还要有可调用的工具/脚本,两者缺一不可。
