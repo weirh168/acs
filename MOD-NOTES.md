@@ -1635,3 +1635,117 @@ background_standby_authorized = true
 
 设置 › AI 电话 › 设置 ›「通话设置」(原来是「通话质量」,`calls_profile` 文案已改):
 开场白、通话目的与说明、AI 最长秒数(15–600)、火山音色编号。
+
+## 重装后 10 分钟恢复清单（AI 接电话）
+
+按顺序做,四步走完就能接电话。命令里的包名固定 `com.wangzan101.mika.mod`。
+
+### 0. 装包（1 分钟）
+
+```powershell
+adb install -r app-debug.apk
+```
+
+### 1. 权限（2 分钟）
+
+```powershell
+$P = "com.wangzan101.mika.mod"
+foreach ($p in @(
+  "android.permission.READ_PHONE_STATE",
+  "android.permission.CALL_PHONE",
+  "android.permission.ANSWER_PHONE_CALLS",
+  "android.permission.RECORD_AUDIO",
+  "android.permission.READ_CONTACTS",
+  "android.permission.READ_MEDIA_AUDIO",
+  "android.permission.POST_NOTIFICATIONS"
+)) { adb shell pm grant $P $p }
+adb shell appops set $P MANAGE_ONGOING_CALLS allow
+adb shell appops set $P MANAGE_EXTERNAL_STORAGE allow
+```
+
+对应功能：
+
+| 权限 | 少了会怎样 |
+|---|---|
+| READ_PHONE_STATE / CALL_PHONE | 拨出卡显示「请选择」、SIM 列表空 |
+| ANSWER_PHONE_CALLS | 无法自动接起 |
+| RECORD_AUDIO | AI 听不到对方 |
+| READ_CONTACTS | 通讯录 0 个号码 |
+| READ_MEDIA_AUDIO + MANAGE_EXTERNAL_STORAGE | 转写系统通话录音失败 |
+| POST_NOTIFICATIONS | 待命/转写通知不显示 |
+
+权限给完后打开 App，进「设置 › 设备与权限 › 检查并准备」，直到显示
+「AI 电话 · 可使用 AI 接听和拨打」。
+
+### 2. 音频通道 = DIRECT（2 分钟）
+
+```
+设置 › 高级设置 › 音频通道与诊断
+  → 通话音频通道:选「直连电话音频」(DIRECT)
+  → 勾「已实测本机通话双方均能听到声音」
+```
+
+⚠️ **必须是 DIRECT**。选 REDIRECT 时电话能接起、但双方都没声音（已实测）。
+⚠️ 切换通道会重置双向音频验证，换完必须重新勾一次，否则自动接听开关灰着打不开。
+
+### 3. 实时语音凭据（3 分钟）
+
+```
+设置 › AI 声音 › 添加实时语音配置
+  配置名称     : 随意
+  接口地址(wss): wss://openspeech.bytedance.com/api/v3/duplex/realtime/dialogue
+  实时对话模型 : 1.2.6.1
+  火山音色编号 : zh_female_vv_jupiter_bigtts
+  API Key      : 火山控制台 › 语音技术 › 应用管理 里的 API Key
+→ 保存 → 设为默认 → 点「测试连接」
+```
+
+测试通过的标准：那一行从「待测试连接」变成「连接已测试」。
+
+⚠️ 填 AppID 会报「凭据或服务权限无效」；只拿到 UUID 时先当 API Key 试。
+⚠️ 别点「沿用语音转文字里的豆包凭据」——重装后 Keystore 变了，解不开，会静默拿到空值。
+
+### 4. 规则与交代（2 分钟）
+
+```
+接听页
+  ├─ 接听范围:选「接听所有来电」
+  ├─ 接听卡:两张卡都勾上(或只勾要用 AI 接的那张)
+  └─ 自动接听来电:打开 → 显示「待命中 · 等待 3 秒后接听」
+
+设置 › 通话设置
+  ├─ 开场白:您好，我是小乐电话助手。请问有什么需要我转告？
+  └─ 通话目的与说明(交代):按「一问一条」写
+```
+
+交代模板（改成自己的）：
+
+```
+有人问我在不在：说我在忙，请留言，有空时我会及时回电话。
+有人问地址：只说不方便。
+快递：放菜鸟驿站或附近快递站，取件码发我手机。
+```
+
+### 5. 收尾验证（1 分钟）
+
+```powershell
+adb shell dumpsys activity services com.wangzan101.mika.mod | findstr CallStandbyService
+```
+
+看得到 `CallStandbyService` = 待命正常；界面显示「待命中」即可打一通电话实测。
+
+### 一句话版
+
+> **装包 → 7 个权限+2 个 appops → 音频通道选 DIRECT 并重勾验证 →
+> 填 API Key 测连接 → 接听所有来电 + 打开自动接听 → 写交代 → 打一通验证。**
+
+### 常见卡点
+
+| 现象 | 原因 | 处理 |
+|---|---|---|
+| 显示「AI 电话尚未就绪」 | 电话助手没连 / 未点检查并准备 | 设置 › 设备与权限 › 检查并准备 |
+| 显示「请先配置实时语音凭据」 | 第 3 步没做或凭据无效 | 重填 API Key，**必须测试连接通过** |
+| 自动接听开关灰着 | 音频未验证 | 第 2 步重勾双向音频验证 |
+| 接得起来但没声音 | 通道是 REDIRECT | 改回 DIRECT |
+| 拨出卡显示「请选择」 | 缺 READ_PHONE_STATE/CALL_PHONE | 补授权 |
+| 通讯录读不到 | 缺 READ_CONTACTS | 补授权，或在选号弹窗点授权按钮 |
