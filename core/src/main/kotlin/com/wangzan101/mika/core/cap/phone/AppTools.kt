@@ -12,6 +12,7 @@ import com.wangzan101.mika.core.tool.Risk
 import com.wangzan101.mika.core.tool.ToolContext
 import com.wangzan101.mika.core.tool.ToolDef
 import com.wangzan101.mika.core.tool.ToolExecution
+import com.wangzan101.mika.core.uistate.toPx
 import com.wangzan101.mika.core.tool.Verb
 import com.wangzan101.mika.core.tool.argStr
 import com.wangzan101.mika.core.tool.bool
@@ -140,7 +141,27 @@ internal object LaunchApp : PhoneTool {
         val r = ctx.action(opened)
         if (r.content["ok"] != JsonPrimitive(true)) return r
         ctx.appOpened = true
+        // 冷启动常见的开屏广告:等一会儿,看到「跳过」就点掉,免得下一步卡在广告页
+        if (cold) skipSplash(ctx)
         return unreadable(ctx, p, r)
+    }
+
+    /** 看到开屏广告的「跳过/关闭广告」就点掉;最多等 8 秒,点不到就算了(不报错)。 */
+    private suspend fun skipSplash(ctx: ToolContext) {
+        val words = listOf("跳过", "跳过广告", "关闭广告", "跳过开屏")
+        repeat(8) {
+            val lines = ctx.phone.screen.readVisibleText().orEmpty()
+            val hit = lines.firstOrNull { l -> words.any { w -> l.text.trim() == w || l.text.trim().startsWith(w) } }
+            if (hit != null) {
+                val s = runCatching { ctx.phone.screen.snapshot() }.getOrNull() ?: return
+                val cx = (hit.bounds[0] + hit.bounds[2]) / 2
+                val cy = (hit.bounds[1] + hit.bounds[3]) / 2
+                runCatching { ctx.phone.screen.tapXY(toPx(cx, s.width), toPx(cy, s.height)) }
+                kotlinx.coroutines.delay(600)
+                return
+            }
+            kotlinx.coroutines.delay(1_000)
+        }
     }
 
     override fun logTarget(o: JsonObject, r: ToolExecution, ctx: ToolContext) =
