@@ -1353,3 +1353,59 @@ AGNES 的生成模型是：`agnes-image-2.1-flash`、`agnes-image-2.5-flash`（�
 `agnes-video-2.5`、`agnes-video-2.5-flash`（文生视频）。它们是**新增用途**（生成），
 不是替换「看图模型」，别混用。
 
+## 生图 / 生视频 API 实测记录（2026-11-19 10:45）
+
+### 生图（已验证可用，同步返回）
+
+```
+POST https://api.agnes-ai.cn/v1/images/generations
+Authorization: Bearer <AGNES key>
+
+{
+  "model": "agnes-image-2.5-flash",
+  "prompt": "a red apple on a white table",
+  "n": 1,
+  "size": "1024x1024"
+}
+```
+
+返回（实测）：
+
+```json
+{ "data": [ { "url": "https://cos-platform-outputs.agnes-ai.cn/images/t2i/task_xxx/output_xxx.png",
+              "b64_json": "", "revised_prompt": "" } ],
+  "created": 1795056088,
+  "task_id": "task_xxx" }
+```
+
+**同步返回 URL，不需要轮询。**
+
+### 生视频（接口存在，参数待探明）
+
+```
+POST https://api.agnes-ai.cn/v1/video/generations     ← 注意是单数 video
+{ "model": "agnes-video-2.5-flash", "prompt": "..." }
+```
+
+实测报错：`mode 不能为空 (param: mode)` —— **需要额外的 `mode` 参数**（推测 `t2v` 文生视频、`i2v` 图生视频），
+以及大概率是异步任务（返回 task_id 后再查状态）。实现前要先探明这两点。
+
+### 可用的生成模型（AGNES）
+
+| 模型 | 用途 |
+|---|---|
+| `agnes-image-2.1-flash` | 文生图 |
+| `agnes-image-2.5-flash` | 文生图（新） |
+| `agnes-video-2.5` | 文生视频 |
+| `agnes-video-2.5-flash` | 文生视频（快） |
+
+### 待实现（下一轮）
+
+1. `providers` 加图片 provider（model = `agnes-image-2.5-flash`）
+2. `uses.Image` 用途字段（数据类 + 序列化 + 用途解析）
+3. `ModelsScreen` 加「生图模型 · 画图/配图时用」一行
+4. 工具 `acs_draw(prompt, size?, n?)`：调 API → 下载 → 存**相册 Pictures/ACS/** + **工作区 inbox/**
+5. 真机验证：说「画一只猫」，相册里真的多一张图
+
+注意：`uses` 是强类型 schema，**只改 `providers.json` 不会让界面出现这一行**，必须同时改代码。
+
