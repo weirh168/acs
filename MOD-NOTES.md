@@ -1749,3 +1749,74 @@ adb shell dumpsys activity services com.wangzan101.mika.mod | findstr CallStandb
 | 接得起来但没声音 | 通道是 REDIRECT | 改回 DIRECT |
 | 拨出卡显示「请选择」 | 缺 READ_PHONE_STATE/CALL_PHONE | 补授权 |
 | 通讯录读不到 | 缺 READ_CONTACTS | 补授权，或在选号弹窗点授权按钮 |
+
+## 操作节奏:像人只对选中的 App 生效（2026-11-20）
+
+### 设置项
+
+设置 › 任务运行 › 操作节奏:
+
+```
+○ 快          全局最快,和 App 名单无关
+○ 标准（默认）  全局标准,和 App 名单无关
+● 像人         下面两行才参与判断
+    ⚙ 只在选中的 App 里像人   [开]   ← 默认常开,切到快/标准也不消失
+    ⚙ 只在哪些 App 像人        19 个 App ›
+```
+
+| 节奏 | 名单是否生效 | 行为 |
+|---|---|---|
+| 快 | ❌ | 所有 App 不停顿、一次填好 |
+| 标准 | ❌ | 所有 App 按标准节奏 |
+| 像人 + 开关开 | ✅ | **只有名单里的 App** 放慢,其他按标准 |
+| 像人 + 开关关 | ❌ | 所有 App 都放慢 |
+
+名单为空时按"全部 App 走"处理,不会因为开关开着让像人失效。
+
+### 存哪
+
+`shared_prefs/feature_flags.xml`
+
+```
+operating_pace      = FAST / STANDARD / HUMAN
+human_pace_scoped   = true（默认）
+human_pace_apps     = <包名集合>
+```
+
+### 代码怎么走
+
+1. `FeatureFlags.humanPaceApps()` / `humanPaceScoped()` 读设置;
+2. `TaskRun` 解析成 `paceIn(pkg)`:
+   ```kotlin
+   if (pace == HUMAN && scopeOn && apps.isNotEmpty() && pkg !in apps) STANDARD else pace
+   ```
+3. `TaskTools.appPacingFor: (String?) -> AppPacing` 透传到 `PhoneCapability`;
+4. `AppDwell` 用 `pacingOf(app)` **按包名缓存**各自的节奏,`after/before/outwardEnd/userAnswered` 都走它;
+5. 打字节奏同样按包名:`typing = { pkg -> paceIn(pkg).typing(...) }`。
+
+想加新的"慢节奏"档位时,只需要改 `OperatingPace` 与 `paceIn`,不用动 `AppDwell`。
+
+## 对话输入条:居中对称（2026-11-20）
+
+### 原来为什么偏
+
+```kotlin
+// 改前:比屏幕宽 10% 再左移 20dp,整条视觉上偏左
+GlassBar(Modifier.fillMaxWidth(1.10f).offset(x = (-20).dp).keepsKeyboard(), backdrop)
+
+// 改后:铺满、不偏移,左右自然对称
+GlassBar(Modifier.fillMaxWidth().keepsKeyboard(), backdrop)
+```
+
+顺带把电话图标从 36dp 收到 32dp、左内边距 10dp → 2dp,把宽度还给提示文字。
+
+### 踩过的坑
+
+试过"两侧各留 8dp + 提示文字居中",结果提示被截成「按住说话,点一下打…」——
+宽度本来就不够,留白和居中都占地方。**结论:输入条要整宽居中,不要额外加侧边距;
+提示文字保持左对齐才不会被省略号吃掉。**
+
+### 相关文件
+
+`app/src/main/java/com/wangzan101/mika/ui/ChatScreen.kt`(输入条在 `GlassBar` 那段),
+`GlassBar` 本身在 `ui/components/Surfaces.kt`(内边距 6dp、行距 4dp)。
