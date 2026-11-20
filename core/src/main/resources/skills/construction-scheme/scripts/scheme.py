@@ -294,13 +294,17 @@ class Doc:
     def __init__(self):
         self.blocks = []      # (kind, payload)
         self.chars = 0
-        self.tables = []      # (caption, headers, rows)
+        self.tables = []      # 表标题（按章编号）
+        self.table_rows = []  # (caption, headers, rows)
+        self.table_span = []  # (起块, 止块, 是否软表)
+        self.table_text = {}
         self.chapter_titles = []
         self.sections = []    # (chapter_no, text)
         self.subs3 = []       # 三级节标题
         self.chapter_chars = [0] * 13   # 1..12 章正文字数
         self.current_ch = 0
         self.chapter_at = {}
+        self.soft_left = 99      # 软表预算（由 HERMES 表数决定）
 
     def h1(self, text, page=True):
         if page:
@@ -324,12 +328,29 @@ class Doc:
             self.chapter_chars[self.current_ch] += len(text)
         self.blocks.append(("raw", para(text)))
 
-    def t(self, caption, headers, rows):
-        self.blocks.append(("raw", para(caption, align="center", bold=True, font="宋体",
+    SOFT_KEYS = ("设备配置", "材料要求", "危险源", "雨季施工重点", "应急物资储备", "施工段",
+                 "分段表", "结构参数", "主要尺寸", "断面参数", "管材参数", "沟槽尺寸",
+                 "热熔连接参数", "回填压实度", "面层指标", "路基压实度", "用工分区")
+
+    def t(self, caption, headers, rows, soft=False):
+        soft = soft or any(k in caption for k in Doc.SOFT_KEYS)
+        if soft and self.soft_left <= 0:
+            return
+        if soft:
+            self.soft_left -= 1
+        ch = self.current_ch if 1 <= self.current_ch <= 12 else 1
+        seq = sum(1 for c in self.tables if c.startswith("表%d-" % ch)) + 1
+        bare = re.sub(r"^表[0-9A-Za-z\-]+\s*", "", caption)
+        cap = "表%d-%d %s" % (ch, seq, bare)
+        start = len(self.blocks)
+        self.blocks.append(("raw", para(cap, align="center", bold=True, font="宋体",
                                         size=10.5, indent=0)))
-        self.tables.append((caption, headers, rows))
         self.blocks.append(("raw", table(headers, rows)))
         self.blocks.append(("raw", para("")))
+        self.tables.append(cap)
+        self.table_rows.append((cap, headers, rows))
+        self.table_span.append((start, len(self.blocks), soft))
+        self.table_text[cap] = (headers, rows)
 
     def render(self, cover_lines, toc=True):
         body = []
@@ -340,11 +361,55 @@ class Doc:
             body.append(para(""))
             for i, t in enumerate(self.chapter_titles, 1):
                 title = re.sub(r"^[一二三四五六七八九十]+、", "", t)
-                body.append(para("%s、%s" % (num(i) if i <= 12 else str(i), title), indent=0, align="left"))
+                dots = "…" * max(6, 30 - len(title) * 2)
+                body.append(para("%s、%s %s（　）" % (num(i) if i <= 12 else str(i), title, dots),
+                                 indent=0, align="left"))
             body.append(page_break())
         body.append("".join(b for k, b in self.blocks))
         return body
 
+
+
+
+def trim_tables(d, cap=21):
+    """表数超过 cap 时，按登记顺序删掉软表（模板表），保留工程助手原文表。"""
+    soft_keys = ("设备配置", "材料要求", "危险源", "雨季施工重点", "应急物资储备", "施工段",
+                 "分段表", "结构参数", "主要尺寸", "断面参数", "管材参数", "沟槽尺寸",
+                 "热熔连接参数", "回填压实度", "面层指标", "路基压实度", "用工分区", "工程质量目标")
+    while len(d.table_rows) > cap:
+        idx = next((i for i in range(len(d.table_span) - 1, -1, -1)
+                    if any(k in d.table_rows[i][0] for k in soft_keys)), None)
+        if idx is None:
+            break
+        start, end, _ = d.table_span[idx]
+        cap_name = d.table_rows[idx][0]
+        d.blocks[start:end] = []
+        del d.table_rows[idx]
+        del d.table_span[idx]
+        if cap_name in d.tables:
+            d.tables.remove(cap_name)
+        d.table_text.pop(cap_name, None)
+        for j in range(idx, len(d.table_span)):
+            a, b, soft = d.table_span[j]
+            d.table_span[j] = (a - (end - start), b - (end - start), soft)
+    keep = ("项目基本信息", "编制依据", "组织机构", "质量目标", "检验项目", "用工岗位",
+            "劳务报酬标准", "劳务报酬占比", "分阶段进度", "应急组织", "签章", "签署")
+    while len(d.table_rows) > cap and len(d.table_rows) > 14:
+        idx = next((i for i in range(len(d.table_rows) - 1, -1, -1)
+                    if not any(k in d.table_rows[i][0] for k in keep)), None)
+        if idx is None:
+            break
+        start, end, _ = d.table_span[idx]
+        cap_name = d.table_rows[idx][0]
+        d.blocks[start:end] = []
+        del d.table_rows[idx]
+        del d.table_span[idx]
+        if cap_name in d.tables:
+            d.tables.remove(cap_name)
+        d.table_text.pop(cap_name, None)
+        for j in range(idx, len(d.table_span)):
+            a, b, soft = d.table_span[j]
+            d.table_span[j] = (a - (end - start), b - (end - start), soft)
 
 
 def merge_hermes(d, project, cmap, table_no):
@@ -376,15 +441,80 @@ def merge_hermes(d, project, cmap, table_no):
                 if not heads:
                     continue
                 rows = [[sanitize(c, project) for c in r] for r in b.get("rows") or []]
-                table_no[0] += 1
-                cap = "表%d" % table_no[0]
-                d.tables.append((cap, heads, rows))
+                ch = d.current_ch if 1 <= d.current_ch <= 12 else 1
+                seq = sum(1 for c in d.tables if c.startswith("表%d-" % ch)) + 1
+                cap = "表%d-%d 工程助手工艺表" % (ch, seq)
+                start = idx + 1 + len(xmls)
                 xmls.append(para(cap, align="center", bold=True, font="宋体", size=10.5, indent=0))
                 xmls.append(table(heads, rows))
+                d.tables.append(cap)
+                d.table_rows.append((cap, heads, rows))
+                d.table_span.append((start, start + 2, False))
+                d.table_text[cap] = (heads, rows)
         if xmls:
             d.blocks[idx + 1:idx + 1] = [("raw", x) for x in xmls]
             inserted += 1
     return inserted
+
+
+TYPE_DETAIL = {
+ "排水渠": [
+  ("渠身混凝土", "渠身采用 C25 混凝土，坍落度控制在 30–50 mm（机械振捣），水泥用量不低于 280 kg/m³；"
+                 "C15 垫层厚度 100 mm，宽度较渠底每侧宽出 100 mm，浇筑前洒水湿润基底。" ),
+  ("渠槽开挖", "渠槽开挖宽度按设计底宽加两侧各 300 mm 工作面，深度超过 1.5 m 时按 1:0.5 放坡；"
+               "槽底不得超挖，超挖部分用 C15 混凝土回填至设计标高。" ),
+  ("伸缩沉降缝", "每 10 m 设一道伸缩缝，缝宽 20 mm，采用沥青木板或聚乙烯闭孔泡沫板填塞，"
+                 "迎水面用聚硫密封胶嵌缝，深度不小于 20 mm。" ),
+  ("抹面与养护", "渠身内壁采用 1:2 水泥砂浆抹面，厚度 20 mm，一次成活；抹面后覆盖塑料薄膜养护不少于 7 d，"
+                 "养护期内不得过水。" ),
+  ("回填与压实", "渠道两侧回填采用透水性材料，分层厚度不大于 300 mm，压实度不低于 93%，"
+                 "回填对称进行，两侧高差不大于 300 mm。" ),
+ ],
+ "灌溉管道": [
+  ("管材与压力等级", "采用 PE100 给水管，公称压力 PN1.0 MPa，DN110 外径 110 mm、壁厚 6.6 mm；"
+                     "管材进场核查出厂合格证、卫生许可与压力试验报告。" ),
+  ("沟槽断面", "沟底宽度按管外径加两侧各 300 mm 控制（DN110 取 0.6 m），沟深按设计覆土 0.8 m 控制；"
+               "土质边坡按 1:0.33 放坡，砂性土按 1:0.5。" ),
+  ("热熔连接参数", "加热板温度 200±10℃，DN110 加热时间 45 s、切换时间 5 s、保压冷却不少于 10 min；"
+                   "DN160 加热 60 s、切换 6 s、冷却不少于 12 min；端面错边量不大于壁厚的 10%。" ),
+  ("水压试验", "试验压力取工作压力的 1.5 倍且不小于 0.6 MPa，预试验 15 min 稳压后正式试验 60 min，"
+               "压力降不超过 0.05 MPa 且无渗漏为合格。" ),
+  ("回填与标识", "管顶以上 0.5 m 范围内采用细砂回填，压实度不低于 90%；管顶 0.3 m 处敷设警示带，"
+                 "转角与分水处设标识桩，间距不大于 50 m。" ),
+ ],
+ "高位水池": [
+  ("混凝土强度", "池体采用 C25 抗渗混凝土，抗渗等级 P6，水泥用量不低于 300 kg/m³，"
+                 "水胶比不大于 0.55，坍落度 120–160 mm。" ),
+  ("钢筋保护层", "底板下层钢筋保护层 40 mm，池壁内外侧 35 mm，采用同强度等级砂浆垫块，"
+                 "间距不大于 800 mm，梅花形布置。" ),
+  ("施工缝与止水", "池壁水平施工缝设在底板面上 300 mm 处，设 3 mm 厚钢板止水带，"
+                   "宽度 300 mm，搭接长度不小于 100 mm 并双面满焊。" ),
+  ("满水试验", "满水试验分三次注水，每次注至设计水深的 1/3，间隔不少于 24 h；"
+               "注满后静置 24 h 观测，渗水量不大于 2 L/(m²·d) 为合格。" ),
+  ("池外回填", "池壁混凝土强度达到设计强度 75% 后方可回填，回填土分层厚度不大于 300 mm，"
+               "压实度不低于 93%，四周对称回填。" ),
+ ],
+}
+
+
+def type_detail_lines(typ):
+    return TYPE_DETAIL.get(typ) or []
+
+
+EXPERT_CHAPTER = "十三、专家论证要求"
+
+
+def expert_block(project, reasons):
+    """超过一定规模危险性工程：补专家论证章节（附件 1.1 硬规则）。"""
+    d_parts = ["本工程触发专家论证情形：%s。" % "；".join(reasons),
+               "按《危险性较大的分部分项工程安全管理规定》，须组织不少于 5 名专家进行论证，"
+               "专家应从省级住房城乡建设主管部门专家库中抽取，与本项目参建单位有利害关系的人员不得作为专家。",
+               "论证程序：施工单位编制专项方案 → 企业内部审核（技术负责人签字）→ 监理审查 → 组织专家论证 → "
+               "按论证意见修改并重新审批 → 报监理与建设单位备案。",
+               "论证重点：支护与放坡方案的稳定性验算、监测项目与预警值、应急处置措施、"
+               "相邻建构筑物与管线保护措施、施工顺序与工序衔接。",
+               "论证资料留存：专家论证报告、修改说明、审批表、监测记录，随施工资料一并归档。"]
+    return d_parts
 
 
 def body_text(project, typ, seg, use_hermes=True):
@@ -406,11 +536,13 @@ def body_text(project, typ, seg, use_hermes=True):
     local_min = labor.get("local_ratio_min") or 0.80
     staff = project.get("staff") or []
     cmap = load_map(typ) if use_hermes else {}
+    n_hermes_tables = sum(1 for k in cmap for b in cmap[k] if b.get("kind") == "t")
     tno = [0]
     norms = project.get("norms") or []
     segs = project.get("segments") or [{"name": seg.get("name") or "（施工段待填）", "type": typ,
                                         "length_m": 0, "width_m": 0, "structure": "（待填）"}]
 
+    d.soft_left = max(0, 20 - n_hermes_tables)   # 封面 1 张 + 正文 ≤20 张
     # 第一章
     d.h1("一、工程概况", page=False)
     d.h2("1.1 项目基本信息")
@@ -530,6 +662,13 @@ def body_text(project, typ, seg, use_hermes=True):
         n5 = len([t for t in d.tables if t[0].startswith("表5-")]) + 1
         d.t("表5-%d %s" % (n5, cap), heads,
             _table_rows(cap, heads, project, segs, typ, tech_wage, common_wage))
+
+    for item_name, text in type_detail_lines(typ):
+        d.h2("5.%d %s（技术要求补充）" % (len(WORK[typ]) + type_detail_lines(typ).index((item_name, text)) + 1, item_name))
+        d.h3("5.%d.1 技术要求" % (len(WORK[typ]) + type_detail_lines(typ).index((item_name, text)) + 1))
+        d.p(text)
+        d.h3("5.%d.2 质量检验" % (len(WORK[typ]) + type_detail_lines(typ).index((item_name, text)) + 1))
+        d.p("%s完成后按设计及规范检验，允许偏差与检验频率见表6-2；不合格部位返工后复检并留存记录。" % item_name)
 
     # 第六章
     d.h1("六、质量保证措施")
@@ -660,6 +799,16 @@ def body_text(project, typ, seg, use_hermes=True):
     d.t("表A-1 签章表", ["签章项目", "内容"], [["编制单位盖章", ""], ["法定代表人或授权代理人签字", ""],
                                                 ["审批单位盖章", ""], ["审批负责人签字", ""]])
     d.t("表A-2 签署表", ["岗位", "姓名", "签字"], [["编制人", "", ""], ["审核人", "", ""], ["审批人", "", ""]])
+    if project.get("_expert_reasons"):
+        d.h1(EXPERT_CHAPTER)
+        d.h2("13.1 论证情形与依据")
+        for line in expert_block(project, project["_expert_reasons"])[:2]:
+            d.p(line)
+        d.h2("13.2 论证程序与重点")
+        for line in expert_block(project, project["_expert_reasons"])[2:]:
+            d.p(line)
+        d.t("表13-1 专家论证意见落实表", ["论证意见", "落实情况", "责任人", "完成时间"],
+            [["（待填）", "（待填）", "（待填）", "（待填）"]])
     d.blocks.append(("raw", para("编制日期：　　　年　　月　　日　　　　审批日期：　　　年　　月　　日", indent=0)))
     if cmap:
         merge_hermes(d, project, cmap, tno)
@@ -867,8 +1016,37 @@ def _table_rows(cap, heads, project, segs, typ, tech_wage, common_wage):
     return [["（待填）"] * len(heads)]
 
 
+
+def enforce_table_cap(d, cap=19):
+    """生成后按块扫描，删掉超出 cap 的软表三元组（标题段 + 表 + 空段），并同步表清单。"""
+    caps = []
+    for i, (kind, xml) in enumerate(d.blocks):
+        m = re.search(r"(表\d+-\d+)\s*([^<]{0,40})", xml or "")
+        if m and "<w:tbl>" not in (xml or ""):
+            nxt = d.blocks[i + 1][1] if i + 1 < len(d.blocks) else ""
+            if "<w:tbl>" in (nxt or ""):
+                caps.append((i, m.group(1), m.group(2).strip()))
+    soft = ("设备配置", "材料要求", "危险源", "雨季施工重点", "应急物资储备", "施工段",
+            "分段表", "结构参数", "主要尺寸", "断面参数", "管材参数", "沟槽尺寸",
+            "热熔连接参数", "回填压实度", "面层指标", "路基压实度", "用工分区")
+    protect = ("签章", "签署", "占比", "项目基本信息", "编制依据", "组织机构", "质量目标",
+               "检验项目", "用工岗位", "劳务报酬标准", "分阶段进度", "应急组织")
+    while len(caps) > cap:
+        pick = next((c for c in reversed(caps)
+                     if any(k in c[2] for k in soft) and not any(p2 in c[2] for p2 in protect)), None)
+        if pick is None and len(caps) > 14:
+            pick = next((c for c in reversed(caps) if not any(p2 in c[2] for p2 in protect)), None)
+        if pick is None:
+            break
+        i = pick[0]
+        del d.blocks[i:i + 3]
+        caps = [(idx if idx < i else idx - 3, code, name) for idx, code, name in caps if idx != i]
+    kept = {code for _, code, _ in caps}
+    d.table_rows = [r for r in d.table_rows if r[0].split(" ")[0] in kept]
+
+
 def build_docx(doc, project, typ, out_path):
-    title = "%s工程施工方案" % typ
+    title = "%s工程施工方案%s" % (typ, "（专项）" if project.get("_expert_reasons") else "")
     if project.get("name"):
         cover = [para(""), para(""), para(""),
                  para(title, style="Cover"),
@@ -878,7 +1056,9 @@ def build_docx(doc, project, typ, out_path):
                  para("施工单位：%s" % (project.get("contractor") or "（待填）"), indent=0, align="center"),
                  para("监理单位：%s" % (project.get("supervisor") or "（待填）"), indent=0, align="center"),
                  para("编制日期：%s" % (project.get("start_date") or "（待填）"), indent=0, align="center"),
-                 para(""), para(""), para(""), para(""), para(""), page_break()]
+                 para(""), para(""), para(""), para(""), para(""),
+                 table(["编制人", "技术负责人", "日期"], [["", "", ""], ["审核人", "总工程师", "日期"], ["审批人", "项目经理", "日期"]]),
+                 page_break()]
     else:
         cover = [para(title, style="Cover"), page_break()]
     body = doc.render(cover)
@@ -899,9 +1079,10 @@ def assertions(doc, project, typ):
     def add(name, ok, detail=""):
         checks.append({"check": name, "pass": bool(ok), "detail": detail})
 
-    add("1 章数与章序", len(doc.chapter_titles) == 12 and
-        [t.split("、", 1)[1] if "、" in t else t for t in doc.chapter_titles] == CH_TITLES,
-        "章数 %d" % len(doc.chapter_titles))
+    titles = [t.split("、", 1)[1] if "、" in t else t for t in doc.chapter_titles]
+    ok12 = titles[:12] == CH_TITLES and len(titles) in (12, 13)
+    ok_expert = len(titles) == 13 and titles[12] == "专家论证要求"
+    add("1 章数与章序", ok12 and (len(titles) == 12 or ok_expert), "章数 %d" % len(titles))
 
     items = WORK.get(typ) or []
     ch5_sections = [s for s in doc.sections if re.match(r"^5\.\d+\s", s)]
@@ -924,20 +1105,20 @@ def assertions(doc, project, typ):
     add("4 第五章字数≥2300", ch5_chars >= 2300, "%d 字" % ch5_chars)
     add("5 正文≥6000字", doc.chars >= 6000, "%d 字" % doc.chars)
 
-    bad_tables = [c for c, h, rows in doc.tables if any(len(r) > len(h) for r in rows)]
-    add("6 表格数≥14且行列一致", len(doc.tables) >= 14 and not bad_tables,
-        "表 %d 张%s" % (len(doc.tables), "，异常：" + "、".join(bad_tables) if bad_tables else ""))
+    bad_tables = [c for c, h, rows in doc.table_rows if any(len(r) > len(h) for r in rows)]
+    add("6 表格数≥14且行列一致", len(doc.table_rows) >= 14 and not bad_tables,
+        "表 %d 张%s" % (len(doc.table_rows), "，异常：" + "、".join(bad_tables) if bad_tables else ""))
 
     norms = project.get("norms") or []
     good_norms = [n for n in norms if re.search(r"^(GB|JGJ|CJJ|DB|JTG|SL)", (n.get("code") or ""))]
     add("7 编制依据≥5项含标准号", len(good_norms) >= 5, "%d 项" % len(good_norms))
 
-    ratio_tables = [t for t in doc.tables if "占比" in t[0]]
+    ratio_tables = [t for t, h, r in doc.table_rows if "占比" in t]
     ratio_ok = bool(ratio_tables)
     add("8 第十章含占比表", ratio_ok,
         "占比表 %d 张" % len(ratio_tables))
 
-    sign_tables = [(c, h, rows) for c, h, rows in doc.tables if h and h[0] == "签章项目"]
+    sign_tables = [(c, h, rows) for c, h, rows in doc.table_rows if h and h[0] == "签章项目"]
     cells = [cell for c, h, rows in sign_tables for row in rows for cell in row[1:]]
     blank = all(str(c).strip() == "" for c in cells)
     add("9 签章页存在且留空", bool(sign_tables) and blank,
@@ -970,14 +1151,20 @@ def load_project(path):
     return p
 
 
-def gen_one(project, typ, out_dir):
+def gen_one(project, typ, out_dir, thresholds=None):
     out_dir = out_dir or project.get("output_dir") or "out"
+    cls = classify(thresholds or {})
+    if cls["expert_review"]:
+        project = dict(project)
+        project["_expert_reasons"] = cls["reasons"]
     doc = body_text(project, typ, (project.get("segments") or [{}])[0])
     name = "%s工程施工方案.docx" % typ
     path = os.path.join(out_dir, name)
+    enforce_table_cap(doc, 19)
     build_docx(doc, project, typ, path)
     rep = assertions(doc, project, typ)
-    return {"type": typ, "file": path, "chapters": len(doc.chapter_titles),
+    return {"type": typ, "file": path, "expert": bool(project.get("_expert_reasons")),
+            "chapters": len(doc.chapter_titles),
             "sections": len(doc.sections), "h3": len(doc.subs3),
             "chars": doc.chars, "tables": len(doc.tables),
             "ch5_chars": doc.chapter_chars[5],
@@ -999,7 +1186,9 @@ def main(argv):
         typ = arg("--type")
         if not typ:
             raise SystemExit("--type 必填（%s）" % "、".join(WORK))
-        r = gen_one(project, typ, arg("--out"))
+        th = {"depth": arg("--depth"), "formwork": arg("--formwork"),
+              "lift_kn": arg("--lift-kn"), "scaffold": arg("--scaffold")}
+        r = gen_one(project, typ, arg("--out"), th)
         print(json.dumps(r, ensure_ascii=False))
     elif cmd == "batch":
         project = load_project(arg("--project", "project.json"))
@@ -1007,7 +1196,9 @@ def main(argv):
         if arg("--types") and arg("--types") != "all":
             types = arg("--types").split(",")
         out_dir = arg("--out") or project.get("output_dir") or "out"
-        results = [gen_one(project, t, out_dir) for t in types]
+        th = {"depth": arg("--depth"), "formwork": arg("--formwork"),
+              "lift_kn": arg("--lift-kn"), "scaffold": arg("--scaffold")}
+        results = [gen_one(project, t, out_dir, th) for t in types]
         lines = ["# 批量生成汇总", "", "| 类型 | 章 | 节 | 三级节 | 正文 | 表 | 第五章 | 自检 |", "|---|---|---|---|---|---|---|---|"]
         for r in results:
             lines.append("| %s | %d | %d | %d | %d | %d | %d | %s |" % (
