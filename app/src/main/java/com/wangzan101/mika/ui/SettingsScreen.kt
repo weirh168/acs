@@ -136,6 +136,7 @@ fun SettingsScreen(
     var muteTarget by remember { mutableStateOf(flags.muteTarget()) }
     var operatingPace by remember { mutableStateOf(flags.operatingPace()) }
     var humanPaceApps by remember { mutableStateOf(flags.humanPaceApps()) }
+    var humanPaceScoped by remember { mutableStateOf(flags.humanPaceScoped()) }
     var stepLimit by remember { mutableStateOf(flags.taskStepLimit()) }
     var tokenBudget by remember { mutableStateOf(flags.taskTokenBudget()) }
     var selfConfig by remember { mutableStateOf(flags.selfConfig()) }
@@ -276,6 +277,8 @@ fun SettingsScreen(
             operatingPace = operatingPace, onOperatingPace = { flags.setOperatingPace(it); operatingPace = it },
             humanPaceApps = humanPaceApps,
             onHumanPaceApps = { flags.setHumanPaceApps(it); humanPaceApps = it },
+            humanPaceScoped = humanPaceScoped,
+            onHumanPaceScoped = { flags.setHumanPaceScoped(it); humanPaceScoped = it },
             stepLimit = stepLimit, onStepLimit = { flags.setTaskStepLimit(it); stepLimit = it },
             tokenBudget = tokenBudget, onTokenBudget = { flags.setTaskTokenBudget(it); tokenBudget = it },
             selfConfig = selfConfig, onSelfConfig = { flags.setSelfConfig(it); selfConfig = it },

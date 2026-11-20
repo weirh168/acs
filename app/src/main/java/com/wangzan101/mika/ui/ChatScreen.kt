@@ -1981,8 +1981,8 @@ internal fun Composer(
                 VoiceFloat(vh, vState, title, backdrop, reduceMotion)
             }
             Box(Modifier.fillMaxWidth()) {
-            // 比原来宽 10%:两侧各溢出约 20dp(屏幕边缘自然裁掉)
-            GlassBar(Modifier.fillMaxWidth(1.10f).offset(x = (-20).dp).keepsKeyboard(), backdrop) {
+            // 整宽居中：不再向左偏，两边自然对称
+            GlassBar(Modifier.fillMaxWidth().keepsKeyboard(), backdrop) {
                 if (showAttach) {
                     val label = if (panel == Panel.Open) AttachCopy.CLOSE else AttachCopy.ADD
                     val blockedHint = stringResource(R.string.attach_blocked_running)
@@ -2001,20 +2001,21 @@ internal fun Composer(
                 if (onOpenCalls != null) {
                     // 电话图标用系统同款:绿色圆角方块 + 白色话筒
                     Box(
-                        Modifier.padding(start = 10.dp).size(36.dp).clip(RoundedCornerShape(10.dp))
+                        Modifier.padding(start = 2.dp).size(32.dp).clip(RoundedCornerShape(10.dp))
                             .clickable(role = Role.Button) { onOpenCalls() },
                         contentAlignment = Alignment.Center,
                     ) {
                         Image(
                             painter = painterResource(R.drawable.ic_acs_call),
                             contentDescription = "AI 接打电话",
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(32.dp),
                         )
                     }
                 }
                 Box(Modifier.weight(1f).padding(start = if (showAttach) 2.dp else 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)) {
                     val converting = vState is HoldToTalk.State.Converting
                     if (text.isEmpty() && !converting) {
+                        // 居中会被截断：保持左对齐，提示完整可读
                         if (vh != null) VoicePlaceholder(mode, followUpMode)
                         else Text(ChatCopy.placeholder(mode, hasHistory, followUpMode), style = MikaType.Body, color = c.ink3, maxLines = 1)
                     }

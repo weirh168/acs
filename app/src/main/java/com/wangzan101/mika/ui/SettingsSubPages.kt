@@ -293,6 +293,7 @@ fun DuringWorkScreen(
     autonomous: Boolean = false, onAutonomous: (Boolean) -> Unit = {},
     operatingPace: OperatingPace = OperatingPace.DEFAULT, onOperatingPace: (OperatingPace) -> Unit = {},
     humanPaceApps: Set<String> = emptySet(), onHumanPaceApps: (Set<String>) -> Unit = {},
+    humanPaceScoped: Boolean = true, onHumanPaceScoped: (Boolean) -> Unit = {},
     selfConfig: Boolean = false, onSelfConfig: (Boolean) -> Unit = {},
     selfOperate: Boolean = false, onSelfOperate: (Boolean) -> Unit = {},
     pipOperate: Boolean = false, onPipOperate: (Boolean) -> Unit = {},
@@ -413,12 +414,22 @@ fun DuringWorkScreen(
                 RadioRow(paceLabel(p), selected = p == operatingPace, onClick = { onOperatingPace(p) }, subtitle = paceDetail(p), first = i == 0)
             }
             // “像人”只对选中的 App 生效：没列出的 App 按标准走
-            if (operatingPace == OperatingPace.HUMAN) {
+            run {
+                // 这两项一直摆着（默认常开），不随上面选了快/标准而消失；只在“像人”时真正生效
                 var picking by remember { mutableStateOf(false) }
-                val context = LocalContext.current
+                val idleHint = if (operatingPace == OperatingPace.HUMAN) "" else "（当前不是像人，切到像人才生效）"
+                ListRow(
+                    MikaIcons.Gear, "只在选中的 App 里像人",
+                    when {
+                        !humanPaceScoped -> "已关闭：所有 App 都像人"
+                        humanPaceApps.isEmpty() -> "默认开 · 还没选 App，暂时按全部 App 走" + idleHint
+                        else -> "默认开 · " + humanPaceApps.size.toString() + " 个 App，其他 App 按标准走" + idleHint
+                    },
+                    onClick = { onHumanPaceScoped(!humanPaceScoped) },
+                ) { MikaSwitch(humanPaceScoped, onHumanPaceScoped, Modifier.testTag("work-pace-scoped")) }
                 ListRow(
                     MikaIcons.Gear, "只在哪些 App 像人",
-                    if (humanPaceApps.isEmpty()) "全部 App" else humanPaceApps.size.toString() + " 个 App，其他 App 按标准走",
+                    if (humanPaceApps.isEmpty()) "全部 App" else humanPaceApps.size.toString() + " 个 App" + idleHint,
                     onClick = { picking = true },
                 ) { RowChevron() }
                 if (picking) PaceAppsDialog(

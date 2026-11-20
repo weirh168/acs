@@ -696,7 +696,8 @@ class TaskRun(
             // 在 App 里操作的节奏(设置 › 任务运行);评测、真机验收按钩子覆盖
             val pace = env.evalHooks.operatingPace ?: FeatureFlags.get(service).operatingPace()
             // “像人”只对选中的 App 生效，没列出的按标准走
-            val humanApps = if (env.evalHooks.operatingPace != null) emptySet() else FeatureFlags.get(service).humanPaceApps()
+            val humanScope = env.evalHooks.operatingPace == null && FeatureFlags.get(service).humanPaceScoped()
+            val humanApps = if (!humanScope) emptySet() else FeatureFlags.get(service).humanPaceApps()
             val paceIn: (String?) -> OperatingPace = { pkg ->
                 if (pace == OperatingPace.HUMAN && humanApps.isNotEmpty() && (pkg == null || pkg !in humanApps))
                     OperatingPace.STANDARD else pace
