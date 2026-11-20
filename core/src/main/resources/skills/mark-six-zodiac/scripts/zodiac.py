@@ -94,9 +94,21 @@ def cmd_audit(codes):
                       "zodiac": rows}, ensure_ascii=False))
 
 
+
+def issue_of(r):
+    return str(r.get("issue") or r.get("period") or "")
+
+
+def special_of(r):
+    v = r.get("special")
+    if v is None:
+        raise SystemExit("开奖记录缺少 special（特码）：%s" % r)
+    return int(v)
+
+
 def load_draws(path):
     rows = json.load(open(path, encoding="utf-8"))
-    rows.sort(key=lambda r: str(r["period"]))
+    rows.sort(key=lambda r: issue_of(r))
     return rows
 
 
@@ -108,7 +120,7 @@ def s4_scores(draws):
     for z in ALL:
         miss[z] = n
         for i in range(n - 1, -1, -1):
-            if zodiac(draws[i]["special"]) == z:
+            if zodiac(special_of(draws[i])) == z:
                 miss[z] = n - 1 - i
                 break
     counts = {z: 0 for z in ALL}
@@ -117,7 +129,7 @@ def s4_scores(draws):
             seg = draws[-w:] if n >= w else draws
             c = 0
             for r in seg:
-                for num in list(r.get("regular") or []) + [r["special"]]:
+                for num in list(r.get("regular") or []) + [special_of(r)]:
                     if zodiac(num) == z:
                         c += 1
             counts[z] += (c / len(seg) if seg else 0) / len(number_map()[z]) / 3.0
@@ -137,14 +149,14 @@ def cmd_s4(draws_path, period):
         raise SystemExit("缺少 --draws：S4 必须有开奖历史，不能用估算代替")
     draws = load_draws(draws_path)
     if period:
-        draws = [r for r in draws if str(r["period"]) < str(period)]
+        draws = [r for r in draws if issue_of(r) < str(period)]
     if len(draws) < 120:
         raise SystemExit("历史不足 120 期（当前 %d），S4 的三个窗口不齐，请先补数据" % len(draws))
     score, order = s4_scores(draws)
     print(json.dumps({"ok": True, "rule": "S4-frozen",
                       "top3": order[:3], "scores": score,
                       "based_on_periods": len(draws),
-                      "based_until": str(draws[-1]["period"])}, ensure_ascii=False))
+                      "based_until": issue_of(draws[-1])}, ensure_ascii=False))
 
 
 def cmd_fill(codes, top3, draws_path):
@@ -160,7 +172,7 @@ def cmd_fill(codes, top3, draws_path):
         # 该肖热榜最热的一码（并列取小号）
         best, bestc = None, -1
         for n in m[z]:
-            c = sum(1 for r in draws[-120:] for x in list(r.get("regular") or []) + [r["special"]] if x == n)
+            c = sum(1 for r in draws[-120:] for x in list(r.get("regular") or []) + [special_of(r)] if x == n)
             if c > bestc:
                 best, bestc = n, c
         if best is not None:
