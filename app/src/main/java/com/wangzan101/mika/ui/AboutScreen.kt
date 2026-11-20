@@ -71,6 +71,7 @@ import com.wangzan101.mika.ui.components.ValueTone
 import com.wangzan101.mika.ui.theme.MikaIcons
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import androidx.compose.foundation.layout.width
 
 /** 关于页上点开的底部面板。 */
 private enum class AboutSheet { Update, Changelog, Feedback, Diagnostics, Contact }
@@ -150,9 +151,10 @@ fun AboutScreen(
         GroupCard {
             ListRow(MikaIcons.Bug, AboutCopy.FEEDBACK, AboutCopy.FEEDBACK_SUB, first = true, onClick = { sheet = AboutSheet.Feedback }) { RowChevron() }
         }
-        GroupCard {
-            ListRow(MikaIcons.Code, AboutCopy.REPO, AboutCopy.REPO_SUB, first = true, onClick = { onOpenUrl(MikaLinks.REPO) }) { ExternalMark() }
-        }
+        // “开源仓库”这一行按要求隐藏；要恢复把下面三行取消注释即可
+        // GroupCard {
+        //     ListRow(MikaIcons.Code, AboutCopy.REPO, AboutCopy.REPO_SUB, first = true, onClick = { onOpenUrl(MikaLinks.REPO) }) { ExternalMark() }
+        // }
 
         Row(
             Modifier.fillMaxWidth().padding(top = 2.dp).background(c.okSoft, RoundedCornerShape(14.dp)).padding(horizontal = 14.dp, vertical = 12.dp),
@@ -349,7 +351,11 @@ private fun ContactAuthorSheet(onDismiss: () -> Unit) {
                 Image(
                     painter = androidx.compose.ui.res.painterResource(R.drawable.author_wechat_qr),
                     contentDescription = "作者微信二维码，长按保存并打开微信扫一扫",
-                    modifier = Modifier.padding(top = 12.dp).size(220.dp)
+                    // 新图是竖版（头像 + 二维码 + 底字），按原比例显示，不裁不拉伸
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                    modifier = Modifier.padding(top = 12.dp)
+                        .width(240.dp)
+                        .aspectRatio(604f / 900f)
                         .clip(RoundedCornerShape(12.dp))
                         .combinedClickable(
                             onClick = {},
