@@ -5,7 +5,8 @@
 两者命中概率都是「买入码数/49」,期望都为负;区别只在选号依据,不是预测模型。
 
 用法:
-  m23data.py record --issue 2026323 --regular 33,8,29,15,41,23 --special 47 [--dir DIR]
+  m23data.py record --issue 2026323 --regular 2,8,9,15,33,41 --special 47 [--dir DIR]
+  m23data.py import-csv --file raw.csv [--dir DIR]   # 711 导出 CSV，整批导入并校验
   m23data.py analyze [--dir DIR] [--window 120]
   m23data.py combo [--dir DIR] [--k 23] [--window 120] [--max-age-hours 72]
   m23data.py status [--dir DIR]
@@ -97,6 +98,53 @@ def freshness(rows, max_age_hours):
           ("最新一期 %s 抓于 %.1f 小时前，超过 %.0f 小时，数据不是当期的；必须重新抓取后再出码" %
            (rows[-1]["issue"], age, max_age_hours))
     return ok, round(age, 1), msg
+
+
+
+def cmd_import_csv(d, path, replace):
+    """导入 711「导出 CSV」：列 = 彩种,期号,开奖时间,号码区域,开奖号码（6 正码 + 特码）。"""
+    import csv as _csv
+    if not path or not os.path.exists(path):
+        raise SystemExit("CSV 不存在：%s" % path)
+    rows = load(d) if not replace else []
+    have = {str(r["issue"]) for r in rows}
+    added, skipped, bad = 0, 0, []
+    now = datetime.now().isoformat(timespec="seconds")
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        for rec in _csv.reader(f):
+            if len(rec) < 5 or not rec[1].strip().isdigit():
+                continue
+            issue = rec[1].strip()
+            zones = rec[3].split()
+            nums = [int(x) for x in rec[4].split() if x.strip().isdigit()]
+            if zones.count("special") != 1 or len(nums) != len(zones):
+                bad.append({"issue": issue, "reason": "区域与号码数不一致", "raw": rec})
+                continue
+            si = zones.index("special")
+            special = nums[si]
+            regular = [n for i, n in enumerate(nums) if i != si]
+            if len(regular) != 6 or len(set(regular)) != 6 or special in regular:
+                bad.append({"issue": issue, "reason": "正码/特码不合法", "raw": rec})
+                continue
+            if any(not 1 <= n <= 49 for n in regular + [special]):
+                bad.append({"issue": issue, "reason": "号码越界", "raw": rec})
+                continue
+            if issue in have:
+                skipped += 1
+                continue
+            rows.append({"issue": issue, "regular": regular, "special": special, "recorded": now})
+            have.add(issue)
+            added += 1
+    save(d, rows)
+    rows.sort(key=lambda r: str(r["issue"]))
+    issues = [str(r["issue"]) for r in rows]
+    gaps = [(a, b) for a, b in zip(issues, issues[1:]) if int(b) - int(a) != 1]
+    print(json.dumps({
+        "ok": True, "added": added, "skipped_existing": skipped, "bad": bad[:5],
+        "total": len(rows), "range": [issues[0], issues[-1]] if issues else None,
+        "gaps": gaps[:5], "gaps_count": len(gaps),
+        "note": "gaps 是期号断档，跨年或停开时可能出现；同一批次内断档要回查",
+    }, ensure_ascii=False))
 
 
 def cmd_record(d, issue, regular, special):
@@ -279,7 +327,9 @@ def main(argv):
         raise SystemExit(__doc__)
     cmd = argv[1]
     d = arg(argv, "--dir") or base_dir()
-    if cmd == "record":
+    if cmd == "import-csv":
+        cmd_import_csv(d, arg(argv, "--file"), "--replace" in argv)
+    elif cmd == "record":
         cmd_record(d, arg(argv, "--issue"), nums(arg(argv, "--regular", "")), int(arg(argv, "--special", 0)))
     elif cmd == "analyze":
         cmd_analyze(d, int(arg(argv, "--window", 120) or 120))

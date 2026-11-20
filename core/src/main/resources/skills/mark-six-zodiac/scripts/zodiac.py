@@ -8,7 +8,7 @@ top3 覆盖约 29%(322期),随机基线 25%,未达显著。
   zodiac.py map
   zodiac.py quota --full 鸡 --empty 马
   zodiac.py audit --codes 3,4,9,10
-  zodiac.py s4 --draws DRAW.json [--period 2026318]
+  zodiac.py s4 --draws DRAW.json [--period 2026318] [--allow-short]
   zodiac.py fill --codes 1,2,3 --top3 兔,虎,猪 --draws DRAW.json
 
 draws.json 形如 [{"period":"2026317","regular":[31,49,30,22,43,24],"special":26}, ...]
@@ -112,7 +112,7 @@ def load_draws(path):
     return rows
 
 
-def s4_scores(draws):
+def s4_scores(draws, windows=(30, 60, 120)):
     """S4:压力分 = 0.6×minmax(遗漏期数) + 0.4×minmax(多窗口每码归一热榜)。"""
     n = len(draws)
     # 遗漏:该肖最近一次当特码距今多少期
@@ -125,7 +125,7 @@ def s4_scores(draws):
                 break
     counts = {z: 0 for z in ALL}
     for z in ALL:
-        for w in (30, 60, 120):
+        for w in windows:
             seg = draws[-w:] if n >= w else draws
             c = 0
             for r in seg:
@@ -144,28 +144,39 @@ def s4_scores(draws):
     return score, order
 
 
-def cmd_s4(draws_path, period):
+def cmd_s4(draws_path, period, allow_short=False):
     if not draws_path or not os.path.exists(draws_path):
         raise SystemExit("缺少 --draws：S4 必须有开奖历史，不能用估算代替")
     draws = load_draws(draws_path)
     if period:
         draws = [r for r in draws if issue_of(r) < str(period)]
-    if len(draws) < 120:
-        raise SystemExit("历史不足 120 期（当前 %d），S4 的三个窗口不齐，请先补数据" % len(draws))
-    score, order = s4_scores(draws)
-    print(json.dumps({"ok": True, "rule": "S4-frozen",
-                      "top3": order[:3], "scores": score,
-                      "based_on_periods": len(draws),
-                      "based_until": issue_of(draws[-1])}, ensure_ascii=False))
+    full = len(draws) >= 120
+    if not full and not allow_short:
+        raise SystemExit("历史不足 120 期（当前 %d），S4 三个窗口不齐；"
+                         "要按可用窗口做降级计算，加 --allow-short" % len(draws))
+    if not full and len(draws) < 30:
+        raise SystemExit("历史不足 30 期（当前 %d），连降级口径都不够，先补数据" % len(draws))
+    windows = (30, 60, 120) if full else tuple(w for w in (30, 60, 120) if w <= len(draws))
+    score, order = s4_scores(draws, windows)
+    out = {"ok": True, "rule": "S4-frozen" if full else "S4-degraded",
+           "top3": order[:3], "scores": score,
+           "based_on_periods": len(draws), "based_until": issue_of(draws[-1]),
+           "windows_used": list(windows), "degraded": not full}
+    if not full:
+        out["warning"] = ("样本只有 %d 期（完整 S4 需 ≥120），窗口只用 %s；"
+                          "结果按降级口径计算，只能当参考，不是完整 S4。" % (len(draws), list(windows)))
+    print(json.dumps(out, ensure_ascii=False))
 
 
-def cmd_fill(codes, top3, draws_path):
+def cmd_fill(codes, top3, draws_path, allow_short=False):
     if not draws_path or not os.path.exists(draws_path):
         raise SystemExit("缺少 --draws：补码要按热榜挑号，必须有开奖历史")
     draws = load_draws(draws_path)
     m = number_map()
     codes = list(dict.fromkeys(codes))
     added, removed = [], []
+    if len(draws) < 20:
+        raise SystemExit("历史不足 20 期（当前 %d），补码无法按热榜挑号" % len(draws))
     for z in top3:
         if any(n in codes for n in m[z]):
             continue
@@ -245,11 +256,11 @@ def main(argv):
         codes = [int(x) for x in arg(argv, "--codes", "").replace(" ", "").split(",") if x]
         cmd_audit(codes)
     elif cmd == "s4":
-        cmd_s4(arg(argv, "--draws"), arg(argv, "--period"))
+        cmd_s4(arg(argv, "--draws"), arg(argv, "--period"), "--allow-short" in argv)
     elif cmd == "fill":
         codes = [int(x) for x in arg(argv, "--codes", "").replace(" ", "").split(",") if x]
         top3 = [z for z in arg(argv, "--top3", "").split(",") if z]
-        cmd_fill(codes, top3, arg(argv, "--draws"))
+        cmd_fill(codes, top3, arg(argv, "--draws"), "--allow-short" in argv)
     else:
         raise SystemExit(__doc__)
 
