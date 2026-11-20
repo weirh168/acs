@@ -460,7 +460,7 @@ fun ChatDrawer(
             // 管理员入口只在「调试包 + 管理员机」出现:发布的正式包(非 DEBUG)里根本没有这个入口
             if (com.wangzan101.mika.BuildConfig.DEBUG && isAdminDevice(drawerCtx)) {
                 var adminOpen by remember { mutableStateOf(false) }
-                NavEntry(MikaIcons.Gear, "管理员 · 生成激活码", onClick = { adminOpen = true })
+                NavEntry(MikaIcons.Gear, "管理员", onClick = { adminOpen = true })
                 if (adminOpen) AdminCodeDialog(isAdmin = true) { adminOpen = false }
             }
             if (membershipOpen) MembershipDialog { membershipOpen = false }

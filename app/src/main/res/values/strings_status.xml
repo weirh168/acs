@@ -35,13 +35,13 @@
     <string name="heads_up_card_action">How to change it</string>
     <string name="heads_up_card_title_short">“%1$s”</string>
     <string name="heads_up_page_title">Let these two kinds of notification pop up</string>
-    <string name="heads_up_page_intro">Each row below opens that channel in system settings. What you want is Pop on screen (some phones call it Banner or Floating notification).</string>
+    <string name="heads_up_page_intro">Tap each row below and set it to pop up on screen (some systems call it banner).</string>
     <string name="heads_up_title">“%1$s” notifications won’t pop up</string>
     <string name="heads_up_lead_attention">When you need to take over or approve</string>
     <string name="heads_up_lead_result">When a task finishes</string>
     <string name="heads_up_also">"The same goes for “%1$s”. "</string>
     <string name="heads_up_body">%1$s, these notifications now land quietly in the shade and are easy to miss. %2$sTap “%3$s” and turn on “Pop on screen”.</string>
-    <string name="heads_up_path">Settings › Apps › ACS › Notifications › %1$s › Pop on screen (some phones call it “Banner” or “Floating notification”)</string>
+    <string name="heads_up_path">Path: Settings › Apps › ACS › Notifications › %1$s › Pop up on screen</string>
     <string name="banner_too_old">Phone control unavailable</string>
     <string name="banner_too_old_detail">Chat, web and sandbox tasks are available; phone control needs Android 12 or later</string>
     <string name="learn_more">Learn more</string>

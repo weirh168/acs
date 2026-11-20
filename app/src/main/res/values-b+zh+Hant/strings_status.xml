@@ -34,7 +34,7 @@
     <string name="heads_up_lead_result">任務做完時</string>
     <string name="heads_up_also">「%1$s」的通知也一樣。</string>
     <string name="heads_up_body">%1$s，這類通知現在只安靜地進通知欄，容易錯過。%2$s點「%3$s」，開啟「在螢幕上彈出」。</string>
-    <string name="heads_up_path">系統設定 › 應用程式 › ACS › 通知 › %1$s › 在螢幕上彈出（有的系統叫「橫幅」「浮動通知」）</string>
+    <string name="heads_up_path">路徑：系統設定 › 應用 › ACS › 通知 › %1$s › 在螢幕上彈出</string>
     <string name="banner_too_old">手機操作不可用</string>
     <string name="banner_too_old_detail">可以聊天、使用網頁和沙盒；手機操作需要 Android 12 及以上</string>
     <string name="learn_more">瞭解</string>

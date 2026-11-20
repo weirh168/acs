@@ -33,13 +33,13 @@
     <string name="heads_up_card_action">看看怎么改</string>
     <string name="heads_up_card_title_short">「%1$s」</string>
     <string name="heads_up_page_title">让这两类通知弹出来</string>
-    <string name="heads_up_page_intro">下面每一行点进去就是那个频道的系统设置。要的效果是「在屏幕上弹出」（有的系统叫「横幅」「悬浮通知」）。</string>
+    <string name="heads_up_page_intro">点下面两行，把通知改成「在屏幕上弹出」（有的系统叫「横幅」）。</string>
     <string name="heads_up_title">「%1$s」的通知不会弹出</string>
     <string name="heads_up_lead_attention">要你接手或同意时</string>
     <string name="heads_up_lead_result">任务做完时</string>
     <string name="heads_up_also">「%1$s」的通知也一样。</string>
-    <string name="heads_up_body">%1$s，这类通知现在只安静地进通知栏，容易错过。%2$s点「%3$s」，打开「在屏幕上弹出」。</string>
-    <string name="heads_up_path">系统设置 › 应用 › ACS › 通知 › %1$s › 在屏幕上弹出（有的系统叫「横幅」「悬浮通知」）</string>
+    <string name="heads_up_body">%1$s，现在只静静进通知栏，容易错过。%2$s</string>
+    <string name="heads_up_path">路径：系统设置 › 应用 › ACS › 通知 › %1$s › 在屏幕上弹出</string>
     <string name="banner_too_old">手机操作不可用</string>
     <string name="banner_too_old_detail">可以聊天、使用网页和沙箱；手机操作需要安卓 12 及以上</string>
     <string name="learn_more">了解</string>

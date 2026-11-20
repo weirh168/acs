@@ -191,26 +191,30 @@ fun NotificationsScreen(status: SystemStatus, onFix: (Fix) -> Unit, onBack: () -
         if (lowered != null) {
             GroupLabel(StatusCopy.HEADS_UP_PAGE_TITLE)
             GroupCard {
-                Column(Modifier.padding(16.dp).testTag("notif-heads-up-explain")) {
+                // 三行说清楚：怎么改、为什么、路径
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 14.dp).testTag("notif-heads-up-explain")) {
                     Text(
                         StatusCopy.HEADS_UP_PAGE_INTRO,
-                        fontSize = 14.5.sp, lineHeight = 23.sp, color = MikaTheme.colors.ink2,
+                        fontSize = 13.5.sp, lineHeight = 20.sp, color = MikaTheme.colors.ink2,
                     )
-                    Text(
-                        StatusCopy.headsUpExplain(lowered), Modifier.padding(top = 10.dp),
-                        fontSize = 14.sp, lineHeight = 22.sp, color = MikaTheme.colors.ink2,
-                    )
+                    // 原因与路径两段已按要求隐藏，只留“怎么改”一句
                 }
             }
         }
         GroupCard {
+            // 总开关：开着就是已允许；点一下开/关都去系统里改真正的开关
+            val notifAllowed = o.appAllowed
             ListRow(
                 MikaIcons.Bell, stringResource(R.string.settings_notif_master),
-                if (o.appAllowed) StatusCopy.NOTIF_APP_SUBTITLE_ON else StatusCopy.NOTIF_APP_SUBTITLE_OFF,
-                first = true, tone = if (o.appAllowed) TileTone.Neutral else TileTone.Bad,
-                onClick = if (o.appAllowed) null else ({ onFix(Fix.AllowNotifications) }),
+                if (notifAllowed) StatusCopy.NOTIF_APP_SUBTITLE_ON else StatusCopy.NOTIF_APP_SUBTITLE_OFF,
+                first = true, tone = if (notifAllowed) TileTone.Neutral else TileTone.Bad,
+                onClick = { onFix(Fix.AllowNotifications) },
             ) {
-                if (o.appAllowed) RowValue(stringResource(R.string.settings_allowed), ValueTone.Ok) else RowValue(StatusCopy.HEADS_UP_ACTION, ValueTone.Link)
+                MikaSwitch(
+                    notifAllowed,
+                    { on -> if (on != notifAllowed) onFix(Fix.AllowNotifications) },
+                    Modifier.testTag("notif-master-switch"),
+                )
             }
         }
         GroupLabel(stringResource(R.string.settings_task_notifs))
@@ -219,7 +223,7 @@ fun NotificationsScreen(status: SystemStatus, onFix: (Fix) -> Unit, onBack: () -
             ChannelRowItem(StatusCopy.RESULT_CHANNEL, StatusCopy.NOTIF_RESULT_WHEN, o.result, Fix.OpenResultChannel, onFix)
             ChannelRowItem(StatusCopy.PROGRESS_CHANNEL, StatusCopy.NOTIF_PROGRESS_WHEN, o.progress, Fix.OpenProgressChannel, onFix)
         }
-        FooterNote(StatusCopy.NOTIF_FOOTER)
+        // 底部这段与顶部路径重复，按要求不再显示
         GroupCard {
             ListRow(
                 MikaIcons.Mute, stringResource(R.string.settings_scheduled_quiet),

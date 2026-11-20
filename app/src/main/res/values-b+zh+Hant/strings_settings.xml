@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="settings_personal_start">啟動時開啟個人助理</string>
+    <string name="settings_personal_start">助手</string>
     <string name="settings_personal_start_sub">將個人助理設為 ACS 的起始畫面</string>
     <string name="language_title">語言</string>
     <string name="language_system">跟隨系統</string>
@@ -11,11 +11,11 @@
     <string name="settings_model_sub">模型、服務商與 Token 用量</string>
     <string name="settings_not_set">未設定</string>
     <string name="settings_phone_ops">手機操作</string>
-    <string name="settings_during_work">任務運行</string>
+    <string name="settings_during_work">任務設定</string>
     <string name="settings_during_work_sub">自主模式、操作節奏、步數上限與聲音</string>
     <string name="settings_notif_sub">什麼時候彈出、去系統裡改</string>
     <string name="settings_privacy">我的資料</string>
-    <string name="settings_memory_data">記憶與資料</string>
+    <string name="settings_memory_data">記憶數據</string>
     <string name="settings_memory_sub">記憶、技能、操作路線與網站登入</string>
     <string name="settings_saved_data">儲存的資料</string>
     <string name="settings_web_logins">網站登入</string>
@@ -71,7 +71,7 @@
     <plurals name="settings_count_tasks">
         <item quantity="other">%1$d 個</item>
     </plurals>
-    <string name="capsule_settings_title">浮動膠囊</string>
+    <string name="capsule_settings_title">小膠囊</string>
     <string name="capsule_settings_sub">用別的 App 時，在螢幕上看任務進展</string>
     <string name="capsule_settings_foot">膠囊借用 ACS 已開著的無障礙服務畫在螢幕上，不用另外授權；無障礙服務沒開或畫不出來時，照舊用通知提醒你。</string>
     <string name="capsule_settings_background">有的手機會關掉背景的 App；膠囊不見了的話，請在系統設定裡允許 ACS 在背景執行、自動啟動。</string>
@@ -202,7 +202,7 @@
     <string name="settings_token_budget_custom">自訂 Token 預算</string>
     <string name="settings_token_budget_apply">使用</string>
     <string name="settings_token_budget_invalid">請輸入 %1$s 到 %2$s 的整數。</string>
-    <string name="settings_auto_archive">自動歸檔對話</string>
+    <string name="settings_auto_archive">舊對話設定</string>
     <string name="settings_auto_archive_sub">太久沒有新訊息的對話自動收進歸檔</string>
     <string name="settings_auto_archive_hint">超過選定的時間沒有新訊息的對話會收進歸檔。置頂的對話和有任務在運行的對話不歸檔；隨時可以在對話列表的歸檔裡恢復。</string>
     <plurals name="settings_auto_archive_days">
