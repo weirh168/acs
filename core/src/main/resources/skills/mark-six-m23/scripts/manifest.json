@@ -5,5 +5,12 @@
 "needs": [
 "apk:python3"
 ]
+},
+{
+"file": "scripts/m23data.py",
+"runnable": true,
+"needs": [
+"apk:python3"
+]
 }
 ]
