@@ -40,6 +40,9 @@ import com.wangzan101.mika.ui.components.RowChevron
 import com.wangzan101.mika.ui.components.SheetAction
 import com.wangzan101.mika.ui.theme.MikaTheme
 import com.wangzan101.mika.ui.theme.MikaType
+import com.wangzan101.mika.settings.FeatureFlags
+import com.wangzan101.mika.core.knowledge.GuideCatalog
+import com.wangzan101.mika.core.knowledge.KnowledgeIndex
 
 /**
  * 技能相关的两块内容。[pending] 为假是「技能」段:已收下的个人技能(开关即启用/停用)和在用的 App 知识;
@@ -96,6 +99,34 @@ internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean) 
                     SkillBody(s, expanded = viewing == s.id)
                 }
             }
+        }
+        // 内置技能列表:每一份都有开关，关掉的不进索引、不可检索、不可读
+        val flags = FeatureFlags.get(context)
+        var off by remember { mutableStateOf(flags.builtinSkillsOff()) }
+        val builtins = remember {
+            runCatching { GuideCatalog.loadBundled().items.filter { it.kind == KnowledgeIndex.SKILL } }.getOrDefault(emptyList())
+        }
+        if (builtins.isNotEmpty()) {
+            GroupLabel("内置技能")
+            GroupCard {
+                builtins.forEachIndexed { i, skill ->
+                    val on = skill.name !in off
+                    Column(Modifier.testTag("builtin-skill-row")) {
+                        ListRow(null, skill.display, skill.description.ifBlank { null }, first = i == 0) {
+                            MikaSwitch(on, { want ->
+                                val next = if (want) off - skill.name else off + skill.name
+                                flags.setBuiltinSkillsOff(next)
+                                off = next
+                            })
+                        }
+                    }
+                }
+            }
+            Text(
+                "关掉的技能不会被检索到，也读不到正文；需要时再打开。",
+                style = MikaType.Caption, color = MikaTheme.colors.ink3,
+                modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 2.dp),
+            )
         }
         GroupLabel(stringResource(R.string.skills_get))
         GroupCard {

@@ -53,8 +53,13 @@ class GuideCatalog private constructor(
     private val personal: PersonalSkills? = null,
     /** 个人技能正文载入时做的改写(改名前的工具名换成现在的);默认原样。 */
     private val rewrite: (String) -> String = { it },
+    /** 用户关掉的内置技能:不进索引、不可被检索、不可读,慢在默认之外。 */
+    private val hidden: Set<String> = emptySet(),
 ) {
-    private val bundledItems: List<GuideInfo> = rows.map(::info)
+    private val bundledItems: List<GuideInfo> = rows.map(::info).filter { !(it.kind == KnowledgeIndex.SKILL && it.name in hidden) }
+
+    /** 同一份目录，但把用户关掉的内置技能隐藏。 */
+    fun withoutSkills(off: Set<String>): GuideCatalog = GuideCatalog(loader, rows, personal, rewrite, off)
 
     /** 个人技能每次现读:收下、停用随时发生。 */
     val items: List<GuideInfo>
