@@ -948,8 +948,8 @@ private fun EmptyState(
                     contentAlignment = Alignment.Center,
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(MikaIcons.Plus, "增加 App", Modifier.size(16.dp), tint = c.ink3)
-                        Text("增加", Modifier.padding(start = 4.dp), fontSize = 11.sp, color = c.ink2, maxLines = 1)
+                        Icon(MikaIcons.Plus, "增减 App", Modifier.size(16.dp), tint = c.ink3)
+                        Text("增减", Modifier.padding(start = 4.dp), fontSize = 11.sp, color = c.ink2, maxLines = 1)
                     }
                 }
                 if (picking) {
@@ -968,21 +968,40 @@ private fun EmptyState(
                     androidx.compose.ui.window.Dialog(onDismissRequest = { picking = false }) {
                         androidx.compose.material3.Surface(shape = RoundedCornerShape(14.dp), color = c.surface) {
                             Column(Modifier.padding(12.dp)) {
-                                Text("加一个 App 到首页", fontSize = 13.sp, color = c.ink)
+                                Text("增减首页 App", fontSize = 13.sp, color = c.ink)
+                                Text(
+                                    "勾上就放在首页(前四个)，取消就移出首页。满四个多出来的用「换一批」翻页。",
+                                    fontSize = 11.sp, color = c.ink3,
+                                    modifier = Modifier.padding(top = 2.dp),
+                                )
                                 androidx.compose.foundation.lazy.LazyColumn(Modifier.heightIn(max = 320.dp).padding(top = 8.dp)) {
                                     items(apps.size) { i ->
                                         val (p, label) = apps[i]
-                                        Text(
-                                            label, fontSize = 13.sp, color = c.ink,
-                                            modifier = Modifier
+                                        // 前四个就是首页展示的；勾上=加到首页，取消=移出首页
+                                        val visible = remember(orderVersion) {
+                                            com.wangzan101.mika.settings.QuickAppsStore.order(quickCtx).take(4).toSet()
+                                        }
+                                        val onHome = p in visible
+                                        androidx.compose.foundation.layout.Row(
+                                            Modifier
                                                 .fillMaxWidth()
                                                 .clickable {
-                                                    com.wangzan101.mika.settings.QuickAppsStore.pinToFront(quickCtx, p, label)
-                                                    picking = false
+                                                    if (onHome) {
+                                                        com.wangzan101.mika.settings.QuickAppsStore.rotateOut(quickCtx, p)
+                                                    } else {
+                                                        com.wangzan101.mika.settings.QuickAppsStore.pinToFront(quickCtx, p, label)
+                                                    }
                                                     orderVersion++
                                                 }
-                                                .padding(vertical = 10.dp),
-                                        )
+                                                .padding(vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            androidx.compose.material3.Checkbox(onHome, null)
+                                            Text(
+                                                label, fontSize = 13.sp, color = c.ink,
+                                                modifier = Modifier.padding(start = 6.dp),
+                                            )
+                                        }
                                     }
                                 }
                             }
