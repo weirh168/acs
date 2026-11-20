@@ -26,6 +26,14 @@ QUOTA = {"鸡": 4, "龙": 3, "鼠": 3, "羊": 3, "猴": 2, "猪": 2, "牛": 2,
 M23 = [3, 4, 9, 10, 11, 12, 14, 15, 19, 20, 22, 23, 24,
        29, 30, 31, 32, 34, 36, 39, 42, 43, 46]
 
+# 文档《生肖购买方法完整说明》3.2 节的逐肖买法，用来核对配额生成器是否与冻结集合一致
+FROZEN_BY_ZODIAC = {
+    "鸡": [10, 22, 34, 46], "龙": [3, 15, 39], "鼠": [19, 31, 43], "羊": [12, 24, 36],
+    "猴": [11, 23], "猪": [20, 32], "牛": [30, 42], "蛇": [14], "虎": [29],
+    "狗": [9], "兔": [4], "马": [],
+}
+FROZEN_23 = sorted(n for v in FROZEN_BY_ZODIAC.values() for n in v)
+
 
 def zodiac(n):
     return P_STR[n % 12]
@@ -45,7 +53,16 @@ def cmd_map():
                      ensure_ascii=False))
 
 
-def cmd_quota(full, empty):
+def cmd_quota(full, empty, frozen_mode=False):
+    if frozen_mode:
+        codes = FROZEN_23
+        print(json.dumps({
+            "ok": True, "mode": "frozen", "codes": codes, "k": len(codes),
+            "coverage_pct": round(len(codes) / 49 * 100, 2),
+            "by_zodiac": FROZEN_BY_ZODIAC,
+            "note": "文档 3.2 节原样逐肖买法；与生成器(按口诀取每肖最小号)结果不同，核对时以本表为准",
+        }, ensure_ascii=False))
+        return
     if full not in ALL or empty not in ALL or full == empty:
         raise SystemExit("--full 与 --empty 必须是两个不同的生肖")
     m = number_map()
@@ -161,6 +178,39 @@ def cmd_fill(codes, top3, draws_path):
                      ensure_ascii=False))
 
 
+def cmd_verify():
+    m = number_map()
+    problems = []
+    if len(m["马"]) != 5:
+        problems.append("马的码数不是 5")
+    for z in ALL:
+        if z != "马" and len(m[z]) != 4:
+            problems.append("%s 的码数不是 4" % z)
+    if zodiac(8) != "猪":
+        problems.append("8 应为猪，实为 %s" % zodiac(8))
+    if zodiac(10) != "鸡":
+        problems.append("10 应为鸡，实为 %s" % zodiac(10))
+    if sum(len(v) for v in FROZEN_BY_ZODIAC.values()) != 23:
+        problems.append("逐肖买法合计不是 23")
+    m23 = [3, 4, 9, 10, 11, 12, 14, 15, 19, 20, 22, 23, 24, 29, 30, 31, 32, 34, 36, 39, 42, 43, 46]
+    if FROZEN_23 != m23:
+        problems.append("逐肖买法与 23 码冻结集合不一致：差 %s" %
+                        sorted(set(FROZEN_23) ^ set(m23)))
+    quota_sum = sum(QUOTA.values())
+    if quota_sum != 23:
+        problems.append("配额表合计不是 23(%d)" % quota_sum)
+    print(json.dumps({
+        "ok": not problems, "problems": problems,
+        "checks": {
+            "zodiac_8": zodiac(8), "zodiac_10": zodiac(10),
+            "ma_codes": m["马"], "ma_count": len(m["马"]),
+            "frozen_k": len(FROZEN_23), "matches_m23_frozen": FROZEN_23 == m23,
+            "quota_sum": quota_sum,
+        },
+        "note": "verify 只检查结构不变量，不判断方法优劣",
+    }, ensure_ascii=False, indent=0))
+
+
 def arg(argv, name, default=None):
     if name in argv:
         i = argv.index(name)
@@ -176,7 +226,9 @@ def main(argv):
     if cmd == "map":
         cmd_map()
     elif cmd == "quota":
-        cmd_quota(arg(argv, "--full", "鸡"), arg(argv, "--empty", "马"))
+        cmd_quota(arg(argv, "--full", "鸡"), arg(argv, "--empty", "马"), "--frozen" in argv)
+    elif cmd == "verify":
+        cmd_verify()
     elif cmd == "audit":
         codes = [int(x) for x in arg(argv, "--codes", "").replace(" ", "").split(",") if x]
         cmd_audit(codes)
