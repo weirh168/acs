@@ -1,0 +1,9 @@
+[
+{
+"file": "scripts/docx.py",
+"runnable": true,
+"needs": [
+"apk:python3"
+]
+}
+]
