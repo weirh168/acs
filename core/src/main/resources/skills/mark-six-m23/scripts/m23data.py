@@ -10,6 +10,8 @@
   m23data.py combo [--dir DIR] [--k 23] [--window 120] [--max-age-hours 72]
   m23data.py status [--dir DIR]
   m23data.py set-pick --issue 2026323 [--dir DIR]
+  m23data.py pending [--dir DIR]
+  m23data.py settle --issue 2026324 [--stake 10] [--payout 47] [--dir DIR]
 
 数据文件 draws.json（与 zodiac 技能共用）:
   [{"issue":"2026323","regular":[33,8,29,15,41,23],"special":47,"recorded":"2026-11-20T21:40:00"}, ...]
@@ -32,6 +34,22 @@ def base_dir():
 def paths(d):
     os.makedirs(d, exist_ok=True)
     return os.path.join(d, "draws.json"), os.path.join(d, "picks.jsonl")
+
+
+def settle_path(d):
+    os.makedirs(d, exist_ok=True)
+    return os.path.join(d, "settlements-data.jsonl")
+
+
+def read_jsonl(p):
+    if not os.path.exists(p):
+        return []
+    rows = []
+    for line in open(p, encoding="utf-8"):
+        line = line.strip()
+        if line:
+            rows.append(json.loads(line))
+    return rows
 
 
 def load(d):
@@ -200,6 +218,62 @@ def cmd_set_pick(d, issue):
     print(json.dumps({"ok": True, "issue": issue, "codes": codes, "log": plog}, ensure_ascii=False))
 
 
+
+def cmd_pending(d):
+    picks = read_jsonl(paths(d)[1])
+    settled = {r["issue"] for r in read_jsonl(settle_path(d))}
+    draws = {str(r["issue"]): r for r in load(d)}
+    todo = []
+    for p in picks:
+        iss = str(p.get("issue") or "")
+        if not iss or iss in settled:
+            continue
+        draw = draws.get(iss)
+        todo.append({"issue": iss, "codes": len(p.get("codes") or []),
+                     "has_result": draw is not None,
+                     "special": draw["special"] if draw else None})
+    print(json.dumps({"ok": True, "pending": todo, "count": len(todo),
+                      "note": "has_result=true 的才能结算；没有开奖结果的先补 record"},
+                     ensure_ascii=False))
+
+
+def cmd_settle(d, issue, stake, payout):
+    picks = [p for p in read_jsonl(paths(d)[1]) if str(p.get("issue")) == str(issue)]
+    if not picks:
+        raise SystemExit("没有 %s 期的出码记录（picks.jsonl），不能结算" % issue)
+    draw = next((r for r in load(d) if str(r["issue"]) == str(issue)), None)
+    if draw is None:
+        raise SystemExit("%s 期还没有登记开奖结果，先用 record 补该期再结算" % issue)
+    pick = picks[-1]
+    codes = pick.get("codes") or []
+    special = draw["special"]
+    hit = special in codes
+    total = stake * len(codes) if codes else 0
+    net = (stake * payout - total) if hit else -total
+    sp = settle_path(d)
+    rows = [r for r in read_jsonl(sp) if str(r.get("issue")) != str(issue)]
+    rows.append({"issue": str(issue), "special": special, "hit": hit, "k": len(codes),
+                 "stake": stake, "payout": payout, "net": net, "rule": "M23-DATA-v1",
+                 "codes": codes})
+    with open(sp, "w", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    n = len(rows)
+    hits = sum(1 for r in rows if r["hit"])
+    cum = sum(r["net"] for r in rows)
+    p = len(codes) / 49 if codes else 0
+    z = ((hits - n * p) / ((n * p * (1 - p)) ** 0.5)) if n and 0 < p < 1 else 0.0
+    print(json.dumps({
+        "ok": True, "issue": str(issue), "special": special, "hit": hit,
+        "k": len(codes), "net": net, "cumulative_net": cum,
+        "periods": n, "hits": hits,
+        "hit_rate_pct": round(hits / n * 100, 2) if n else 0,
+        "theoretical_pct": round(p * 100, 2),
+        "z": round(z, 3), "significant": abs(z) >= 1.96,
+        "note": "命中率偏离 46.94% 且 |z|<1.96 属正常波动，不代表方法有效或失效",
+    }, ensure_ascii=False))
+
+
 def main(argv):
     if len(argv) < 2:
         raise SystemExit(__doc__)
@@ -216,6 +290,11 @@ def main(argv):
         cmd_status(d)
     elif cmd == "set-pick":
         cmd_set_pick(d, arg(argv, "--issue"))
+    elif cmd == "pending":
+        cmd_pending(d)
+    elif cmd == "settle":
+        cmd_settle(d, arg(argv, "--issue"), int(arg(argv, "--stake", 10) or 10),
+                   int(arg(argv, "--payout", 47) or 47))
     else:
         raise SystemExit(__doc__)
 
