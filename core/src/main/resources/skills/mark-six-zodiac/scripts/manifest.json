@@ -1,0 +1,9 @@
+[
+{
+"file": "scripts/zodiac.py",
+"runnable": true,
+"needs": [
+"apk:python3"
+]
+}
+]

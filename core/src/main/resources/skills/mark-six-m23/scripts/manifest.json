@@ -1,0 +1,9 @@
+[
+{
+"file": "scripts/m23.py",
+"runnable": true,
+"needs": [
+"apk:python3"
+]
+}
+]
