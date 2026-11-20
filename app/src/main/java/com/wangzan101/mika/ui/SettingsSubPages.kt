@@ -78,6 +78,10 @@ import com.wangzan101.mika.core.usage.TokenBudgetLimits
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Alignment
 
 // ---------- 手机操作 ----------
 
@@ -288,6 +292,7 @@ fun DuringWorkScreen(
     parallel: ParallelSetting?, onParallelMax: (Int) -> Unit, onBack: () -> Unit,
     autonomous: Boolean = false, onAutonomous: (Boolean) -> Unit = {},
     operatingPace: OperatingPace = OperatingPace.DEFAULT, onOperatingPace: (OperatingPace) -> Unit = {},
+    humanPaceApps: Set<String> = emptySet(), onHumanPaceApps: (Set<String>) -> Unit = {},
     selfConfig: Boolean = false, onSelfConfig: (Boolean) -> Unit = {},
     selfOperate: Boolean = false, onSelfOperate: (Boolean) -> Unit = {},
     pipOperate: Boolean = false, onPipOperate: (Boolean) -> Unit = {},
@@ -406,6 +411,21 @@ fun DuringWorkScreen(
         GroupCard {
             OperatingPace.entries.forEachIndexed { i, p ->
                 RadioRow(paceLabel(p), selected = p == operatingPace, onClick = { onOperatingPace(p) }, subtitle = paceDetail(p), first = i == 0)
+            }
+            // “像人”只对选中的 App 生效：没列出的 App 按标准走
+            if (operatingPace == OperatingPace.HUMAN) {
+                var picking by remember { mutableStateOf(false) }
+                val context = LocalContext.current
+                ListRow(
+                    MikaIcons.Gear, "只在哪些 App 像人",
+                    if (humanPaceApps.isEmpty()) "全部 App" else humanPaceApps.size.toString() + " 个 App，其他 App 按标准走",
+                    onClick = { picking = true },
+                ) { RowChevron() }
+                if (picking) PaceAppsDialog(
+                    selected = humanPaceApps,
+                    onDismiss = { picking = false },
+                    onSave = { onHumanPaceApps(it); picking = false },
+                )
             }
         }
         FooterNote(stringResource(R.string.settings_pace_foot))
@@ -819,3 +839,58 @@ fun accentLabel(accent: ThemeAccent): String = tr(
         ThemeAccent.Graphite -> R.string.accent_graphite
     },
 )
+
+
+/** 选“像人”要对哪些 App 生效；一个不选等于全部 App。 */
+@Composable
+private fun PaceAppsDialog(
+    selected: Set<String>,
+    onDismiss: () -> Unit,
+    onSave: (Set<String>) -> Unit,
+) {
+    val context = LocalContext.current
+    val apps = remember {
+        runCatching {
+            val pm = context.packageManager
+            pm.queryIntentActivities(
+                android.content.Intent(android.content.Intent.ACTION_MAIN, null)
+                    .addCategory(android.content.Intent.CATEGORY_LAUNCHER),
+                0,
+            ).mapNotNull { it.activityInfo?.applicationInfo }
+                .distinctBy { it.packageName }
+                .filter { it.packageName != context.packageName }
+                .map { it.packageName to runCatching { pm.getApplicationLabel(it).toString() }.getOrDefault(it.packageName) }
+                .sortedBy { it.second }
+        }.getOrDefault(emptyList())
+    }
+    var picked by remember { mutableStateOf(selected) }
+    MikaDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("\u50cf\u4eba\u5bf9\u54ea\u4e9b App \u751f\u6548") },
+        text = {
+            Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                Text(
+                    "\u4e00\u4e2a\u4e0d\u9009 = \u5168\u90e8 App\u90fd\u50cf\u4eba\uff1b\u9009\u4e86\u53ea\u5bf9\u8fd9\u51e0\u4e2a\u751f\u6548\uff0c\u5176\u4ed6 App \u6309\u6807\u51c6\u8282\u594f\u3002",
+                    fontSize = 12.sp, color = MikaTheme.colors.ink3, modifier = Modifier.padding(bottom = 8.dp),
+                )
+                apps.forEach { (pkg, label) ->
+                    val on = pkg in picked
+                    androidx.compose.foundation.layout.Row(
+                        Modifier.fillMaxWidth()
+                            .clickable { picked = if (on) picked - pkg else picked + pkg }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        androidx.compose.material3.Checkbox(on, null)
+                        Column(Modifier.padding(start = 8.dp)) {
+                            Text(label, fontSize = 15.sp)
+                            Text(pkg, fontSize = 11.sp, color = MikaTheme.colors.ink3)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(picked) }) { Text("\u4fdd\u5b58") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("\u53d6\u6d88") } },
+    )
+}

@@ -107,6 +107,14 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         prefs.edit().putString(OPERATING_PACE, pace.name).commit()
     }
 
+    /** “像人”只对这些包名生效；空表示所有 App。 */
+    fun humanPaceApps(): Set<String> =
+        prefs.getStringSet(HUMAN_PACE_APPS, null)?.toSet().orEmpty()
+
+    fun setHumanPaceApps(packages: Set<String>) {
+        prefs.edit().putStringSet(HUMAN_PACE_APPS, packages).commit()
+    }
+
     /** 界面配色:跟随系统、一直浅色、一直深色(见 [ThemeMode])。界面跟着 [themeModeChanges] 当场换,不用重建。 */
     fun themeMode(): ThemeMode = ThemeMode.parse(prefs.getString(THEME_MODE, null))
 
@@ -382,7 +390,8 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val PROACTIVE_DAILY_TOKEN_BUDGET = "proactive_daily_token_budget"
         private const val KEEP_SCREEN_ON = "keep_screen_on"
         private const val MUTE_TARGET = "mute_target"
-        private const val OPERATING_PACE = "operating_pace"
+        private const val HUMAN_PACE_APPS = "human_pace_apps"
+    private const val OPERATING_PACE = "operating_pace"
         private const val AUTO_ARCHIVE_DAYS = "auto_archive_days"
         private const val SELF_CONFIG = "self_config"
         private const val DEGRADED_SCREEN = "degraded_screen"

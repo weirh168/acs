@@ -37,8 +37,10 @@ internal class PhoneCapability(
     pacing: AppPacing = AppPacing.Off,
     appPace: (String) -> PlacePace = { PlacePace.NORMAL },
     idle: IdleScroll? = null,
+    /** 按包名取节奏：“像人”只对选中的 App 生效时用它。 */
+    paceForApp: (String?) -> AppPacing = { pacing },
 ) : Capability {
-    val dwell = AppDwell(pacing, appPace, idle)
+    val dwell = AppDwell(pacing, paceForApp, appPace, idle)
 
     override val id = PHONE
     private val tools = PhoneGroup.tools

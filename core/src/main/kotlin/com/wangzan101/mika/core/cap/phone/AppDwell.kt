@@ -17,7 +17,8 @@ import kotlinx.coroutines.delay
  * 停留中用户插了话([waitOrSteer]),抛 [DwellInterrupted]:调用方不做这个动作,没停够的部分下次照样补足。
  */
 internal class AppDwell(
-    private val pacing: AppPacing,
+    pacing: AppPacing,
+    private val paceForApp: (String?) -> AppPacing = { _ -> pacing },
     private val pace: (String) -> PlacePace = { PlacePace.NORMAL },
     private val idle: IdleScroll? = null,
     private val clock: () -> Long = System::currentTimeMillis,
@@ -31,11 +32,18 @@ internal class AppDwell(
 
     private val paces = HashMap<String, PlacePace>()
 
-    val paced: Boolean get() = pacing.paced
+    /** 按包名取节奏：没列出的 App 可以用别的节奏（见 [paceForApp]）。 */
+    private val pacings = HashMap<String?, AppPacing>()
+
+    private fun pacingOf(app: String?): AppPacing =
+        synchronized(pacings) { pacings.getOrPut(app) { paceForApp(app) } }
+
+    val paced: Boolean get() = pacingOf(null).paced
 
     /** 在 [app] 里做完了一个改动屏幕的动作:[newScreen] 换到了新的一屏,[counts] 时算进屏数(见 [AppPacing.noteAction])。 */
     fun after(app: String?, newScreen: Boolean, counts: Boolean = newScreen) {
-        if (!paced) return
+        val pacing = pacingOf(app)
+        if (!pacing.paced) return
         pacing.noteAction(app, clock(), newScreen, app?.let(::paceOf) ?: PlacePace.NORMAL, counts)
     }
 
@@ -44,7 +52,8 @@ internal class AppDwell(
      * [gate] 时先看屏数上限,到了抛 [PageLimitReached]。[port] 给了时停留里可以轻轻滚几下。
      */
     suspend fun before(app: String?, textChars: Int, gate: Boolean, port: ScreenPort? = null): Dwelt {
-        if (!paced) return Dwelt(0, 0)
+        val pacing = pacingOf(app)
+        if (!pacing.paced) return Dwelt(0, 0)
         val p = app?.let(::paceOf) ?: PlacePace.NORMAL
         if (gate && pacing.capReached(app, p)) {
             throw PageLimitReached(app!!, pacing.screensIn(app), pacing.screenCap, PageLimitReached.Scope.APP_SCREENS)
@@ -57,11 +66,13 @@ internal class AppDwell(
     }
 
     /** 用户答过话:各 App 的屏数重新算。 */
-    fun userAnswered() = pacing.userAnswered()
+    fun userAnswered() {
+        synchronized(pacings) { pacings.values.toList() }.forEach { it.userAnswered() }
+    }
 
     /** 在 [app] 里的对外动作做完;[done](做成了)时这个 App 不再设屏数上限。 */
     fun outwardEnd(app: String, done: Boolean) {
-        if (done) pacing.outwardDone(app)
+        if (done) pacingOf(app).outwardDone(app)
     }
 
     /** 停 [ms] 毫秒;用户插了话就不再停,抛 [DwellInterrupted]。 */

@@ -69,6 +69,8 @@ fun toolDispatcher(
     webIdleScroll: () -> IdleScroll? = { null },
     /** 在 App 里一步一步操作的节奏(改动屏幕的动作之前补足停留,见 [AppPacing]);默认不等。 */
     appPacing: () -> AppPacing = { AppPacing.Off },
+    /** 按包名取节奏；默认用 [appPacing] 的一个。 */
+    appPacingFor: (String?) -> AppPacing = { appPacing() },
     /** App 对浏览快慢的要求(按包名);默认按 [skills] 里 App 知识的 pace。 */
     appPace: (String) -> PlacePace = { pkg -> PlacePace.of(skills?.appPace(pkg)) },
     /** App 里新的一屏上的停留时轻轻滚几下(见 [IdleScroll]);默认不滚。 */
@@ -147,7 +149,8 @@ fun toolDispatcher(
     val providers: List<CapabilityProvider> = listOf(
         object : CapabilityProvider {
             override val id = PHONE
-            override fun open(spec: RunSpec) = PhoneCapability(screen, deepLinks, appPacing(), appPace, appIdleScroll())
+            override fun open(spec: RunSpec) =
+                PhoneCapability(screen, deepLinks, appPacing(), appPace, appIdleScroll(), appPacingFor)
         },
         object : CapabilityProvider {
             override val id = WEB
