@@ -7,7 +7,7 @@
 用法:
   m23data.py record --issue 2026323 --regular 33,8,29,15,41,23 --special 47 [--dir DIR]
   m23data.py analyze [--dir DIR] [--window 120]
-  m23data.py combo [--dir DIR] [--k 23] [--window 120]
+  m23data.py combo [--dir DIR] [--k 23] [--window 120] [--max-age-hours 72]
   m23data.py status [--dir DIR]
   m23data.py set-pick --issue 2026323 [--dir DIR]
 
@@ -58,6 +58,27 @@ def arg(argv, name, default=None):
 
 def nums(s):
     return [int(x) for x in str(s).replace(" ", "").split(",") if x]
+
+
+
+def freshness(rows, max_age_hours):
+    """最新一期是不是新抓的:看 recorded 时间。过期就拒绝出码(铁律:必须用当时热榜)。"""
+    from datetime import datetime as _dt
+    if not rows:
+        return False, None, "没有任何历史数据"
+    rec = rows[-1].get("recorded")
+    if not rec:
+        return False, None, "最新一期没有记录抓取时间，无法确认是否为当时数据；请重新 record"
+    try:
+        when = _dt.fromisoformat(rec)
+    except ValueError:
+        return False, None, "抓取时间格式不对：%s" % rec
+    age = (_dt.now() - when).total_seconds() / 3600.0
+    ok = age <= max_age_hours
+    msg = ("最新一期 %s 抓于 %.1f 小时前，可用" % (rows[-1]["issue"], age)) if ok else \
+          ("最新一期 %s 抓于 %.1f 小时前，超过 %.0f 小时，数据不是当期的；必须重新抓取后再出码" %
+           (rows[-1]["issue"], age, max_age_hours))
+    return ok, round(age, 1), msg
 
 
 def cmd_record(d, issue, regular, special):
@@ -124,11 +145,14 @@ def cmd_analyze(d, window):
     }, ensure_ascii=False))
 
 
-def cmd_combo(d, k, window):
+def cmd_combo(d, k, window, max_age_hours):
     rows = load(d)
     if len(rows) < 30:
-        raise SystemExit("历史不足 30 期（当前 %d 期）：数据驱动的出码需要先 record，"
-                         "不够就改用冻结法 bill" % len(rows))
+        raise SystemExit("历史不足 30 期（当前 %d 期）：按铁律必须先补齐当时的热榜数据再出码，"
+                         "不许退回冻结集合" % len(rows))
+    ok, age, msg = freshness(rows, max_age_hours)
+    if not ok:
+        raise SystemExit("拒绝出码：%s" % msg)
     seg, freq, miss = score(rows, window)
     rank = sorted(range(1, 50), key=lambda x: (-freq[x], -miss[x]))
     codes = sorted(rank[:k])
@@ -139,7 +163,8 @@ def cmd_combo(d, k, window):
     print(json.dumps({
         "ok": True, "rule": "M23-DATA-v1", "k": k, "codes": codes,
         "coverage_pct": round(k / 49 * 100, 2),
-        "basis": {"draws": len(rows), "window": len(seg), "latest_issue": str(seg[-1]["issue"])},
+        "basis": {"draws": len(rows), "window": len(seg), "latest_issue": str(seg[-1]["issue"]),
+                  "recorded": rows[-1].get("recorded"), "age_hours": age},
         "top_scores": {str(x): round(freq[x], 2) for x in rank[:k]},
         "cold_tails_avoided": cold_tails,
         "codes_in_cold_tails": covered,
@@ -153,7 +178,8 @@ def cmd_status(d):
     print(json.dumps({
         "ok": True, "draws_file": p, "draws": len(rows),
         "latest": (str(rows[-1]["issue"]), rows[-1]["special"]) if rows else None,
-        "ready_for_data_pick": len(rows) >= 30,
+        "ready_for_data_pick": len(rows) >= 30 and freshness(rows, 72)[0],
+        "freshness": freshness(rows, 72)[2] if rows else "没有数据",
         "note": "≥30 期才能按热榜出码；不足时用冻结 23 码",
     }, ensure_ascii=False))
 
@@ -184,7 +210,8 @@ def main(argv):
     elif cmd == "analyze":
         cmd_analyze(d, int(arg(argv, "--window", 120) or 120))
     elif cmd == "combo":
-        cmd_combo(d, int(arg(argv, "--k", 23) or 23), int(arg(argv, "--window", 120) or 120))
+        cmd_combo(d, int(arg(argv, "--k", 23) or 23), int(arg(argv, "--window", 120) or 120),
+                  float(arg(argv, "--max-age-hours", 72) or 72))
     elif cmd == "status":
         cmd_status(d)
     elif cmd == "set-pick":
