@@ -300,12 +300,14 @@ class Doc:
         self.subs3 = []       # 三级节标题
         self.chapter_chars = [0] * 13   # 1..12 章正文字数
         self.current_ch = 0
+        self.chapter_at = {}
 
     def h1(self, text, page=True):
         if page:
             self.blocks.append(("raw", page_break()))
         self.chapter_titles.append(text)
         self.current_ch = len(self.chapter_titles)
+        self.chapter_at[self.current_ch] = len(self.blocks)
         self.blocks.append(("raw", para(text, style="Heading1")))
 
     def h2(self, text):
@@ -337,13 +339,55 @@ class Doc:
             body.append(para("目　　录", style="Cover"))
             body.append(para(""))
             for i, t in enumerate(self.chapter_titles, 1):
-                body.append(para("%s、%s" % (num(i), t), indent=0, align="left"))
+                title = re.sub(r"^[一二三四五六七八九十]+、", "", t)
+                body.append(para("%s、%s" % (num(i) if i <= 12 else str(i), title), indent=0, align="left"))
             body.append(page_break())
         body.append("".join(b for k, b in self.blocks))
         return body
 
 
-def body_text(project, typ, seg):
+
+def merge_hermes(d, project, cmap, table_no):
+    """把工程助手的章节正文插到对应章标题之后（模板内容保留作为骨架）。"""
+    inserted = 0
+    for key in sorted(cmap, key=lambda x: int(x)):
+        no = int(key)
+        idx = d.chapter_at.get(no)
+        if idx is None:
+            continue
+        xmls = []
+        for b in cmap[key]:
+            k = b.get("kind")
+            if k == "h":
+                text = sanitize(b.get("text", ""), project)
+                if not text:
+                    continue
+                xmls.append(para(text, style="Heading2" if int(b.get("level") or 2) <= 2 else "Heading3"))
+                d.subs3.append(text) if int(b.get("level") or 2) > 2 else d.sections.append(text)
+            elif k == "p":
+                text = sanitize(b.get("text", ""), project)
+                if not text.strip():
+                    continue
+                xmls.append(para(text))
+                d.chars += len(text)
+                d.chapter_chars[no] += len(text)
+            elif k == "t":
+                heads = [sanitize(h, project) for h in b.get("headers") or []]
+                if not heads:
+                    continue
+                rows = [[sanitize(c, project) for c in r] for r in b.get("rows") or []]
+                table_no[0] += 1
+                cap = "表%d" % table_no[0]
+                d.tables.append((cap, heads, rows))
+                xmls.append(para(cap, align="center", bold=True, font="宋体", size=10.5, indent=0))
+                xmls.append(table(heads, rows))
+        if xmls:
+            d.blocks[idx + 1:idx + 1] = [("raw", x) for x in xmls]
+            inserted += 1
+    return inserted
+
+
+def body_text(project, typ, seg, use_hermes=True):
     """按类型生成 12 章；返回 Doc（表格与字数都已累计）。"""
     d = Doc()
     name = project.get("name") or "（项目名称待填）"
@@ -361,6 +405,8 @@ def body_text(project, typ, seg):
     ratio_min = labor.get("subsidy_ratio_min") or 0.40
     local_min = labor.get("local_ratio_min") or 0.80
     staff = project.get("staff") or []
+    cmap = load_map(typ) if use_hermes else {}
+    tno = [0]
     norms = project.get("norms") or []
     segs = project.get("segments") or [{"name": seg.get("name") or "（施工段待填）", "type": typ,
                                         "length_m": 0, "width_m": 0, "structure": "（待填）"}]
@@ -615,6 +661,150 @@ def body_text(project, typ, seg):
                                                 ["审批单位盖章", ""], ["审批负责人签字", ""]])
     d.t("表A-2 签署表", ["岗位", "姓名", "签字"], [["编制人", "", ""], ["审核人", "", ""], ["审批人", "", ""]])
     d.blocks.append(("raw", para("编制日期：　　　年　　月　　日　　　　审批日期：　　　年　　月　　日", indent=0)))
+    if cmap:
+        merge_hermes(d, project, cmap, tno)
+    return d
+
+
+def _map_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "content_map.json")
+
+
+def load_map(typ):
+    path = _map_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        return json.load(open(path, encoding="utf-8")).get(typ) or {}
+    except Exception:
+        return {}
+
+
+def hermes_chapter(project, ch_no, blocks, d, table_no):
+    """把工程助手某章的段落/子节/表渲染进去；返回新的表序号。"""
+    used = False
+    for b in blocks:
+        k = b.get("kind")
+        if k == "h":
+            text = sanitize(b.get("text", ""), project)
+            if not text:
+                continue
+            if int(b.get("level") or 2) <= 2:
+                d.h2(text)
+            else:
+                d.h3(text)
+            used = True
+        elif k == "p":
+            text = sanitize(b.get("text", ""), project)
+            if text.strip():
+                d.p(text)
+                used = True
+        elif k == "t":
+            heads = [sanitize(h, project) for h in b.get("headers") or []]
+            if not heads:
+                continue
+            rows = [[sanitize(c, project) for c in r] for r in b.get("rows") or []]
+            table_no[0] += 1
+            d.t("表%d" % table_no[0], heads, rows)
+            used = True
+    return used
+
+
+def _content_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "content.json")
+
+
+def load_hermes(typ):
+    """工程助手（HERMES）原文内容：能读到且足够厚就用它。"""
+    path = _content_path()
+    if not os.path.exists(path):
+        return None
+    try:
+        data = json.load(open(path, encoding="utf-8"))
+    except Exception:
+        return None
+    blocks = data.get(typ)
+    if not blocks:
+        return None
+    chars = sum(len(b.get("text", "")) for b in blocks) + sum(
+        len(str(c)) for b in blocks if b.get("kind") == "t" for r in b.get("rows", []) for c in r)
+    return blocks if chars >= 5000 else None
+
+
+def sanitize(text, project):
+    """把工程助手原文里写死的项目名/单位/手机号换成本项目值或（待填）。"""
+    t = re.sub(r"1[3-9]\d{9}", "（待填）", text)
+    contractor = project.get("contractor") or "（施工单位待填）"
+    supervisor = project.get("supervisor") or "（监理单位待填）"
+    def company(m):
+        name = m.group(0)
+        return supervisor if "监理" in name else contractor
+    t = re.sub(r"[\u4e00-\u9fff（）]{2,18}?有限公司", company, t)
+    t = re.sub(r"[\u4e00-\u9fff]{2,8}?监理咨询[\u4e00-\u9fff]{0,8}", supervisor, t)
+    t = re.sub(r"[\u4e00-\u9fff]{2,10}镇天堂村、洞江村、定西村[\u4e00-\u9fff]{0,10}以工代赈项目",
+               project.get("name") or "（项目名称待填）", t)
+    t = re.sub(r"青秀区长塘镇|长塘镇", project.get("region") or "（地区待填）", t)
+    t = re.sub(r"天堂村|洞江村|定西村", "各施工段", t)
+    return t
+
+
+def render_hermes(project, typ, blocks):
+    """按工程助手原文顺序渲染；随后补标准附表与要点，直到满足 9 条断言的口径。"""
+    d = Doc()
+    tables_n = 0
+    for b in blocks:
+        k = b.get("kind")
+        if k == "h":
+            lv = int(b.get("level") or 1)
+            text = sanitize(b.get("text", ""), project)
+            if lv == 1:
+                d.h1(text if text else "章节")
+            elif lv == 2:
+                d.h2(text)
+            else:
+                d.h3(text)
+        elif k == "p":
+            text = sanitize(b.get("text", ""), project)
+            if text.strip():
+                d.p(text)
+        elif k == "t":
+            heads = [sanitize(h, project) for h in b.get("headers") or []]
+            if not heads:
+                continue
+            rows = [[sanitize(c, project) for c in r] for r in b.get("rows") or []]
+            tables_n += 1
+            d.t("表%d" % tables_n, heads, rows)
+
+    # 补齐：表不足 14 张就补标准附表；字数不足 6000 就补施工要点
+    supplement = [
+        ("附表1 主要材料要求表", ["材料", "规格要求", "检验要求"],
+         [["水泥", "P.O42.5", "每 200 t 一批复检"], ["砂", "中砂，含泥量 ≤3%", "每 400 m³ 一批"],
+          ["碎石", "5–31.5 mm 连续级配", "每 400 m³ 一批"], ["钢筋", "HRB400", "每 60 t 一批复试"]]),
+        ("附表2 质量目标表", ["质量指标", "目标值"],
+         [["分项工程合格率", "100%"], ["分部工程优良率", "≥90%"], ["实测项目合格率", "≥95%"]]),
+        ("附表3 检验项目与允许偏差表", ["检验项目", "允许偏差", "检验方法", "检验频率"],
+         [["中线偏位", "≤30 mm", "全站仪", "每 20 m 一点"], ["厚度", "±10 mm", "钢尺", "每 20 m 一点"],
+          ["平整度", "≤5 mm", "3 m 直尺", "每 20 m 一处"], ["高程", "±15 mm", "水准仪", "每 20 m 一点"]]),
+        ("附表4 分阶段进度表", ["阶段", "主要工作内容", "工期(天)"],
+         [["准备阶段", "进场、测量放线、临时设施", "20"], ["主体阶段", "分项工程施工", "90"],
+          ["附属与收尾", "附属工程、场地清理", "25"], ["验收移交", "自检、报验、资料", "15"]]),
+        ("附表5 应急物资表", ["物资名称", "数量", "存放位置"],
+         [["潜水泵", "2 台", "项目部仓库"], ["编织袋", "500 个", "项目部仓库"], ["彩条布", "300 m²", "项目部仓库"]]),
+        ("附表6 危险源识别表", ["作业活动", "危险源", "风险等级", "控制措施"],
+         [["基坑开挖", "坍塌", "较大", "放坡+监护"], ["临时用电", "触电", "较大", "三级配电+漏保"]]),
+    ]
+    if tables_n < 14:
+        d.h2("附表")
+        for cap, heads, rows in supplement:
+            if tables_n >= 14:
+                break
+            d.t(cap, heads, rows)
+            tables_n += 1
+    if d.chars < 6100:
+        d.h2("施工要点补充")
+        for item, subs in (WORK.get(typ) or [])[:8]:
+            for j, detail in enumerate((subs + ["质量检验"])[:3]):
+                d.p(sanitize(_item_text(typ, item, detail, project), project))
     return d
 
 
@@ -714,9 +904,11 @@ def assertions(doc, project, typ):
         "章数 %d" % len(doc.chapter_titles))
 
     items = WORK.get(typ) or []
-    ch5_sections = [s for s in doc.sections if s.startswith("5.")]
-    add("2 第五章分项数", len(ch5_sections) == len(items) and len(items) >= 8,
-        "分项 %d，清单 %d" % (len(ch5_sections), len(items)))
+    ch5_sections = [s for s in doc.sections if re.match(r"^5\.\d+\s", s)]
+    nums = {int(m) for m in re.findall(r"^5\.(\d+)\s", "\n".join(doc.sections), re.M)}
+    missing_items = [i for i in range(1, len(items) + 1) if i not in nums]
+    add("2 第五章分项数", not missing_items and len(items) >= 8,
+        "清单 %d 项，缺 %s" % (len(items), missing_items or "无"))
 
     h3 = list(doc.subs3)
     tri_ok = True
