@@ -180,8 +180,7 @@ fun CallAutoAnswerRulesDialog(
                 }
                 Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)) {
                     if (permissionIssue != null) PermissionBanner(permissionIssue, onFixPermissions)
-                    SummaryCard(draft)
-                    Spacer(Modifier.size(14.dp))
+                    Spacer(Modifier.size(6.dp))
                     PresetCards(preset, flags, ::applyPreset)
                     Spacer(Modifier.size(16.dp))
                     SectionTitle(stringResource(R.string.calls_sources_title))
@@ -285,37 +284,6 @@ fun CallAutoAnswerRulesDialog(
 }
 
 private fun keep(preset: CallPreset): CallPreset = preset
-
-@Composable
-private fun SummaryCard(draft: CallRulesDraft) {
-    val ai = mutableListOf<String>()
-    val me = mutableListOf<String>()
-    if (draft.preset == CallPreset.ALL) {
-        ai += stringResource(R.string.calls_summary_everyone)
-    } else if (draft.preset == CallPreset.LIST) {
-        me += stringResource(R.string.calls_summary_not_in_list)
-    } else {
-        fun put(on: Boolean, label: String) { if (on) ai += label else me += label }
-        put(draft.answerContacts, stringResource(R.string.calls_source_contacts))
-        put(draft.answerStrangers, stringResource(R.string.calls_source_strangers))
-        put(draft.answerHidden, stringResource(R.string.calls_source_hidden))
-        put(draft.answerRepeat, stringResource(R.string.calls_source_repeat))
-        put(draft.answerInternational, stringResource(R.string.calls_source_international))
-    }
-    Column(Modifier.fillMaxWidth().background(MikaTheme.colors.accentSoft, RoundedCornerShape(14.dp))
-        .padding(14.dp).testTag("call-rules-summary")) {
-        if (ai.isNotEmpty()) {
-            Text(stringResource(R.string.calls_summary_ai, ai.joinToString("、")), fontSize = 15.sp,
-                lineHeight = 21.sp, color = MikaTheme.colors.ink)
-        }
-        if (me.isNotEmpty()) {
-            Text(stringResource(R.string.calls_summary_me, me.joinToString("、")), fontSize = 15.sp,
-                lineHeight = 21.sp, color = MikaTheme.colors.ink)
-        }
-        Text(stringResource(R.string.calls_summary_ring, draft.delaySeconds), fontSize = 13.sp,
-            color = MikaTheme.colors.ink2, modifier = Modifier.padding(top = 4.dp))
-    }
-}
 
 @Composable
 private fun PresetCards(preset: CallPreset, flags: List<Boolean>, onPick: (CallPreset) -> Unit) {
