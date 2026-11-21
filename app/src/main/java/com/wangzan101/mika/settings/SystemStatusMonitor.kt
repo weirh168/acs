@@ -35,8 +35,15 @@ import com.wangzan101.mika.a11y.MikaAccessibilityService
 private const val OP_RESTRICTED_SETTINGS = "android:access_restricted_settings"
 
 class SystemStatusMonitor(context: Context, private val shell: BuiltinShellControl) {
+    private companion object {
+        /** 无障碍从 On 掉下去后的宽限:这段时间内仍按 On 报,免得重绑瞬间界面闪成「没准备好」。 */
+        const val ACCESSIBILITY_GRACE_MS = 2_500L
+    }
+
     private val app = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
+    /** 无障碍上一次确实在跑的时刻:短暂重绑期间保持「就绪」,不闪。 */
+    private var lastAccessibilityOnAt = 0L
     private val _status = MutableStateFlow(read())
     val status: StateFlow<SystemStatus> = _status.asStateFlow()
 
@@ -116,11 +123,22 @@ class SystemStatusMonitor(context: Context, private val shell: BuiltinShellContr
     }
 
     private fun accessibilityState(): AccessibilityState {
-        if (ScreenAccessibility.instance.value != null) return AccessibilityState.On
+        if (ScreenAccessibility.instance.value != null) {
+            lastAccessibilityOnAt = android.os.SystemClock.elapsedRealtime()
+            return AccessibilityState.On
+        }
         val enabled = Settings.Secure.getString(app.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
             .orEmpty().split(':').mapNotNull { ComponentName.unflattenFromString(it.trim()) }
         val me = ComponentName(app, MikaAccessibilityService::class.java)
-        return if (me in enabled) AccessibilityState.EnabledNotRunning else AccessibilityState.Off
+        val raw = if (me in enabled) AccessibilityState.EnabledNotRunning else AccessibilityState.Off
+        // 服务重绑(装包、系统回收)时会有一两秒的 EnabledNotRunning;这一瞬间别把界面打回「没准备好」。
+        // 过了宽限期到点重算,真掉线照样如实降级。
+        val since = android.os.SystemClock.elapsedRealtime() - lastAccessibilityOnAt
+        if (lastAccessibilityOnAt > 0 && since < ACCESSIBILITY_GRACE_MS) {
+            main.postDelayed({ refresh() }, ACCESSIBILITY_GRACE_MS - since)
+            return AccessibilityState.On
+        }
+        return raw
     }
 
     /** 开机后还没解锁过一次:这时无障碍服务绑不上是系统行为,不是故障。 */

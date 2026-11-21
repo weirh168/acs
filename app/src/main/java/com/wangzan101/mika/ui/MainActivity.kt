@@ -70,6 +70,7 @@ import com.wangzan101.mika.task.TaskService
 import com.wangzan101.mika.settings.Prerequisites
 import com.wangzan101.mika.settings.ProviderStore
 import com.wangzan101.mika.settings.SystemStatusMonitor
+import com.wangzan101.mika.core.shell.HandoffJournal
 import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.cap.phone.setup.DeveloperSettings
 import com.wangzan101.mika.cap.phone.setup.PairingNotifier
@@ -418,6 +419,8 @@ private fun MikaRoot(
     val roles by store.roles.collectAsState()
     val hasMain = roles.main != null
     val check = Prerequisites.check(status, hasMain)
+    HandoffJournal.note("check", "phoneReady=${check.phoneReady} canStart=${check.canStartTask} " +
+        "problems=${check.problems.joinToString { it::class.simpleName ?: "?" }}")
     val app = context.applicationContext as MikaApp
     // 查到的新版本:侧栏、设置首页、关于页的红点都看它
     val updateState by app.updates.state.collectAsState()
