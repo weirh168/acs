@@ -118,8 +118,10 @@ def cmd_engine(argv):
         print(json.dumps({"ok": False, "error": "缺少 --bazi，如 \"乙亥 乙酉 戊申 庚申\""}, ensure_ascii=False))
         return 1
     gender = CITY_ALIAS.get((arg(argv, "--gender") or "男").strip(), "male")
-    args = {"bazi": bazi, "gender": gender,
-            "modules": (arg(argv, "--modules") or "core").split(",")}
+    mods = [m.strip() for m in (arg(argv, "--modules") or "core").split(",") if m.strip()]
+    if "all" in mods:
+        mods = ["core", "marriage", "career", "health", "education", "wealth", "yingqi"]
+    args = {"bazi": bazi, "gender": gender, "modules": mods}
     if arg(argv, "--age"):
         args["age"] = int(arg(argv, "--age"))
     print(fy_core.handle_mingli_engine(args))
