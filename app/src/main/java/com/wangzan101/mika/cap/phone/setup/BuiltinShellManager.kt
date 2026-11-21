@@ -24,6 +24,8 @@ import com.wangzan101.mika.core.adb.LocalPortScan
 import com.wangzan101.mika.core.adb.NioPortScanner
 import com.wangzan101.mika.core.adb.PortCache
 import com.wangzan101.mika.core.shell.BuiltinShellEngine
+import com.wangzan101.mika.core.shell.BuiltinShellFailure
+import com.wangzan101.mika.core.shell.BuiltinShellStatus
 import com.wangzan101.mika.core.shell.BuiltinShellPlatform
 import com.wangzan101.mika.core.shell.HelperHandoff
 import com.wangzan101.mika.core.shell.PermissionCommands
@@ -67,6 +69,12 @@ class BuiltinShellManager(
 ) {
     private val app = context.applicationContext
     private var started = false
+
+    /**
+     * 需要重新配对时把配对窗口打开(通知、无障碍读码接着走)。由 [com.wangzan101.mika.cap.phone.PhoneServices] 注入,
+     * 免得这里再依赖一遍配对流程。
+     */
+    var onPairingNeeded: (() -> Unit)? = null
 
     private val _scanningPorts = MutableStateFlow(false)
     /** 正在扫本机找无线调试端口(引导页显示「正在本机查找…」)。 */
@@ -171,6 +179,22 @@ class BuiltinShellManager(
                 last = s
                 runCatching { onConnected() }
                 healSecureSettings()
+            }
+        }
+        // 授权被撤销、或存着的钥匙读不出时,原来只能等用户自己进引导页;
+        // 这里自动把配对窗口打开:无障碍开着就直接读码配回去,没开就弹一条带输入框的通知。
+        scope.launch {
+            var handled: BuiltinShellFailure? = null
+            e.status.collect { st ->
+                val failure = (st as? BuiltinShellStatus.Failed)?.reason
+                if (failure == null || failure !in AUTO_REPAIR) {
+                    handled = null
+                    return@collect
+                }
+                if (handled == failure || e.paired.not()) return@collect
+                handled = failure
+                Log.i("MikaShellRestore", "auto re-pair after $failure")
+                onPairingNeeded?.invoke()
             }
         }
         e.start()
@@ -339,6 +363,12 @@ class BuiltinShellManager(
     }
 
     companion object {
+        /** 这两类失败只靠自己重连永远好不了,必须重新配对一次。 */
+        val AUTO_REPAIR = setOf(
+            BuiltinShellFailure.AuthorizationRevoked,
+            BuiltinShellFailure.KeyUnreadable,
+        )
+
         /** 内置助手从安卓 12 起启用;旧系统使用不带较新屏幕标志的兼容路径。 */
         const val MIN_SDK = Build.VERSION_CODES.S
         private const val PREFS = "builtin_shell"

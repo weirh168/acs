@@ -43,6 +43,11 @@ class PhoneServices(context: Context) {
     /** 任务要用手机、助手却没在运行时的提示。 */
     val setupPrompt = PhoneSetupPrompt(app)
 
+    init {
+        // 钥匙被撤销/读不出时,看门狗会举手:直接把配对窗口打开,通知和无障碍读码接着走
+        shellManager.onPairingNeeded = { pairing.begin() }
+    }
+
     /** 给出进程里那一份的 Application。 */
     interface Owner {
         val phone: PhoneServices
