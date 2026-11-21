@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import com.wangzan101.mika.core.shell.HandoffJournal
 import com.wangzan101.mika.core.shell.RestoreOutcome
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -37,6 +38,7 @@ open class BootRestoreHandler : BroadcastReceiver() {
         phone.pairing.scope.launch {
             try {
                 val outcome = runCatching { phone.recovery.restoreAfterBoot() }.getOrNull()
+                HandoffJournal.note("boot", "restore outcome=$outcome")
                 // 开机那一下常常来不及:Wi-Fi 还没连上、系统还没把开关拨回来。
                 // 恢复没成功就自己再追几次,连上就停,省得用户开机后还要手动点「重试」。
                 if (outcome == RestoreOutcome.NotRecovered) followUp(phone)

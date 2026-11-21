@@ -24,6 +24,7 @@ import com.wangzan101.mika.core.adb.LocalPortScan
 import com.wangzan101.mika.core.adb.NioPortScanner
 import com.wangzan101.mika.core.adb.PortCache
 import com.wangzan101.mika.core.shell.BuiltinShellEngine
+import com.wangzan101.mika.core.shell.HandoffJournal
 import com.wangzan101.mika.core.shell.BuiltinShellFailure
 import com.wangzan101.mika.core.shell.BuiltinShellStatus
 import com.wangzan101.mika.core.shell.BuiltinShellPlatform
@@ -149,6 +150,7 @@ class BuiltinShellManager(
     fun start() {
         if (started || Build.VERSION.SDK_INT < MIN_SDK) return
         started = true
+        HandoffJournal.note("manager", "start sdk=${Build.VERSION.SDK_INT}")
         usbScript.start()
         root.refresh()
         val e = engine
@@ -307,12 +309,18 @@ class BuiltinShellManager(
         }
 
         override suspend fun launchHelper() {
+            HandoffJournal.note("launchHelper", "begin")
             launchStage("preparing")
             val tls = AndroidAdb.tls(AndroidAdb.identity(app))
             // 助手每次交接前都核对 Mika 的签名
             val command = HelperHandoff.command(app.applicationInfo.sourceDir, app.packageName, Process.myUid(), ownCertPin(app))
-            launchStage("adb_connecting")
-            val connection = connect(tls)
+                launchStage("adb_connecting")
+            val connection = try {
+                connect(tls)
+            } catch (e: Exception) {
+                HandoffJournal.note("launchHelper", "connect failed: ${e.javaClass.simpleName} ${e.message?.take(120) ?: ""}")
+                throw e
+            }
             launchStage("adb_connected")
             // 流开着 sh 就一直等;交接到了(或超时)再关,交接结果仍由引擎从 HelperHub 判断
             val before = hub.shell.value
@@ -323,6 +331,10 @@ class BuiltinShellManager(
                 launchStage("launch_nonce_written")
                 val handedOff = withTimeoutOrNull(HANDOFF_WAIT_MS) { hub.shell.first { s -> s != null && s !== before } }
                 launchStage(if (handedOff != null) "handoff_received" else "handoff_timeout")
+                HandoffJournal.note(
+                    "launchHelper",
+                    if (handedOff != null) "handoff received" else "handoff TIMEOUT after ${HANDOFF_WAIT_MS}ms",
+                )
             }
         }
 

@@ -11,6 +11,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.wangzan101.mika.cap.phone.PhoneServices
 import com.wangzan101.mika.core.shell.HandoffDiagnostics
+import com.wangzan101.mika.core.shell.HandoffJournal
 import com.wangzan101.mika.core.shell.HandoffNonces
 import com.wangzan101.mika.core.shell.HelperHandoff
 import com.wangzan101.mika.core.shell.HelperRestoreReport
@@ -57,6 +58,7 @@ class HelperHub(context: Context) {
     /** 经 adbd 起新助手前调:这个一次性口令经 exec 流的标准输入交给助手。 */
     fun issueLaunchNonce(): String {
         handoffDiagnostics.launchStarted()
+        HandoffJournal.note("nonce", "issued a launch nonce")
         return nonces.issueLaunch()
     }
 
@@ -68,6 +70,7 @@ class HelperHub(context: Context) {
 
     /** 解除配对:口令全部作废(还活着的助手下次交接会被拒绝并退出),手里的接口也放掉。 */
     fun forget() {
+        HandoffJournal.note("hub", "forget: drop helper and all nonces")
         nonces.clear()
         handoffDiagnostics.clear()
         _shell.value = null
@@ -87,7 +90,10 @@ class HelperHub(context: Context) {
             helperApk = extras?.getString(HelperHandoff.KEY_APK),
             appApk = app.applicationInfo.sourceDir,
             hasBinder = binder != null,
-        )?.let { return reject(callingUid, it) }
+        )?.let { why ->
+            HandoffJournal.note("handoff", "rejected $why uid=$callingUid pid=$callingPid")
+            return reject(callingUid, why)
+        }
         val gate = nonces
         val nonce = extras?.getString(HelperHandoff.KEY_NONCE)
         // 口令不对就不碰对方给的 Binder
@@ -112,6 +118,7 @@ class HelperHub(context: Context) {
             )
         }
         Log.i(TAG, "helper pid $callingPid handed off")
+        HandoffJournal.note("handoff", "accepted pid=$callingPid")
         return Bundle().apply {
             putBoolean(HelperHandoff.KEY_ACCEPTED, true)
             putString(HelperHandoff.KEY_NEXT, next)

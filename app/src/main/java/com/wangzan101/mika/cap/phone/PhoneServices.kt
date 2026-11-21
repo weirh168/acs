@@ -6,9 +6,11 @@ import com.wangzan101.mika.cap.phone.setup.BuiltinShellRecovery
 import com.wangzan101.mika.cap.phone.setup.PairingCoordinator
 import com.wangzan101.mika.cap.phone.setup.PhoneSetupPrompt
 import com.wangzan101.mika.cap.phone.shell.BuiltinShellConnection
+import com.wangzan101.mika.cap.phone.shell.HandoffLogFile
 import com.wangzan101.mika.cap.phone.shell.HelperHub
 import com.wangzan101.mika.cap.phone.shell.SharedShell
 import com.wangzan101.mika.core.shell.BuiltinShellControl
+import com.wangzan101.mika.core.shell.HandoffJournal
 import com.wangzan101.mika.settings.RecoverySettings
 
 /**
@@ -40,10 +42,19 @@ class PhoneServices(context: Context) {
     /** 一次配对的全过程。 */
     val pairing: PairingCoordinator by lazy { PairingCoordinator(app, shellControl) }
 
+    /** 交接日志文件:诊断页与导出都用它。 */
+    private lateinit var handoffLog: HandoffLogFile
+
+    /** 读交接日志的最后几行(给诊断用)。 */
+    fun handoffTail(lines: Int = 40): List<String> = if (::handoffLog.isInitialized) handoffLog.tail(lines) else emptyList()
+
     /** 任务要用手机、助手却没在运行时的提示。 */
     val setupPrompt = PhoneSetupPrompt(app)
 
     init {
+        // 交接流水:进程一建就装上,之后引擎、助手落点、平台起助手都往这份文件里写
+        handoffLog = HandoffLogFile(app)
+        HandoffJournal.install(handoffLog)
         // 钥匙被撤销/读不出时,看门狗会举手:直接把配对窗口打开,通知和无障碍读码接着走
         shellManager.onPairingNeeded = { pairing.begin() }
     }

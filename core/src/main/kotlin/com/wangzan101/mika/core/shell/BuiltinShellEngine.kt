@@ -203,6 +203,7 @@ class BuiltinShellEngine(
      * Mika 自己正在写这个开关时不跟着动:系统可能马上拨回去,由写的那一边判断。
      */
     fun wirelessDebuggingChanged() {
+        HandoffJournal.note("wd", "changed now=${platform.wirelessDebugging()} paired=${platform.paired()} helper=${helper.value != null}")
         // 经 su 起助手不看无线调试
         if (helper.value != null || !platform.paired() || rootStart) return
         if (autoOn?.writing == true) return
@@ -220,6 +221,7 @@ class BuiltinShellEngine(
      * 卡在无线调试关着(包括上一个网络不允许)也马上再试。换了网络,上一个网络上的拒绝不再算数。
      */
     fun wifiAvailable() {
+        HandoffJournal.note("wifi", "available")
         autoOn?.reset()
         val s = _status.value
         val off = s == BuiltinShellStatus.WirelessDebuggingOff || s == BuiltinShellStatus.Failed(BuiltinShellFailure.WifiNotAllowed)
@@ -256,6 +258,7 @@ class BuiltinShellEngine(
 
     @Synchronized
     private fun schedule(delayMs: Long) {
+        HandoffJournal.note("schedule", "in ${delayMs}ms")
         retryJob?.cancel()
         retryJob = scope.launch {
             delay(delayMs)
@@ -264,7 +267,11 @@ class BuiltinShellEngine(
     }
 
     private suspend fun launchOnce(): Unit = launchLock.withLock {
-        if (helper.value != null) return@withLock
+        HandoffJournal.note("launch", "start failures=$failures paired=${platform.paired()} wd=${platform.wirelessDebugging()} root=$rootStart")
+        if (helper.value != null) {
+            HandoffJournal.note("launch", "skip: helper already handed off")
+            return@withLock
+        }
         // 先走 root:不用配对、不用 Wi-Fi;不行时配过对就接着走无线调试
         if (rootStart) {
             _status.value = BuiltinShellStatus.Connecting
@@ -298,6 +305,7 @@ class BuiltinShellEngine(
     private fun failed(failure: BuiltinShellFailure) {
         _status.value = BuiltinShellStatus.Failed(failure)
         val next = synchronized(this) { ++failures }
+        HandoffJournal.note("launch", "failed reason=$failure attempt=$next lastError=${lastError ?: "-"}")
         if (BuiltinShellFailures.retryable(failure)) backoff.delayAfter(next)?.let { d ->
             synchronized(this) {
                 retryJob = scope.launch {
@@ -372,6 +380,7 @@ class BuiltinShellEngine(
     }
 
     override suspend fun startPairing(code: String, port: Int?) {
+        HandoffJournal.note("pair", "start port=${port ?: "?"} discovery=${_discovery.value}")
         _status.value = BuiltinShellStatus.Connecting
         val target = port ?: (_discovery.value as? PairingDiscovery.Found)?.port
             ?: withContext(io) { platform.findPairingPort(pairingPortTimeoutMs) }
@@ -393,15 +402,19 @@ class BuiltinShellEngine(
             BuiltinShellFailure.Unknown
         }
         if (failure != null) {
+            HandoffJournal.note("pair", "failed $failure lastError=${lastError ?: "-"}")
             _status.value = BuiltinShellStatus.Failed(failure)
             return
         }
+        HandoffJournal.note("pair", "ok")
         platform.setPaired(true)
         stopDiscovery()
         retry()
     }
 
     override suspend fun retry() {
+        HandoffJournal.note("retry", "manual/by-policy")
+
         synchronized(this) {
             failures = 0
             retryJob?.cancel()
