@@ -114,6 +114,8 @@ class CallRuntime(private val app: MikaApp) {
     private var sims: List<CarrierSim> = emptyList()
     private var shell: IMikaShell? = null
     private var armed = false
+    /** 每次进程启动只自愈一次，避免和用户的显式操作抢。 */
+    private var rearmAttempted = false
     private var configuring = false
     private var detail: String? = null
     private var work: Work? = null
@@ -159,6 +161,7 @@ class CallRuntime(private val app: MikaApp) {
                 audioDetail = null
                 publish()
                 if (settings.state.value.enabled && current != null) probeAudio()
+                rearmIfNeeded()
                 maybeStartAutoAnswer()
             }
         }
@@ -239,6 +242,7 @@ class CallRuntime(private val app: MikaApp) {
         }
         scope.launch {
             accessLock.withLock { armed = withContext(Dispatchers.IO) { access.ready() } }
+            rearmIfNeeded()
             readSims()
             publish()
             maybeStartAutoAnswer()
@@ -564,6 +568,27 @@ class CallRuntime(private val app: MikaApp) {
         maybeStartAutoAnswer()
         if (state.value.prepared) ok("系统通话管理权限可用；连接状态以实际电话回调为准")
         else fail("AI 电话尚未准备好")
+    }
+
+    /**
+     * 升级、重装或重启会让「本 boot 已准备」的日记对不上，自动接听就会静默变成不可用。
+     * 只要自动接听是开着的、内置助手也在，就自己补一次配置，不再等用户去点。
+     */
+    private suspend fun rearmIfNeeded() {
+        if (armed || rearmAttempted) return
+        val helper = shell ?: return
+        val config = settings.state.value
+        if (!config.enabled || !config.autoAnswer) return
+        rearmAttempted = true
+        accessLock.withLock {
+            if (armed) return@withLock
+            val error = withContext(Dispatchers.IO) { access.prepare(helper) }
+            if (error == null || access.ready()) {
+                armed = true
+                detail = "已自动恢复电话伴侣配置"
+                publish()
+            }
+        }
     }
 
     suspend fun prepare(): CallActionResult = onMain {

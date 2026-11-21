@@ -204,8 +204,8 @@ internal object CallPolicy {
         )
     }
 
-    fun observing(config: CallConfig, nowMs: Long = System.currentTimeMillis()): Boolean =
-        nowMs < config.observeUntilMs
+    /** 观察期已取消:开关一开就按规则接听,不再先只记录几天。 */
+    fun observing(config: CallConfig, nowMs: Long = System.currentTimeMillis()): Boolean = false
 
     /** 观察期还剩几天(向上取整),没过期返回 0。 */
     fun observeDaysLeft(config: CallConfig, nowMs: Long = System.currentTimeMillis()): Int {
@@ -262,8 +262,7 @@ internal object CallPolicy {
         if (number != null && key == null) return false
         // 不在自动接听的时段里,一律不接(交给系统响铃)
         if (!inActiveWindow(config, nowMs)) return false
-        // 观察期:只记录,不真的接
-        if (nowMs < config.observeUntilMs) return false
+
         // 只接了部分 SIM:不是这些 SIM 上的来电不接
         if (config.autoAnswerSimIds.isNotEmpty() && simKey != null && simKey !in config.autoAnswerSimIds) return false
         // 黑名单最优先:名单里说不接就,或者号码落在不接的号段里,都不接

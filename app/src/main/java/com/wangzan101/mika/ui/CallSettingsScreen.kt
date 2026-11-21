@@ -262,8 +262,9 @@ private fun CallSettingsWorkspace(
                             onSetup = ::openDeviceSettings,
                             onToggle = { checked ->
                                 scope.launch {
-                                    val until = if (checked) System.currentTimeMillis() + config.observeDays * 86_400_000L
-                                      else config.observeUntilMs
+                                    // 不再有观察期:开关一开就按规则接听
+                                    val until = if (checked) 0L
+                                      else 0L
                                   if (save { it.copy(autoAnswer = checked, observeUntilMs = until) } && checked &&
                                         device.readiness.standbyNotificationsAllowed) startStandby()
                                 }
@@ -605,9 +606,6 @@ private fun CallReceivePage(
                 }
             }
         }
-    }
-    if (CallPolicy.observing(config)) ObserveBanner(CallPolicy.observeDaysLeft(config)) {
-        onEditConfig { cfg -> cfg.copy(observeUntilMs = 0L) }
     }
     CallTodayCard(history, onHistory)
     Spacer(Modifier.size(12.dp))
@@ -1364,23 +1362,6 @@ private fun callerLabel(context: android.content.Context, number: String?): Stri
     return if (name != null) "$kind · $name" else "$kind · $number"
 }
 
-/** 观察期横幅:只记录不接听,可提前结束。 */
-@Composable
-private fun ObserveBanner(daysLeft: Int, onSkip: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().background(MikaTheme.colors.warnSoft, RoundedCornerShape(12.dp))
-            .padding(14.dp).testTag("call-observe-banner"),
-    ) {
-        Text(stringResource(R.string.calls_observe_title, daysLeft), fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold, color = MikaTheme.colors.warn)
-        Text(stringResource(R.string.calls_observe_note), fontSize = 13.sp,
-            color = MikaTheme.colors.ink2, modifier = Modifier.padding(top = 2.dp))
-        TextButton(onClick = onSkip, modifier = Modifier.align(Alignment.End).testTag("call-observe-skip")) {
-            Text(stringResource(R.string.calls_observe_skip), fontSize = 14.sp)
-        }
-    }
-    Spacer(Modifier.size(12.dp))
-}
 
 
 
