@@ -1,0 +1,241 @@
+[
+{
+"file": "scripts/fuyuntang.py",
+"runnable": true,
+"needs": [
+"apk:python3"
+]
+},
+{
+"file": "scripts/bazi.py",
+"runnable": false
+},
+{
+"file": "scripts/birth_registry.json",
+"runnable": false
+},
+{
+"file": "scripts/case_index.json",
+"runnable": false
+},
+{
+"file": "scripts/cities.json",
+"runnable": false
+},
+{
+"file": "scripts/engine.py",
+"runnable": false
+},
+{
+"file": "scripts/fy_core.py",
+"runnable": false
+},
+{
+"file": "scripts/marriage_params_v2.json",
+"runnable": false
+},
+{
+"file": "scripts/predict_record.py",
+"runnable": false
+},
+{
+"file": "scripts/review_log.json",
+"runnable": false
+},
+{
+"file": "scripts/shishen.json",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/EightChar.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/Foto.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/FotoFestival.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/Fu.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/Holiday.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/JieQi.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/Lunar.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/LunarMonth.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/LunarTime.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/LunarYear.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/NineStar.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/ShuJiu.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/Solar.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/SolarHalfYear.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/SolarMonth.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/SolarSeason.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/SolarWeek.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/SolarYear.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/Tao.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/TaoFestival.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/pkginit.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/eightchar/DaYun.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/eightchar/LiuNian.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/eightchar/LiuYue.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/eightchar/XiaoYun.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/eightchar/Yun.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/eightchar/pkginit.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/util/FotoUtil.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/util/HolidayUtil.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/util/LunarUtil.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/util/ShouXingUtil.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/util/SolarUtil.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/util/TaoUtil.py",
+"runnable": false
+},
+{
+"file": "scripts/vendor/lunar_python/util/pkginit.py",
+"runnable": false
+},
+{
+"file": "references/00-智能体配置档案.md",
+"runnable": false
+},
+{
+"file": "references/00-福运命理法则.md",
+"runnable": false
+},
+{
+"file": "references/00-输出格式公约.md",
+"runnable": false
+},
+{
+"file": "references/bazi-pai-pan.md",
+"runnable": false
+},
+{
+"file": "references/config-guard.md",
+"runnable": false
+},
+{
+"file": "references/fuyuntang-mingli.md",
+"runnable": false
+},
+{
+"file": "references/guji-jinghua.md",
+"runnable": false
+},
+{
+"file": "references/mangpai-jinghua.md",
+"runnable": false
+},
+{
+"file": "references/mingli-life-narrative.md",
+"runnable": false
+},
+{
+"file": "references/mingli-output-format.md",
+"runnable": false
+},
+{
+"file": "references/mingli-pipeline.md",
+"runnable": false
+},
+{
+"file": "references/mingli-preworkflow.md",
+"runnable": false
+},
+{
+"file": "references/mingli-think-framework.md",
+"runnable": false
+},
+{
+"file": "references/sushi-faze.md",
+"runnable": false
+}
+]
