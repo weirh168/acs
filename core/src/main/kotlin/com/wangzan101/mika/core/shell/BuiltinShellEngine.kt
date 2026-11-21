@@ -269,7 +269,10 @@ class BuiltinShellEngine(
     private suspend fun launchOnce(): Unit = launchLock.withLock {
         HandoffJournal.note("launch", "start failures=$failures paired=${platform.paired()} wd=${platform.wirelessDebugging()} root=$rootStart")
         if (helper.value != null) {
-            HandoffJournal.note("launch", "skip: helper already handed off")
+            // 助手已经在手:状态必须跟着事实走,否则界面会一直停在「没准备好」
+            HandoffJournal.note("launch", "skip: helper already handed off -> Running")
+            lastError = null
+            _status.value = BuiltinShellStatus.Running
             return@withLock
         }
         // 先走 root:不用配对、不用 Wi-Fi;不行时配过对就接着走无线调试

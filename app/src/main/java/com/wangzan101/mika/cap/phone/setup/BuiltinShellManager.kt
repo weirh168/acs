@@ -322,6 +322,12 @@ class BuiltinShellManager(
                 throw e
             }
             launchStage("adb_connected")
+            // 助手跑在 shell 身份下,am force-stop 杀不到它;Mika 重启后旧助手还拿着旧 APK 的身份来交接,
+            // 必被 StaleApk 拒,新的就起不来。既然 adb 已经连上,起新的之前先把旧的清掉。
+            val cleared = runCatching {
+                connection.exec(killStaleHelper).readText().trim()
+            }.getOrNull()
+            HandoffJournal.note("launchHelper", "cleared stale helper: ${cleared?.take(60)?.ifEmpty { "none" } ?: "failed"}")
             // 流开着 sh 就一直等;交接到了(或超时)再关,交接结果仍由引擎从 HelperHub 判断
             val before = hub.shell.value
             connection.use {
@@ -375,6 +381,8 @@ class BuiltinShellManager(
     }
 
     companion object {
+        /** 起新助手前清掉残留:只杀本包名下的助手进程,不碰别的。 */
+        const val killStaleHelper = "pkill -f com.wangzan101.mika.mod:helper"
         /** 这两类失败只靠自己重连永远好不了,必须重新配对一次。 */
         val AUTO_REPAIR = setOf(
             BuiltinShellFailure.AuthorizationRevoked,

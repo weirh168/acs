@@ -14,6 +14,7 @@ import android.os.UserManager
 import android.provider.Settings
 import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.core.shell.BuiltinShellControl
+import com.wangzan101.mika.core.shell.HandoffJournal
 import com.wangzan101.mika.cap.phone.setup.DeveloperSettings
 import com.wangzan101.mika.cap.phone.setup.PairingNotifier
 import kotlinx.coroutines.CoroutineScope
@@ -66,7 +67,10 @@ class SystemStatusMonitor(context: Context, private val shell: BuiltinShellContr
     }
 
     fun refresh() {
-        _status.value = read()
+        val snapshot = read()
+        // 界面到底读到了什么:助手状态和无障碍各是什么,判定卡住时一眼能看出来
+        HandoffJournal.note("ui", "shell=${snapshot.builtinShell} a11y=${snapshot.accessibility}")
+        _status.value = snapshot
     }
 
     private fun read() = SystemStatus(
