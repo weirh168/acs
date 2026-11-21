@@ -265,7 +265,8 @@ class VolcRealtimeSession internal constructor(
             VolcRealtimeProtocol.USER_STARTED -> {
                 currentUserItem = frame.string("item_id")?.takeIf { it.isNotEmpty() }
                 userText = StringBuilder()
-                interruptAudio()
+                // 不打断 AI 播报:对方说话时让这一句先说完整,否则电话里会出现"AI 突然不说话了"。
+                // 只有服务端明确 response.canceled 才停,那是云端的决定。
                 publish(VolcRealtimeEvent.UserSpeaking)
             }
             VolcRealtimeProtocol.USER_DELTA -> {
@@ -313,7 +314,10 @@ class VolcRealtimeSession internal constructor(
                 }
             }
             VolcRealtimeProtocol.AUDIO_DELTA -> {
-                if (waitForAudioStart || (responseId != null && responseId == interruptedAudioId)) return
+                // 曾经把 waitForAudioStart 当门闸:一旦本地清空过播放,后续 delta 会被永久丢掉,
+                // 表现就是"AI 一被打断就再也不说话"。现在只在明确的旧响应上丢帧。
+                if (responseId != null && responseId == interruptedAudioId) return
+                waitForAudioStart = false
                 val pcm = VolcRealtimeProtocol.pcm(frame) ?: run { invalidFrame(); return }
                 if (pcm.isEmpty()) return
                 if (!audioActive) {
@@ -344,7 +348,9 @@ class VolcRealtimeSession internal constructor(
         interruptedAudioId = audioId
         audioActive = false
         audioId = null
-        waitForAudioStart = true
+        // 不置 waitForAudioStart:置了就要求下一次一定要有 response.output_audio.started,
+        // 而服务端常常只补 delta,导致之后整段静音。
+        waitForAudioStart = false
     }
 
     @Synchronized private fun closing(webSocket: WebSocket, code: Int) {

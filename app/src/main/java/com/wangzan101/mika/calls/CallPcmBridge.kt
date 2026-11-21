@@ -54,6 +54,7 @@ internal class CallPcmBridge(
             assistantText.clear()
         }
         // The separate writer leaves model event collection responsive when a pipe is full.
+        val holdInput = java.util.concurrent.atomic.AtomicBoolean(false)
         val output = launch(Dispatchers.IO) {
             val pcm = ByteArray(CallPlaybackQueue.WRITE_BYTES)
             while (true) {
@@ -66,6 +67,8 @@ internal class CallPcmBridge(
                         }
                     }
                 } finally {
+            holdInput.set(false)
+            runCatching { session.setMuted(false) }
                     playbackQueue.release(block)
                 }
             }
@@ -83,8 +86,12 @@ internal class CallPcmBridge(
                     if (count == 0) continue
                     position += count
                     if (position == frame.size) {
-                        if (!session.sendPcm16(frame)) throw CallMediaFailure("火山音频输入已中断")
-                        counters?.inputAccepted(frame, System.nanoTime())
+                        // AI 正在说话时先不送上去：既避免它听见自己的回声而自我打断，
+                        // 也避免对方一句插话就把这一轮播报掐掉。说完立刻恢复。
+                        if (!holdInput.get()) {
+                            if (!session.sendPcm16(frame)) throw CallMediaFailure("火山音频输入已中断")
+                            counters?.inputAccepted(frame, System.nanoTime())
+                        }
                         position = 0
                     }
                 }
@@ -104,7 +111,7 @@ internal class CallPcmBridge(
                                 farewell.audio(event.pcm.size)
                                 counters?.outputQueued(queuedBytes)
                             }
-                            VolcRealtimeEvent.UserSpeaking, VolcRealtimeEvent.AssistantInterrupted -> {
+                            VolcRealtimeEvent.AssistantInterrupted -> {
                                 cancelFarewellWaiter()
                                 farewell.cancelCandidate()
                                 if (farewell.hasPlaybackSinceFlush) {
@@ -121,6 +128,11 @@ internal class CallPcmBridge(
                                 // Without newly accepted PCM, another flush would only reset the route.
                                 flushAssistantText()
                             }
+                            VolcRealtimeEvent.UserSpeaking -> {
+                                // 对方开口不清空 AI 正在说的话,避免"对方一说话 AI 就哑了"
+                                cancelFarewellWaiter()
+                                farewell.cancelCandidate()
+                            }
                             is VolcRealtimeEvent.UserTranscript -> {
                                 cancelFarewellWaiter()
                                 if (event.isFinal) {
@@ -132,9 +144,13 @@ internal class CallPcmBridge(
                             VolcRealtimeEvent.AssistantAudioStarted -> {
                                 cancelFarewellWaiter()
                                 farewell.audioStarted()
+                                holdInput.set(true)
+                                session.setMuted(true)
                             }
                             VolcRealtimeEvent.AssistantAudioEnded -> {
                                 farewell.audioEnded()
+                                holdInput.set(false)
+                                session.setMuted(false)
                                 checkFarewell()
                             }
                             is VolcRealtimeEvent.AssistantTranscript -> {
