@@ -180,3 +180,115 @@ def audit(text, bazi_str, dayun=None, liunian=None):
         "违例": violations,
         "ok": not violations,
     }
+
+# ─────────────────────── 宫位引动校验（--layer gongwei） ───────────────────────
+
+GONG = {"年": "祖业/父母/童年", "月": "事业/兄弟/青年", "日": "婚姻/自身/中年", "时": "子女/晚年/下属"}
+STRENGTH = {"冲": 5, "三合": 4, "半合": 4, "三会": 4, "六合": 4, "刑": 3, "害": 2, "破": 2, "伏吟": 1, "自刑": 3}
+
+
+def _pillar_hits(zhi, pillars, layer_name):
+    """某一层的支，引动了原局哪几柱。"""
+    hits = []
+    for p in pillars:
+        rel = relation(zhi, p["支"])
+        if rel:
+            hits.append({"柱": p["柱"], "宫位领域": GONG[p["柱"]], "该柱地支": p["支"],
+                         "引动方式": rel, "强度": STRENGTH.get(rel, 1),
+                         "来源": "%s%s" % (layer_name, zhi)})
+    # 三合/三会/三合局把相关柱一并算引动
+    others = [(p["柱"], p["支"]) for p in pillars]
+    for group, element in SANHE.items():
+        if zhi not in group:
+            continue
+        mates = [(c, b) for c, b in others if b in group and b != zhi]
+        uniq_branches = {b for _, b in mates}
+        if len(uniq_branches) >= 2:
+            rel = "三合" + element + "局"
+            for c, b in mates:
+                hits.append({"柱": c, "宫位领域": GONG[c], "该柱地支": b, "引动方式": rel,
+                             "强度": STRENGTH["三合"], "来源": "%s%s" % (layer_name, zhi)})
+        elif len(uniq_branches) == 1:
+            rel = "半合" + element + "局"
+            for c, b in mates:
+                hits.append({"柱": c, "宫位领域": GONG[c], "该柱地支": b, "引动方式": rel,
+                             "强度": STRENGTH["半合"], "来源": "%s%s" % (layer_name, zhi)})
+    for group, element in SANHUI.items():
+        if zhi not in group:
+            continue
+        mates = [(c, b) for c, b in others if b in group and b != zhi]
+        if len({b for _, b in mates}) >= 2:
+            rel = "三会" + element + "方"
+            for c, b in mates:
+                hits.append({"柱": c, "宫位领域": GONG[c], "该柱地支": b, "引动方式": rel,
+                             "强度": STRENGTH["三会"], "来源": "%s%s" % (layer_name, zhi)})
+    return hits
+
+
+def gongwei(bazi_str, dayun=None, liunian=None):
+    """宫位引动：这几柱里，哪几柱被大运/流年引动，以及怎么引动。"""
+    pillars = parse_bazi(bazi_str)
+    rows = []
+    for p in pillars:
+        row = {"柱": p["柱"], "地支": p["支"], "宫位领域": GONG[p["柱"]], "引动": []}
+        for layer, gz in (("大运", dayun), ("流年", liunian)):
+            if gz:
+                rel = relation(gz[1], p["支"])
+                if rel:
+                    row["引动"].append({"来源": "%s%s" % (layer, gz[1]), "方式": rel,
+                                       "强度": STRENGTH.get(rel, 1)})
+        rows.append(row)
+    # 三合/三会/半合这类跨柱引动单独列
+    group_hits = []
+    for layer, gz in (("大运", dayun), ("流年", liunian)):
+        if not gz:
+            continue
+        for h in _pillar_hits(gz[1], pillars, layer):
+            if "局" in h["引动方式"] or "方" in h["引动方式"]:
+                group_hits.append(h)
+    # 把合会引动并回对应柱，免得一张表里两处看
+    for h in group_hits:
+        for row in rows:
+            if row["柱"] == h["柱"] and not any(x["来源"] == h["来源"] and x["方式"] == h["引动方式"] for x in row["引动"]):
+                row["引动"].append({"来源": h["来源"], "方式": h["引动方式"], "强度": h["强度"]})
+    for row in rows:
+        row["引动"].sort(key=lambda x: -x["强度"])
+    quiet = [r["柱"] for r in rows if not r["引动"]]
+    return {
+        "八字": " ".join(p["干"] + p["支"] for p in pillars),
+        "宫位表": rows,
+        "合会引动": group_hits,
+        "无引动柱": quiet,
+        "被引动柱": [r["柱"] for r in rows if r["引动"]],
+        "断语要求": [
+            "说某年有某事，必须指出落在哪一柱（年/月/日/时），以及引动方式（冲/合/刑/害/伏吟/半合）",
+            "没有任何引动的柱，不许硬安事件",
+            "同一事件跨两柱时，写清主次（日柱>月柱>时柱>年柱）",
+        ],
+    }
+
+
+def audit_gongwei(text, bazi_str, dayun=None, liunian=None):
+    """审断语里的宫位说法：声称被引动的柱与方式，必须在 gongwei 结果里成立。"""
+    import re
+    pillars = parse_bazi(bazi_str)
+    g = gongwei(bazi_str, dayun, liunian)
+    actual = {}
+    for row in g["宫位表"]:
+        actual[row["柱"]] = {x["方式"] for x in row["引动"]}
+    for h in g["合会引动"]:
+        actual.setdefault(h["柱"], set()).add(h["引动方式"])
+    violations = []
+    claims = re.findall(r"([年月日时])(柱|支)?(?:被|受|遭)?(冲|合|刑|害|伏吟|三合|半合|三会)", text)
+    for pillar, _kind, rel in claims:
+        got = actual.get(pillar, set())
+        if not got:
+            violations.append({"宫位": pillar, "声称": rel, "问题": "这一柱今年没有任何引动", "实际": "无"})
+            continue
+        # 合/半合/三合互认；三会单列
+        ok = rel in got
+        if not ok and rel in ("合", "半合", "三合"):
+            ok = any("合" in x for x in got)
+        if not ok:
+            violations.append({"宫位": pillar, "声称": rel, "问题": "引动方式与实算不符", "实际": "、".join(sorted(got))})
+    return {"被引动柱": g["被引动柱"], "违例": violations, "ok": not violations}

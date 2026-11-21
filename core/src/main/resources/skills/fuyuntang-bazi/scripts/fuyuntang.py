@@ -4,7 +4,7 @@
 子命令：
   paipan  --year 1990 --month 5 --day 12 --hour 14 --minute 30 --gender 男 [--calendar lunar] [--city 南宁 | --longitude 108.3]
   engine  --bazi "乙亥 乙酉 戊申 庚申" [--gender 男] [--age 30] [--modules core,marriage,career]
-  check   --bazi "乙丑 乙酉 乙丑 壬午" [--dayun 戊戌] [--liunian 丙午] [--text 已写好的断语]
+  check   --bazi "乙丑 乙酉 乙丑 壬午" [--dayun 戊戌] [--liunian 丙午] [--text 已写好的断语] [--layer gongwei | --gongwei]
   rules   [--topic 排盘] [--max-chars 12000]
   predict add --bazi ... --item 婚姻 --expect ... --by 2027-01-01
   predict stats
@@ -66,6 +66,11 @@ def arg(argv, name, default=None):
         i = argv.index(name)
         if i + 1 < len(argv):
             return argv[i + 1]
+    # 也认 --key=value，模型有时会拼成一整段
+    prefix = name + "="
+    for item in argv:
+        if isinstance(item, str) and item.startswith(prefix):
+            return item[len(prefix):]
     return default
 
 
@@ -139,7 +144,18 @@ def cmd_check(argv):
         return 1
     dayun = arg(argv, "--dayun")
     liunian = arg(argv, "--liunian") or arg(argv, "--year-gz")
+    layer = "gongwei" if flag(argv, "--gongwei") else (arg(argv, "--layer") or "zhi").lower()
     try:
+        if layer in ("gongwei", "gong", "宫位"):
+            out = structcheck.gongwei(bazi, dayun, liunian)
+            text_g = arg(argv, "--text")
+            if text_g:
+                out["宫位审核"] = structcheck.audit_gongwei(text_g, bazi, dayun, liunian)
+                out["ok"] = out["宫位审核"]["ok"]
+            else:
+                out["ok"] = True
+            print(json.dumps(out, ensure_ascii=False, indent=1, default=str))
+            return 0
         out = structcheck.check(bazi, dayun, liunian)
     except Exception as e:
         print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
@@ -227,7 +243,22 @@ def cmd_selftest(argv):
                        "戌只在大运层": dayun_ok, "辰未被判串盘": caught, "正确断语通过": good["ok"], "一致": passed})
     except Exception as e:
         detail.append({"检查": "结构校验回归", "一致": False, "错误": str(e)})
-    total = len(ANCHORS) + len(BOUNDARY) + 1
+    try:
+        import structcheck as _sc
+        g = _sc.gongwei("乙丑 乙酉 乙丑 壬午", "戊戌", "丙午")
+        rows = {r["柱"]: {x["方式"] for x in r["引动"]} for r in g["宫位表"]}
+        g_bad = _sc.audit_gongwei("月柱被冲，时柱被合。", "乙丑 乙酉 乙丑 壬午", "戊戌", "丙午")
+        g_good = _sc.audit_gongwei("年支被刑、日支被刑，时支被合。", "乙丑 乙酉 乙丑 壬午", "戊戌", "丙午")
+        layout_ok = ("刑" in rows.get("年", set()) and "刑" in rows.get("日", set())
+                     and "害" in rows.get("月", set()) and any("合" in x for x in rows.get("时", set())))
+        caught_g = g_bad["ok"] is False and any(v["宫位"] == "月" for v in g_bad["违例"])
+        g_pass = layout_ok and caught_g and g_good["ok"] is True
+        ok += 1 if g_pass else 0
+        detail.append({"检查": "宫位引动回归（月酉只被害不冲）", "宫位表正确": layout_ok,
+                       "错说法被判": caught_g, "对说法通过": g_good["ok"], "一致": g_pass})
+    except Exception as e:
+        detail.append({"检查": "宫位引动回归", "一致": False, "错误": str(e)})
+    total = len(ANCHORS) + len(BOUNDARY) + 2
     out = {"ok": ok == total and eng.get("ok") is True and rules.get("ok") is True,
            "排盘锚点": detail, "引擎": "ok" if eng.get("ok") else eng.get("error"),
            "规则文件数": len(rules.get("规则文件") or [])}
