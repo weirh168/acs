@@ -47,6 +47,10 @@
 "runnable": false
 },
 {
+"file": "scripts/structcheck.py",
+"runnable": false
+},
+{
 "file": "scripts/vendor/lunar_python/EightChar.py",
 "runnable": false
 },
@@ -180,6 +184,10 @@
 },
 {
 "file": "scripts/vendor/lunar_python/util/pkginit.py",
+"runnable": false
+},
+{
+"file": "references/00-原盘结构校验.md",
 "runnable": false
 },
 {

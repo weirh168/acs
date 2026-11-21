@@ -4,6 +4,7 @@
 子命令：
   paipan  --year 1990 --month 5 --day 12 --hour 14 --minute 30 --gender 男 [--calendar lunar] [--city 南宁 | --longitude 108.3]
   engine  --bazi "乙亥 乙酉 戊申 庚申" [--gender 男] [--age 30] [--modules core,marriage,career]
+  check   --bazi "乙丑 乙酉 乙丑 壬午" [--dayun 戊戌] [--liunian 丙午] [--text 已写好的断语]
   rules   [--topic 排盘] [--max-chars 12000]
   predict add --bazi ... --item 婚姻 --expect ... --by 2027-01-01
   predict stats
@@ -130,6 +131,29 @@ def cmd_engine(argv):
     return 0
 
 
+def cmd_check(argv):
+    import structcheck
+    bazi = arg(argv, "--bazi")
+    if not bazi:
+        print(json.dumps({"ok": False, "error": "缺少 --bazi"}, ensure_ascii=False))
+        return 1
+    dayun = arg(argv, "--dayun")
+    liunian = arg(argv, "--liunian") or arg(argv, "--year-gz")
+    try:
+        out = structcheck.check(bazi, dayun, liunian)
+    except Exception as e:
+        print(json.dumps({"ok": False, "error": str(e)}, ensure_ascii=False))
+        return 1
+    text = arg(argv, "--text")
+    if text:
+        out["断语审核"] = structcheck.audit(text, bazi, dayun, liunian)
+        out["ok"] = out["断语审核"]["ok"]
+    else:
+        out["ok"] = True
+    print(json.dumps(out, ensure_ascii=False, indent=1, default=str))
+    return 0
+
+
 def cmd_rules(argv):
     args = {}
     if arg(argv, "--topic"):
@@ -188,7 +212,22 @@ def cmd_selftest(argv):
         ok += 1 if same else 0
         detail.append({"公历": "%04d-%02d-%02d 立春边界" % (y, m, d), "期望年柱": expect_year,
                        "实得年柱": got, "一致": same})
-    total = len(ANCHORS) + len(BOUNDARY)
+    # 结构校验回归：原局只有丑酉丑午，戌只能以「大运」出现；断语里出现辰/未必须被判违例
+    try:
+        import structcheck
+        sc = structcheck.check("乙丑 乙酉 乙丑 壬午", "戊戌", "丙午")
+        bad = structcheck.audit("大运戌冲辰、未戌相刑；原局酉丑半合金局", "乙丑 乙酉 乙丑 壬午", "戊戌", "丙午")
+        good = structcheck.audit("大运戌与年支丑刑、与月支酉害；原局酉丑半合金局", "乙丑 乙酉 乙丑 壬午", "戊戌", "丙午")
+        native_ok = set(sc["原局四支"].values()) == {"丑", "酉", "午"}
+        dayun_ok = sc.get("大运", {}).get("支") == "戌" and any(x["关系"] == "刑" for x in sc["大运"]["与原局"])
+        caught = bad["ok"] is False and {v["地支"] for v in bad["违例"]} == {"辰", "未"}
+        passed = native_ok and dayun_ok and caught and good["ok"] is True
+        ok += 1 if passed else 0
+        detail.append({"检查": "结构校验回归（大运戌不得并入原局）", "原局锁定": native_ok,
+                       "戌只在大运层": dayun_ok, "辰未被判串盘": caught, "正确断语通过": good["ok"], "一致": passed})
+    except Exception as e:
+        detail.append({"检查": "结构校验回归", "一致": False, "错误": str(e)})
+    total = len(ANCHORS) + len(BOUNDARY) + 1
     out = {"ok": ok == total and eng.get("ok") is True and rules.get("ok") is True,
            "排盘锚点": detail, "引擎": "ok" if eng.get("ok") else eng.get("error"),
            "规则文件数": len(rules.get("规则文件") or [])}
@@ -205,6 +244,8 @@ def main(argv):
         return cmd_paipan(argv)
     if cmd == "engine":
         return cmd_engine(argv)
+    if cmd == "check":
+        return cmd_check(argv)
     if cmd == "rules":
         return cmd_rules(argv)
     if cmd == "predict":
