@@ -325,7 +325,8 @@ private fun PresetCards(preset: CallPreset, flags: List<Boolean>, onPick: (CallP
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             PresetCard(stringResource(R.string.calls_preset_smart), stringResource(R.string.calls_preset_smart_note),
                 selected = preset == CallPreset.SMART && !customized,
-                badge = if (customized) stringResource(R.string.calls_preset_custom) else stringResource(R.string.calls_preset_recommended),
+                // 自定义状态不再标字，卡片只显示标题与说明
+                badge = if (customized) null else stringResource(R.string.calls_preset_recommended),
                 tag = "call-preset-smart", modifier = Modifier.weight(1f).fillMaxHeight()) { onPick(CallPreset.SMART) }
             PresetCard(stringResource(R.string.calls_preset_all), stringResource(R.string.calls_preset_all_note),
                 selected = preset == CallPreset.ALL, badge = null,
