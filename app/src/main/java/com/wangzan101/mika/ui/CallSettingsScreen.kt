@@ -263,12 +263,14 @@ private fun CallSettingsWorkspace(
                             onToggle = { checked ->
                                 scope.launch {
                                     // 不再有观察期:开关一开就按规则接听
-                                    val until = if (checked) 0L
-                                      else 0L
-                                  if (save { it.copy(autoAnswer = checked, observeUntilMs = until) } && checked &&
-                                        device.readiness.standbyNotificationsAllowed) startStandby()
+                                    if (save { it.copy(autoAnswer = checked, observeUntilMs = 0L) } && checked) {
+                                        // 权限被系统收走过之后,先把伴侣补回来再起待命
+                                        if (!state.manualReady) prepare()
+                                        if (device.readiness.standbyNotificationsAllowed) startStandby()
+                                    }
                                 }
                             },
+                            onReprepare = { scope.launch { prepare() } },
                             onStartStandby = startStandby,
                             onRules = { dialog = CallDialog.Rules },
                             onBypass = { dialog = CallDialog.Bypass },
@@ -540,6 +542,7 @@ private fun CallReceivePage(
     onDelay: (Int) -> Unit = {},
     onEditConfig: ((CallConfig) -> CallConfig) -> Unit = {},
     onToggleEnabled: (Boolean) -> Unit = {},
+    onReprepare: () -> Unit = {},
 ) {
     var scopeOpen by rememberSaveable { mutableStateOf(false) }
     var importantOpen by rememberSaveable { mutableStateOf(false) }
@@ -553,6 +556,15 @@ private fun CallReceivePage(
             MikaSwitch(config.enabled, onToggleEnabled, enabled = controlsEnabled || config.enabled,
                 modifier = Modifier.testTag("call-enabled"))
         }
+    }
+    // 开关开着、自动接听也开着,但伴侣权限被系统收回:当场给一条带按钮的提示,别让它在后台静默失效
+    if (config.enabled && config.autoAnswer && !state.manualReady) {
+        Spacer(Modifier.size(12.dp))
+        ReArmBanner(
+            reason = state.autoAnswerBlockedReason ?: stringResource(R.string.calls_needs_setup),
+            onReprepare = onReprepare,
+            enabled = controlsEnabled,
+        )
     }
     Spacer(Modifier.size(12.dp))
     // 接听范围提到最上面:普通人最想改的就是「AI 接谁的电话」
@@ -957,6 +969,25 @@ private fun CallReadinessActions(
                     Text(stringResource(R.string.calls_disable_short))
                 }
             }
+        }
+    }
+}
+
+/** 权限被系统收回后的提示条:说清「现在接不了」,并给一键重新准备。 */
+@Composable
+private fun ReArmBanner(reason: String, onReprepare: () -> Unit, enabled: Boolean) {
+    Column(
+        Modifier.fillMaxWidth().background(MikaTheme.colors.warnSoft, RoundedCornerShape(12.dp))
+            .padding(14.dp).testTag("call-rearm-banner"),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text("自动接听暂时用不了", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MikaTheme.colors.warn)
+        Text(
+            "$reason。系统可能在重装或升级时收回了电话权限，重新准备一次就好。",
+            fontSize = 13.sp, color = MikaTheme.colors.ink2,
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            MikaButton("重新准备", { onReprepare() }, enabled = enabled, size = ButtonSize.Small, modifier = Modifier.align(Alignment.CenterVertically))
         }
     }
 }
