@@ -87,9 +87,19 @@ object KnowledgeIndex {
         for (kind in KINDS) {
             File(root, dirOf(kind)).listFiles { f -> f.isDirectory }.orEmpty().forEach { sub ->
                 sub.walkTopDown().filter { it.isFile && it.name != "LICENSE.md" }.forEach { file ->
-                    val text = file.readText()
                     val rel = file.relativeTo(root).invariantSeparatorsPath
+                    // 跑过一次脚本就会在资源里留下 __pycache__/*.pyc:它们会被原样打进 APK,还让技能目录多出一堆清单外的文件
+                    if (file.extension == "pyc") { errors += "$rel: 运行时缓存不许进资源"; return@forEach }
+                    val text = file.readText()
                     if (text.contains("/Users/")) errors += "$rel: 出现了本机路径"
+                }
+                // 清单里列的每个文件都得在:少一个,沙箱里就少一个,运行期才报错
+                val manifest = File(sub, "scripts/manifest.json")
+                if (manifest.isFile) {
+                    val rel = manifest.relativeTo(root).invariantSeparatorsPath
+                    for (e in ScriptManifest.parse(manifest.readText())) {
+                        if (!File(sub, e.file).isFile) errors += "$rel: 列了不存在的 ${e.file}"
+                    }
                 }
             }
         }

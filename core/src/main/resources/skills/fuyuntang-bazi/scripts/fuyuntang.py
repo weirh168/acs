@@ -13,6 +13,8 @@ import json
 import os
 import sys
 
+# 不要在技能目录里生成 __pycache__：那会被一起打进 APK
+sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 for p in (os.path.join(HERE, "vendor"), HERE):
     if os.path.isdir(p) and p not in sys.path:
