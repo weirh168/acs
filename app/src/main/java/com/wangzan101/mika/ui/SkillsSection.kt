@@ -7,6 +7,11 @@ import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
 import com.wangzan101.mika.ui.components.keepsKeyboard
 import com.wangzan101.mika.ui.components.KeyboardDismissArea
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import com.wangzan101.mika.ui.theme.MikaIcons
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -103,13 +108,16 @@ internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean) 
         // 内置技能列表:每一份都有开关，关掉的不进索引、不可检索、不可读
         val flags = FeatureFlags.get(context)
         var off by remember { mutableStateOf(flags.builtinSkillsOff()) }
+        var hidden by remember { mutableStateOf(flags.builtinSkillsHidden()) }
+        var deleting by remember { mutableStateOf<String?>(null) }
         val builtins = remember {
             runCatching { GuideCatalog.loadBundled().items.filter { it.kind == KnowledgeIndex.SKILL } }.getOrDefault(emptyList())
         }
+        val shown = builtins.filter { it.name !in hidden }
         if (builtins.isNotEmpty()) {
             GroupLabel("内置技能")
             GroupCard {
-                builtins.forEachIndexed { i, skill ->
+                shown.forEachIndexed { i, skill ->
                     val on = skill.name !in off
                     Column(Modifier.testTag("builtin-skill-row")) {
                         ListRow(null, skill.display, skill.description.ifBlank { null }, first = i == 0) {
@@ -118,14 +126,62 @@ internal fun SkillsSection(vm: MemoryViewModel, ui: SkillsUi, pending: Boolean) 
                                 flags.setBuiltinSkillsOff(next)
                                 off = next
                             })
+                            Box(Modifier.padding(start = 4.dp)) {
+                                IconButton(
+                                    onClick = { deleting = skill.name },
+                                    modifier = Modifier.testTag("builtin-skill-delete"),
+                                ) {
+                                    Icon(
+                                        MikaIcons.Trash, contentDescription = "删除",
+                                        tint = MikaTheme.colors.ink3, modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            }
                         }
                     }
                 }
+                if (shown.isEmpty()) EmptyNote("内置技能都删掉了，下面可以恢复")
+            }
+            if (hidden.isNotEmpty()) {
+                ListRow(null, "已删除 ${hidden.size} 个内置技能", "删掉的不会显示，也检索不到；恢复后照常用",
+                    first = shown.isEmpty()) {
+                    TextButton(onClick = {
+                        // 删除时顺手关掉的，恢复时一并打开，免得回来还是关着的
+                        val restored = hidden
+                        flags.setBuiltinSkillsHidden(emptySet())
+                        val nextOff = off - restored
+                        flags.setBuiltinSkillsOff(nextOff)
+                        hidden = emptySet()
+                        off = nextOff
+                    }) { Text("恢复") }
+                }
             }
             Text(
-                "关掉的技能不会被检索到，也读不到正文；需要时再打开。",
+                "删除只是从列表里拿掉，随包的正文还在；恢复后照常用。",
                 style = MikaType.Caption, color = MikaTheme.colors.ink3,
                 modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 2.dp),
+            )
+        }
+        deleting?.let { name ->
+            val display = builtins.firstOrNull { it.name == name }?.display ?: name
+            MikaDialog(
+                onDismissRequest = { deleting = null },
+                title = { Text("删除内置技能") },
+                text = { Text("「$display」会从列表里消失，也不会被检索到。随包的正文不会删掉，需要时可以恢复。") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val nextHidden = hidden + name
+                        val nextOff = off + name
+                        flags.setBuiltinSkillsHidden(nextHidden)
+                        flags.setBuiltinSkillsOff(nextOff)
+                        hidden = nextHidden
+                        off = nextOff
+                        deleting = null
+                    }) { Text("删除", color = MikaTheme.colors.warn) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deleting = null }) { Text(stringResource(R.string.no_thanks)) }
+                },
             )
         }
         GroupLabel(stringResource(R.string.skills_get))

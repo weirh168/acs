@@ -123,6 +123,14 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         prefs.edit().putStringSet(BUILTIN_SKILLS_OFF, names).commit()
     }
 
+    /** 被「删除」的内置技能名:随包目录还在，只是不显示、不检索，随时可以恢复。 */
+    fun builtinSkillsHidden(): Set<String> =
+        prefs.getStringSet(BUILTIN_SKILLS_HIDDEN, null)?.toSet().orEmpty()
+
+    fun setBuiltinSkillsHidden(names: Set<String>) {
+        prefs.edit().putStringSet(BUILTIN_SKILLS_HIDDEN, names).commit()
+    }
+
     /** “只在选中的 App 里像人”开关；默认开。 */
     fun humanPaceScoped(): Boolean = prefs.getBoolean(HUMAN_PACE_SCOPED, true)
 
@@ -407,6 +415,7 @@ class FeatureFlags(private val prefs: SharedPreferences) {
         private const val MUTE_TARGET = "mute_target"
         private const val HUMAN_PACE_APPS = "human_pace_apps"
     private const val BUILTIN_SKILLS_OFF = "builtin_skills_off"
+    private const val BUILTIN_SKILLS_HIDDEN = "builtin_skills_hidden"
     private const val HUMAN_PACE_SCOPED = "human_pace_scoped"
     private const val OPERATING_PACE = "operating_pace"
         private const val AUTO_ARCHIVE_DAYS = "auto_archive_days"
