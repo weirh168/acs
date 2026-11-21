@@ -6,10 +6,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -317,23 +320,29 @@ private fun SummaryCard(draft: CallRulesDraft) {
 @Composable
 private fun PresetCards(preset: CallPreset, flags: List<Boolean>, onPick: (CallPreset) -> Unit) {
     val customized = preset == CallPreset.SMART && !CallPresetDefaults.matches(CallPreset.SMART, flags)
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        PresetCard(stringResource(R.string.calls_preset_smart), stringResource(R.string.calls_preset_smart_note),
-            selected = preset == CallPreset.SMART && !customized,
-            badge = if (customized) stringResource(R.string.calls_preset_custom) else stringResource(R.string.calls_preset_recommended),
-            tag = "call-preset-smart") { onPick(CallPreset.SMART) }
-        PresetCard(stringResource(R.string.calls_preset_all), stringResource(R.string.calls_preset_all_note),
-            selected = preset == CallPreset.ALL, badge = null, tag = "call-preset-all") { onPick(CallPreset.ALL) }
+    // 按屏中心线平分:智能接听与全部交给 AI 各占一半宽度;只接名单单独一行铺满
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PresetCard(stringResource(R.string.calls_preset_smart), stringResource(R.string.calls_preset_smart_note),
+                selected = preset == CallPreset.SMART && !customized,
+                badge = if (customized) stringResource(R.string.calls_preset_custom) else stringResource(R.string.calls_preset_recommended),
+                tag = "call-preset-smart", modifier = Modifier.weight(1f).fillMaxHeight()) { onPick(CallPreset.SMART) }
+            PresetCard(stringResource(R.string.calls_preset_all), stringResource(R.string.calls_preset_all_note),
+                selected = preset == CallPreset.ALL, badge = null,
+                tag = "call-preset-all", modifier = Modifier.weight(1f).fillMaxHeight()) { onPick(CallPreset.ALL) }
+        }
         PresetCard(stringResource(R.string.calls_preset_list), stringResource(R.string.calls_preset_list_note),
-            selected = preset == CallPreset.LIST, badge = null, tag = "call-preset-list") { onPick(CallPreset.LIST) }
+            selected = preset == CallPreset.LIST, badge = null,
+            tag = "call-preset-list", modifier = Modifier.fillMaxWidth()) { onPick(CallPreset.LIST) }
     }
 }
 
 @Composable
-private fun PresetCard(title: String, note: String, selected: Boolean, badge: String?, tag: String, onClick: () -> Unit) {
+private fun PresetCard(title: String, note: String, selected: Boolean, badge: String?, tag: String,
+                       modifier: Modifier = Modifier, onClick: () -> Unit) {
     val c = MikaTheme.colors
     Column(
-        Modifier.width(190.dp).heightIn(min = 96.dp)
+        modifier.heightIn(min = 96.dp)
             .background(if (selected) c.accentSoft else c.surface, RoundedCornerShape(14.dp))
             .border(if (selected) 1.5.dp else 1.dp, if (selected) c.accent else c.edge, RoundedCornerShape(14.dp))
             .clickable(onClick = onClick).padding(12.dp).testTag(tag),

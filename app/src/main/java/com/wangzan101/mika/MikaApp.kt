@@ -493,6 +493,16 @@ class MikaApp : Application(), WebOwner, SandboxOwner, TaskEnvironment.Owner, Ph
         if (flags.proactive()) proactive.start(paused = quit)
         // 先对一下设备时区;退出期间不排闹钟,重新打开时再补排
         if (!quit) scope.launch(Dispatchers.IO) { runCatching { TriggerRuntime.syncTimeZone(this@MikaApp); TriggerRuntime.rearm(this@MikaApp) } }
+        // 进程被任何原因拉起（开机、无障碍绑定、系统回收后重建）就恢复 AI 接电话常驻；
+        // 只有用户开过自动接听、且已授权后台待命才起，不擅自占前台
+        if (!quit) scope.launch(Dispatchers.IO) {
+            runCatching {
+                val prefs = getSharedPreferences("mika_call_settings", MODE_PRIVATE)
+                val on = prefs.getBoolean("enabled", false) && prefs.getBoolean("auto_answer", false) &&
+                    prefs.getBoolean("background_standby_authorized", false)
+                if (on) startForegroundService(com.wangzan101.mika.calls.CallStandbyService.bootIntent(this@MikaApp))
+            }
+        }
         // 自动归档:太久没新消息的对话收进归档(设置里开着才跑);退出期间等下次打开再补
         if (!quit) autoArchiveNow()
         // 给电脑跑的「经 USB 连接」脚本;顺带清掉上次开机留下的 USB 连接信息

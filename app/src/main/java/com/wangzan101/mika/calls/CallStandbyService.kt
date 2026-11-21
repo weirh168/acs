@@ -41,7 +41,10 @@ class CallStandbyService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val calls = (application as? MikaApp)?.calls
         runtime = calls
-        val explicit = intent?.action == ACTION_START && calls?.isStandbyStartRequested(intent.getStringExtra(EXTRA_REQUEST_ID)) == true
+        val boot = intent?.action == ACTION_BOOT && calls?.hasAuthorizedIncomingStandby() == true
+        if (boot) stickyAutoAnswer = true
+        val explicit = boot || (intent?.action == ACTION_START &&
+            calls?.isStandbyStartRequested(intent.getStringExtra(EXTRA_REQUEST_ID)) == true)
         // Always acknowledge the OS start before rejecting a stale or cancelled request. Android may
         // crash the process if we stop before acknowledging a startForegroundService delivery.
         val notificationAllowed = notificationsAvailable(this, create = true)
@@ -141,8 +144,13 @@ class CallStandbyService : Service() {
     companion object {
         const val CHANNEL = "mika_call_standby"
         private const val ACTION_START = "com.wangzan101.mika.calls.START_STANDBY"
+        private const val ACTION_BOOT = "com.wangzan101.mika.calls.BOOT_STANDBY"
         private const val EXTRA_REQUEST_ID = "standby_start_id"
         private const val NOTIFICATION_ID = 90_118
+
+        /** 开机自启：用户已授权后台待命且自动接听开着时，用这条动作恢复常驻。 */
+        internal fun bootIntent(context: Context): Intent =
+            Intent(context, CallStandbyService::class.java).setAction(ACTION_BOOT)
 
         internal fun startIntent(context: Context, requestId: String? = null): Intent =
             Intent(context, CallStandbyService::class.java).setAction(ACTION_START).putExtra(EXTRA_REQUEST_ID, requestId)

@@ -1,5 +1,6 @@
 package com.wangzan101.mika.setup
 
+import com.wangzan101.mika.calls.CallStandbyService
 import com.wangzan101.mika.cap.phone.setup.BootRestoreHandler
 import com.wangzan101.mika.task.TriggerRuntime
 import android.content.Context
@@ -17,5 +18,13 @@ class BootRestoreReceiver : BootRestoreHandler() {
         if (intent.action == Intent.ACTION_TIMEZONE_CHANGED) TriggerRuntime.syncTimeZone(context)
         // 开机时局域网那种电脑连接开着就重新监听(USB 那种不跨重启:换了开机编号,这里已按关着算,上次的连接信息也清掉)
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) (context.applicationContext as com.wangzan101.mika.MikaApp).mcp.ensureRunning()
+        // 开机恢复 AI 接电话常驻：用户开过自动接听、且已授权后台待命时才起，避免擅自占前台
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            val app = context.applicationContext
+            val prefs = app.getSharedPreferences("mika_call_settings", Context.MODE_PRIVATE)
+            val on = prefs.getBoolean("enabled", false) && prefs.getBoolean("auto_answer", false) &&
+                prefs.getBoolean("background_standby_authorized", false)
+            if (on) runCatching { app.startForegroundService(CallStandbyService.bootIntent(app)) }
+        }
     }
 }

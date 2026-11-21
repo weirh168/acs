@@ -61,6 +61,14 @@ class MikaInCallService : InCallService() {
     }
 
     override fun onCallAdded(call: Call) {
+        // 来电时进程已被 Telecom 拉起：顺手把常驻服务要回来（此处允许起前台服务），
+        // 这样即使开机广播被厂商拦掉，锁屏接听后进程也不会被回收
+        runCatching {
+            val prefs = getSharedPreferences("mika_call_settings", MODE_PRIVATE)
+            val on = prefs.getBoolean("enabled", false) && prefs.getBoolean("auto_answer", false) &&
+                prefs.getBoolean("background_standby_authorized", false)
+            if (on) startForegroundService(CallStandbyService.bootIntent(this))
+        }
         super.onCallAdded(call)
         attached.add(call)
         call.registerCallback(callback)
