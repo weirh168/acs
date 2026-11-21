@@ -898,6 +898,7 @@ class CallRuntime(private val app: MikaApp) {
     }
 
     internal fun onCallAdded(service: MikaInCallService, call: Call) {
+        CallDebugLog.note(app, "runtime", "onCallAdded state=${call.state}")
         unobservedManagedCall = false
         tracked.getOrPut(call) { Tracked(call, service) }
         onCallChanged(service, call)
@@ -950,15 +951,36 @@ class CallRuntime(private val app: MikaApp) {
     }
 
     private fun maybeStartAutoAnswer() {
-        if (work != null || lockedDial != null || autoPauseWriting || !canAutomaticallyAnswerHere()) return
-        val t = liveCalls().singleOrNull() ?: return
-        val initial = t.initialRingPolicy ?: return
-        if (t.phase != CallPhase.RINGING || t.direction != CallDirection.INCOMING || t.suppressed || t.autoTried) return
+        if (work != null || lockedDial != null || autoPauseWriting || !canAutomaticallyAnswerHere()) {
+            CallDebugLog.note(app, "auto", "skip work=${work != null} locked=${lockedDial != null}" +
+                " pauseWriting=$autoPauseWriting canHere=${canAutomaticallyAnswerHere()}")
+            return
+        }
+        val t = liveCalls().singleOrNull() ?: run {
+            CallDebugLog.note(app, "auto", "skip no-single-call n=${liveCalls().size}")
+            return
+        }
+        val initial = t.initialRingPolicy ?: run {
+            CallDebugLog.note(app, "auto", "skip no-ring-policy phase=${t.phase}")
+            return
+        }
+        if (t.phase != CallPhase.RINGING || t.direction != CallDirection.INCOMING || t.suppressed || t.autoTried) {
+            CallDebugLog.note(app, "auto", "skip phase=${t.phase} dir=${t.direction} suppressed=${t.suppressed} tried=${t.autoTried}")
+            return
+        }
         val config = settings.state.value
         if (!CallPolicy.canStartAutoAnswer(initial, config, t.number,
                 SystemClock.elapsedRealtime() - t.ringObservedAt,
-                ringObservedWallMs = t.ringObservedWallMs, simKey = t.simKey)) return
-        if (autoAnswerBlocker(config) != null || !t.service.tracks(t.call) || !carrierCall(t.call)) return
+                ringObservedWallMs = t.ringObservedWallMs, simKey = t.simKey)) {
+            CallDebugLog.note(app, "auto", "skip policy-reject")
+            return
+        }
+        val blocker = autoAnswerBlocker(config)
+        if (blocker != null || !t.service.tracks(t.call) || !carrierCall(t.call)) {
+            CallDebugLog.note(app, "auto", "skip blocker=$blocker tracks=${t.service.tracks(t.call)} carrier=${carrierCall(t.call)}")
+            return
+        }
+        CallDebugLog.note(app, "auto", "start answer")
         t.autoTried = true
         val starting = Work(CallDirection.INCOMING, config, track = t, auto = true)
         // 记下这次是哪条规则接的,通话记录里能看到
