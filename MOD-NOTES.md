@@ -1876,3 +1876,22 @@ AI 能把电话接起来,但之后**双方都没声**或者**AI 说完一句就�
 
 ⚠️ 注意：手机上现有的 `com.wangzan101.mika.mod`（签名 `2561…`）与 `.dev`（签名 `35FA…`）
 都在这把新密钥之外，**换到新签名版必须卸载一次**。
+
+## 手机操作没有「无线调试」时怎么办（2026-11-22 23:00，P40 Pro 已验证）
+
+华为部分机型（EMUI 14.2 / HarmonyOS 4，例如 P40 Pro ELS-AN00）在开发者选项里**没有无线调试**，
+系统设置里也没有 `WirelessDebuggingActivity`，所以助手配对这条路走不通。现在改成走**无障碍直连主屏**：
+
+1. 设置 › 手机操作 › 打开「**没有内置助手时读我的主屏**」（= `degraded_screen`）
+2. 在系统设置里给 ACS 打开无障碍（**必须走系统界面并确认 4 秒安全提醒**；用 adb 写
+   `enabled_accessibility_services` 只会写进设置、系统不会绑定）
+3. 之后任务直接操作你自己的主屏：屏幕会被占用，不能并行，没有虚拟屏分享
+
+### 修掉的两个坑
+
+| 现象 | 根因 | 修法 |
+|---|---|---|
+| 无障碍「明明开着却显示未运行」，日志里 `connected/unbound` 每 8 秒一轮 | `onServiceConnected` 发现系统抹掉了 `FLAG_INCLUDE_NOT_IMPORTANT_VIEWS` 就重写 serviceInfo；华为每次都抹，于是重写→解绑→重连死循环 | 进程内只补写一次（`A11Y_FLAG_REAPPLIED`） |
+| 服务已连上，App 仍判定未运行 | 华为的 `AccessibilityManager` 不返回已启用的服务列表 | 状态判断以 `ScreenAccessibility.instance` 在线为准 |
+
+已验证：P40 Pro 上发「打开计算器，算 12×34」，降级模式接管主屏并完成任务。
