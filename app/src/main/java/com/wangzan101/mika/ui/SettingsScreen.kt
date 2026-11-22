@@ -502,10 +502,11 @@ fun SettingsContent(
                 }
             }
             // 没有无线调试时还能走"无 ADB 模式"(无障碍直接操作主屏),这条也算可用
+            val a11yLiveNow = status.accessibility == AccessibilityState.On ||
+                com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility.instance.value != null
             val phoneOpsReady = status.sdkInt >= Prerequisites.MIN_SDK && (
-                (status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On) ||
-                    (com.wangzan101.mika.settings.FeatureFlags.get(LocalContext.current).degradedScreen() &&
-                        status.accessibility == AccessibilityState.On)
+                (status.builtinShell == BuiltinShellStatus.Running && a11yLiveNow) ||
+                    (com.wangzan101.mika.settings.FeatureFlags.get(LocalContext.current).degradedScreen() && a11yLiveNow)
                 )
             if (hit(tPhoneOps, "无障碍", "权限")) {
                 ListRow(MikaIcons.Phone, tPhoneOps, stringResource(R.string.settings_phone_ops_sub), onClick = onOpenPhoneOps) {
@@ -795,9 +796,16 @@ fun AdvancedSettingsContent(
 /** 「手机操作」一行尾部的状态胶囊:无障碍和内置助手都就绪才是「可用」。 */
 @Composable
 private fun PhoneOpsPill(status: SystemStatus) {
+    // 没无线调试的手机可以走"无 ADB 模式":无障碍在线 + 开关打开也算可用
+    val a11yLive = status.accessibility == AccessibilityState.On ||
+        com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility.instance.value != null
+    val degradedReady = a11yLive &&
+        com.wangzan101.mika.settings.FeatureFlags.get(LocalContext.current).degradedScreen()
     when {
         status.sdkInt < Prerequisites.MIN_SDK -> StatusPill(stringResource(R.string.pill_unsupported), PillTone.Neutral)
-        status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On -> StatusPill(stringResource(R.string.pill_available), PillTone.Ok)
+        (status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On) ->
+            StatusPill(stringResource(R.string.pill_available), PillTone.Ok)
+        degradedReady -> StatusPill(stringResource(R.string.settings_phone_ops_degraded), PillTone.Ok)
         else -> StatusPill(stringResource(R.string.pill_needs_attention), PillTone.Warn)
     }
 }
