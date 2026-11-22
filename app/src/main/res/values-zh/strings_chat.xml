@@ -82,6 +82,7 @@
     <string name="drawer_running">进行中</string>
     <string name="drawer_yesterday">昨天</string>
     <string name="drawer_phone_not_ready">手机操作还没准备好</string>
+    <string name="drawer_phone_preparing">正在准备…</string>
     <string name="all_ready">一切就绪</string>
     <string name="drawer_plans">定时任务</string>
     <string name="drawer_calls">AI 接打电话</string>

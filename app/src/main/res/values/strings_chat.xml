@@ -83,6 +83,7 @@
     <string name="drawer_running">Running</string>
     <string name="drawer_yesterday">Yesterday</string>
     <string name="drawer_phone_not_ready">Phone control isn’t ready</string>
+    <string name="drawer_phone_preparing">Preparing…</string>
     <string name="all_ready">All set</string>
     <string name="drawer_plans">Scheduled tasks</string>
     <string name="drawer_calls">AI calls</string>

@@ -38,12 +38,16 @@ class SystemStatusMonitor(context: Context, private val shell: BuiltinShellContr
     private companion object {
         /** 无障碍从 On 掉下去后的宽限:这段时间内仍按 On 报,免得重绑瞬间界面闪成「没准备好」。 */
         const val ACCESSIBILITY_GRACE_MS = 8_000L
+        /** 刚启动的头十几秒:无障碍还没绑上属正常,报「正在准备」而不是「没准备好」。 */
+        const val STARTUP_GRACE_MS = 12_000L
     }
 
     private val app = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
     /** 无障碍上一次确实在跑的时刻:短暂重绑期间保持「就绪」,不闪。 */
     private var lastAccessibilityOnAt = 0L
+    /** 这个实例开始看的时刻:用来判断「刚启动」这一小段。 */
+    private val startedAt = android.os.SystemClock.elapsedRealtime()
     private val _status = MutableStateFlow(read())
     val status: StateFlow<SystemStatus> = _status.asStateFlow()
 
@@ -131,6 +135,11 @@ class SystemStatusMonitor(context: Context, private val shell: BuiltinShellContr
             .orEmpty().split(':').mapNotNull { ComponentName.unflattenFromString(it.trim()) }
         val me = ComponentName(app, MikaAccessibilityService::class.java)
         val raw = if (me in enabled) AccessibilityState.EnabledNotRunning else AccessibilityState.Off
+        // 刚启动的十几秒里,服务还没绑上、系统还没把它认回来都算正常:报「正在绑」,别急着说「没准备好」
+        if (raw != AccessibilityState.On && android.os.SystemClock.elapsedRealtime() - startedAt < STARTUP_GRACE_MS) {
+            main.postDelayed({ refresh() }, STARTUP_GRACE_MS)
+            return AccessibilityState.EnabledNotRunning
+        }
         // 服务重绑(装包、系统回收)时会有一两秒的 EnabledNotRunning;这一瞬间别把界面打回「没准备好」。
         // 过了宽限期到点重算,真掉线照样如实降级。
         val since = android.os.SystemClock.elapsedRealtime() - lastAccessibilityOnAt

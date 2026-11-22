@@ -81,6 +81,16 @@ object Prerequisites {
         val canStartTask: Boolean get() = blockers.isEmpty()
         /** 能操作手机 App。 */
         val phoneReady: Boolean get() = problems.none(::phoneOnly)
+
+        /**
+         * 助手正在连、或无障碍正被系统重新绑上:离「就绪」只差一步,不算故障。
+         * 界面据此说「正在准备」,而不是「还没准备好」。
+         * 用户亲手关掉无障碍([AccessibilityState.Off])不算准备中,那时要如实说没就绪。
+         */
+        val phonePreparing: Boolean get() = problems.any { p ->
+            (p is Problem.PhoneHelper && p.status == BuiltinShellStatus.Connecting) ||
+                (p is Problem.Accessibility && p.state == AccessibilityState.EnabledNotRunning)
+        }
     }
 
     private fun phoneOnly(p: Problem) = p is Problem.SystemTooOld || p is Problem.PhoneHelper || p is Problem.Accessibility

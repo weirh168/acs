@@ -82,6 +82,7 @@
     <string name="drawer_running">進行中</string>
     <string name="drawer_yesterday">昨天</string>
     <string name="drawer_phone_not_ready">手機操作還沒準備好</string>
+    <string name="drawer_phone_preparing">正在準備…</string>
     <string name="all_ready">一切就緒</string>
     <string name="drawer_plans">定時任務</string>
     <string name="memory_and_skills">記憶與技能</string>
