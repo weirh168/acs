@@ -103,6 +103,7 @@ object DiagnosticsCollector {
                 DiagnosticsSnapshot.Update(u.status.name, u.latest?.version, u.update?.version)
             },
             speech = speech(app),
+            handoff = phone.handoffTail(40),
         )
     }
 

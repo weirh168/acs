@@ -46,6 +46,7 @@ class DiagnosticsTest {
         wirelessSetting: Boolean? = true,
         installer: String? = "com.android.packageinstaller",
         connect: ConnectCandidates? = ConnectCandidates(property = 0, mdns = 2, cache = 1, connected = false),
+        handoff: List<String> = emptyList(),
     ) = DiagnosticsSnapshot(
         generatedAtMs = now,
         app = DiagnosticsSnapshot.App("0.1.7", "cfa4380", installer, "System (zh-Hans)"),
@@ -69,7 +70,23 @@ class DiagnosticsTest {
         ),
         runs = runs,
         update = DiagnosticsSnapshot.Update("Done", "0.1.8", "0.1.8"),
+        handoff = handoff,
     )
+
+    @Test
+    fun handoffLogIsIncludedAndRedacted() {
+        val lines = listOf(
+            "11-22 10:15:11.083 handoff | accepted pid=28365",
+            "11-22 10:15:11.342 drawer | phoneReady=false -> state=preparing",
+            "11-22 10:15:12.334 handoff | token=$skKey",
+        )
+        val t = Diagnostics.render(snapshot(handoff = lines))
+        assertTrue(t.contains("Handoff log (last 3 lines)"))
+        assertTrue(t.contains("handoff | accepted pid=28365"))
+        assertTrue(t.contains("drawer | phoneReady=false -> state=preparing"))
+        assertFalse(t.contains(skKey))
+        assertFalse(Diagnostics.render(snapshot()).contains("Handoff log"))
+    }
 
     @Test
     fun sectionsInStableOrderAndShort() {

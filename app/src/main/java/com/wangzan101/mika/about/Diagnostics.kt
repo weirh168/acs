@@ -33,6 +33,8 @@ data class DiagnosticsSnapshot(
     val update: Update,
     /** 语音转文字:选了什么、手机自带识别的情况;旧的调用处不给就不写这一段。 */
     val speech: Speech? = null,
+    /** 内置助手的交接流水最后几十行:出问题时不用连电脑,这里就能看。 */
+    val handoff: List<String> = emptyList(),
 ) {
     data class App(val versionName: String, val build: String, val installer: String?, val language: String)
 
@@ -154,6 +156,11 @@ object Diagnostics {
                 (if (h.gaveUpAtMs > 0) ", backed off ${ago(s.generatedAtMs - h.gaveUpAtMs)}" else "")
         } ?: "never")
         line("accessibility on start", r.lastA11yLoss?.let { "${it.loss.name.lowercase()} ${ago(s.generatedAtMs - it.atMs)}" } ?: "ok")
+
+        if (s.handoff.isNotEmpty()) {
+            section("Handoff log (last ${s.handoff.size} lines)")
+            s.handoff.forEach { appendLine(it) }
+        }
 
         section("Models")
         val m = s.models
