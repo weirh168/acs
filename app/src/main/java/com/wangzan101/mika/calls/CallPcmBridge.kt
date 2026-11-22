@@ -55,6 +55,19 @@ internal class CallPcmBridge(
         }
         // The separate writer leaves model event collection responsive when a pipe is full.
         val holdInput = java.util.concurrent.atomic.AtomicBoolean(false)
+        val holdSince = java.util.concurrent.atomic.AtomicLong(0L)
+        // 对方的声音在 AI 说话时先不送上去:既免回声,也免一句插话就把播报掐掉。说完立刻恢复。
+        fun holdCallerInput() {
+            holdInput.set(true)
+            holdSince.set(System.nanoTime())
+            // 本地不再上行,同时也让云端静音:双保险,避免回声把这一轮播报打断。
+            runCatching { session.setMuted(true) }
+        }
+        // 释放必须幂等:任何一条结束路径(AI 说完、被取消、写线程退出、超时兜底)都会调它。
+        fun releaseCallerInput() {
+            if (holdInput.getAndSet(false)) holdSince.set(0L)
+            runCatching { session.setMuted(false) }
+        }
         val output = launch(Dispatchers.IO) {
             val pcm = ByteArray(CallPlaybackQueue.WRITE_BYTES)
             while (true) {
@@ -67,8 +80,7 @@ internal class CallPcmBridge(
                         }
                     }
                 } finally {
-            holdInput.set(false)
-            runCatching { session.setMuted(false) }
+                    releaseCallerInput()
                     playbackQueue.release(block)
                 }
             }
@@ -86,8 +98,10 @@ internal class CallPcmBridge(
                     if (count == 0) continue
                     position += count
                     if (position == frame.size) {
-                        // AI 正在说话时先不送上去：既避免它听见自己的回声而自我打断，
-                        // 也避免对方一句插话就把这一轮播报掐掉。说完立刻恢复。
+                        // 兜底:AI 那头迟迟不发"说完了"(被取消、断线、丢帧)时,不能把上行一直掐着。
+                        if (holdInput.get() && System.nanoTime() - holdSince.get() > HOLD_CALLER_INPUT_MAX_NS) {
+                            releaseCallerInput()
+                        }
                         if (!holdInput.get()) {
                             if (!session.sendPcm16(frame)) throw CallMediaFailure("火山音频输入已中断")
                             counters?.inputAccepted(frame, System.nanoTime())
@@ -124,6 +138,8 @@ internal class CallPcmBridge(
                                     if (!cleared) throw CallMediaFailure("通话音频无法及时停止，已交还系统")
                                     farewell.afterPairedFlush()
                                 }
+                                // 播放已经冲掉,上行也必须放开:否则这一通电话之后 AI 永远听不到对方。
+                                releaseCallerInput()
                                 // Some providers report a second cancellation after user speech starts.
                                 // Without newly accepted PCM, another flush would only reset the route.
                                 flushAssistantText()
@@ -144,13 +160,11 @@ internal class CallPcmBridge(
                             VolcRealtimeEvent.AssistantAudioStarted -> {
                                 cancelFarewellWaiter()
                                 farewell.audioStarted()
-                                holdInput.set(true)
-                                session.setMuted(true)
+                                holdCallerInput()
                             }
                             VolcRealtimeEvent.AssistantAudioEnded -> {
                                 farewell.audioEnded()
-                                holdInput.set(false)
-                                session.setMuted(false)
+                                releaseCallerInput()
                                 checkFarewell()
                             }
                             is VolcRealtimeEvent.AssistantTranscript -> {
@@ -196,6 +210,10 @@ internal suspend fun commitDrainedFarewell(commit: () -> Boolean): Boolean {
     currentCoroutineContext().ensureActive()
     return commit()
 }
+
+/** AI 说话期间最多把上行掐这么久;超过就是它没发"说完了",当没在说话处理。 */
+private const val HOLD_CALLER_INPUT_MAX_MS = 45_000L
+private const val HOLD_CALLER_INPUT_MAX_NS = HOLD_CALLER_INPUT_MAX_MS * 1_000_000L
 
 /** Bounded by time at 24 kHz PCM16 mono, independent of cloud packet boundaries. */
 internal class CallPlaybackQueue(capacityBytes: Int = MAX_PENDING_BYTES) {

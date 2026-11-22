@@ -236,10 +236,63 @@ class CallPcmBridgeTest {
         override fun close() { closed.countDown() }
     }
 
+    @Test fun `a cancelled reply releases the caller input so the assistant can still hear`() = runBlocking {
+        val session = VolcRealtimeSession(VolcRealtimeConfig(), closeTimeoutMs = 100L)
+        val socket = FakeSocket()
+        val playback = Channel<ByteArray>(8)
+        val capture = BlockingCapture()
+        val bridge = CallPcmBridge(capture, object : OutputStream() {
+            override fun write(value: Int) = error("PCM should be written as a block")
+            override fun write(bytes: ByteArray, offset: Int, count: Int) {
+                check(playback.trySend(bytes.copyOfRange(offset, offset + count)).isSuccess)
+            }
+        }) { true }
+        session.listener.onOpen(socket, Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1)
+            .code(101).message("Switching Protocols").build())
+        fun receiveFrame(frame: String) = session.listener.onMessage(socket, frame)
+        receiveFrame("""{"type":"session.created"}""")
+        val running = launch(start = CoroutineStart.UNDISPATCHED) {
+            bridge.run(session, "", counters = null, onTranscript = { _, _ -> })
+        }
+        try {
+            withTimeout(4_000L) {
+                // 开场:AI 拿到话轮并开始播报 -> 上行被静音
+                receiveFrame("""{"type":"response.output_audio.started","response_id":"r1"}""")
+                receiveFrame("""{"type":"response.output_audio.delta","response_id":"r1","delta":"AQI="}""")
+                assertArrayEquals(byteArrayOf(1, 2), playback.receive())
+                kotlinx.coroutines.delay(150)
+                assertTrue("AI 说话时应静音上行,实际发出: ${socket.sent}", socket.sent.any { "input_audio_mute.commit" in it })
+
+                // 云端取消这一轮:必须立刻解除静音
+                receiveFrame("""{"type":"response.canceled","response_id":"r1"}""")
+                assertTrue(
+                    "取消后必须解除上行静音,否则这通电话里 AI 再也听不到对方",
+                    socket.sent.count { "input_audio_unmute.commit" in it } >= 1,
+                )
+            }
+        } finally {
+            running.cancelAndJoin()
+        }
+    }
+
+    @Test fun `probe mute frame after session created`() = runBlocking {
+        val session = VolcRealtimeSession(VolcRealtimeConfig(), closeTimeoutMs = 100L)
+        val socket = FakeSocket()
+        session.listener.onOpen(socket, Response.Builder().request(socket.request()).protocol(Protocol.HTTP_1_1)
+            .code(101).message("Switching Protocols").build())
+        session.listener.onMessage(socket, """{"type":"session.created"}""")
+        val okMute = session.setMuted(true)
+        val okUnmute = session.setMuted(false)
+        assertEquals("mute 应被接受", true, okMute)
+        assertEquals("unmute 应被接受", true, okUnmute)
+        assertTrue("应发出 mute 帧: ${socket.sent}", socket.sent.any { "input_audio_mute.commit" in it })
+    }
+
     private class FakeSocket : WebSocket {
+        val sent = mutableListOf<String>()
         override fun request(): Request = Request.Builder().url("https://localhost/").build()
         override fun queueSize(): Long = 0L
-        override fun send(text: String): Boolean = true
+        override fun send(text: String): Boolean { sent += text; return true }
         override fun send(bytes: ByteString): Boolean = true
         override fun close(code: Int, reason: String?): Boolean = true
         override fun cancel() = Unit

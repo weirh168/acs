@@ -1820,3 +1820,34 @@ GlassBar(Modifier.fillMaxWidth().keepsKeyboard(), backdrop)
 
 `app/src/main/java/com/wangzan101/mika/ui/ChatScreen.kt`(输入条在 `GlassBar` 那段),
 `GlassBar` 本身在 `ui/components/Surfaces.kt`(内边距 6dp、行距 4dp)。
+
+## 修「AI 接电话没声音」:一轮被取消后上行永久静音（2026-11-22 19:40）
+
+### 现象
+
+AI 能把电话接起来,但之后**双方都没声**或者**AI 说完一句就再也不出声**;换 DIRECT/REDIRECT 也不一定好。
+
+### 根因
+
+`CallPcmBridge` 在 AI 开始说话时把上行掐掉:本地 `holdInput=true`,并且给云端发 `input_audio_mute.commit`(免回声)。原实现**只在 `AssistantAudioEnded` 时放开**。
+
+但只要这一轮被**取消**(对方插话、云端 `response.canceled`),`VolcRealtimeSession.interruptAudio()` 会先把
+`audioActive` 置 false,于是后面那个 `AUDIO_DONE` 不再发布 `AssistantAudioEnded` —— 上行就一直静音着:
+
+- 本地 `holdInput` 一直 true,采集到的声音根本不往云端送;
+- 云端会话也停在 muted,就算有帧也被丢弃。
+
+结果就是这通电话里 AI 再也听不到对方,自然没有回应,听起来就是「没声音」。
+
+### 改法(`app/.../calls/CallPcmBridge.kt`)
+
+1. `holdCallerInput()` / `releaseCallerInput()` 成对抽象,释放是**幂等**的;
+2. `AssistantInterrupted`(被取消)分支在冲掉待播音频后**同时释放上行**;
+3. 兜底:上行被掐超过 **45 秒**没有收到「说完了」,按没在说话处理,自动放开;
+4. 写线程退出、通话收尾也走同一个释放函数。
+
+### 测试
+
+`CallPcmBridgeTest` 新增用例 `a cancelled reply releases the caller input so the assistant can still hear`:
+驱动一条真实事件流(created → audio.started → delta → **response.canceled**),断言取消后一定发出
+`input_audio_unmute.commit`。修之前该用例失败,修之后 10/10 通过。
