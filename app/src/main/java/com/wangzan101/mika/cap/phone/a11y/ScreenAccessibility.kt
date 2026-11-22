@@ -25,6 +25,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 /** Mika 的无障碍服务:操作和事件转给当前已连接实例,任务持有旧实例时也能在重连后恢复。 */
+/** 进程内只重设一次服务配置,避免和系统来回打架(改了要重新编译生效)。 */
+private val A11Y_FLAG_REAPPLIED = java.util.concurrent.atomic.AtomicBoolean(false)
+
 open class ScreenAccessibility : AccessibilityService() {
 
     private class DisplayEvent(val displayId: Int, val event: AccessibilityEvent)
@@ -34,10 +37,15 @@ open class ScreenAccessibility : AccessibilityService() {
         super.onServiceConnected()
         // 不少 App 把显示结果的文字控件标成「对无障碍不重要」,不读它们就看不到结果;配置文件里已声明,
         // 这里再按运行时补一次,防止系统沿用旧的服务配置
+        // 只在进程里试一次:有的系统(HarmonyOS)每次都会把这一位抹掉,若每次重连都补写,
+        // 系统会判定配置变更 -> 解绑重连 -> 再补写,形成 8 秒一轮的死循环,服务永远"未运行"。
         serviceInfo?.let { info ->
-            if (info.flags and AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS == 0) {
+            if (info.flags and AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS == 0 &&
+                A11Y_FLAG_REAPPLIED.compareAndSet(false, true)
+            ) {
                 info.flags = info.flags or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
                 serviceInfo = info
+                Log.i(TAG, "re-applied include-not-important-views once")
             }
         }
         _instance.value = this
