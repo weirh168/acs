@@ -1851,3 +1851,28 @@ AI 能把电话接起来,但之后**双方都没声**或者**AI 说完一句就�
 `CallPcmBridgeTest` 新增用例 `a cancelled reply releases the caller input so the assistant can still hear`:
 驱动一条真实事件流(created → audio.started → delta → **response.canceled**),断言取消后一定发出
 `input_audio_unmute.commit`。修之前该用例失败,修之后 10/10 通过。
+
+## 固定签名（2026-11-22 19:50）
+
+之前每次构建用的都是临时 debug keystore，换机器/清缓存就会变，导致「新包装不上、只能卸载重装」。
+
+现在统一用一把固定密钥：
+
+| 项 | 值 |
+|---|---|
+| 密钥库 | `acs-release.jks`（仓库根目录，`.gitignore` 已排除） |
+| 类型 | PKCS12，RSA 4096，别名 `acs`，有效期 30 年 |
+| 证书 | `CN=ACS, OU=ACS, O=PoJuZhe, L=Shanghai, ST=Shanghai, C=CN` |
+| SHA-256 | `27:AF:A8:A7:A6:A6:31:B0:F5:68:27:CB:E7:78:3E:68:5F:FA:DD:7C:0E:FD:11:27:AB:3E:42:AE:48:31:51:68` |
+
+**所有构建类型都用它**：`debug`、`release`、`devInstall`(.dev)、`logs`(.logs)、`perf`、`releaseCheck`(.rel)。
+密码写在 `keystore.properties`（同样不进版本库）；缺失时回落到默认调试签名。
+
+备份位置（仓库之外）：
+
+1. `C:\dsh-build\keys\acs-release.jks`
+2. 工作区 `signing-backup/acs-release.jks` + `keystore.properties` + `README.md`
+3. 建议再存一份到自己网盘/密码管理器——**丢了就不能覆盖升级**
+
+⚠️ 注意：手机上现有的 `com.wangzan101.mika.mod`（签名 `2561…`）与 `.dev`（签名 `35FA…`）
+都在这把新密钥之外，**换到新签名版必须卸载一次**。

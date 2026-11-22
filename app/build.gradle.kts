@@ -77,6 +77,10 @@ android {
     sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("eval/tasks"))
 
     buildTypes {
+        getByName("debug") {
+            // 固定签名:调试包与发布包用同一把 acs-release.jks,换机器/清缓存也不会变
+            signingConfigs.findByName("release")?.let { signingConfig = it }
+        }
         getByName("release") {
             signingConfig = signingConfigs.findByName("release")
             // 正式包不再挂 Beta 标记(调试包仍是 beta)

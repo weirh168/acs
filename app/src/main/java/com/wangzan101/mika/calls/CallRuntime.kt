@@ -1350,6 +1350,7 @@ class CallRuntime(private val app: MikaApp) {
             val playback = ParcelFileDescriptor.AutoCloseOutputStream(up)
             w.capture = capture
             w.playback = playback
+            CallDebugLog.note(app, "media", "bridge start direction=${w.direction} greeting=${if (greeting.isBlank()) "none" else "${greeting.length}字"}")
             CallPcmBridge(capture, playback) {
                 withContext(Dispatchers.IO) { runCatching { helper.flushCallAudio(w.audioOwner) }.getOrDefault(false) }
             }
@@ -1371,10 +1372,12 @@ class CallRuntime(private val app: MikaApp) {
                             runCatching { helper.callAudioStats(w.audioOwner) }.getOrNull()
                         }
                         if (stats?.getBoolean("active") != true) {
+                            CallDebugLog.note(app, "media", "helper audio stopped reason=${stats?.getString("reason")} ai=${w.aiActive}")
                             throw CallMediaFailure(shellAudioStopDiagnostic(stats?.getString("reason"))
                                 ?: "设备已停止双向音频，电话由系统处理")
                         }
                         val bytes = stats.getLong("downBytes")
+                        CallDebugLog.note(app, "media", "stats down=$bytes up=${stats.getLong("upBytes")} ai=${w.aiActive}")
                         if (!w.aiActive) {
                             if (callAudioHasStarted(greeting, bytes, stats.getLong("upBytes"))) {
                                 if (!notifications.show(w.id, notification, ringing = false)) {
@@ -1388,11 +1391,15 @@ class CallRuntime(private val app: MikaApp) {
                                 }
                                 publish()
                             } else if (SystemClock.elapsedRealtime() - w.activeElapsed >= 7_000) {
+                                CallDebugLog.note(app, "media", "audio never started after 7s down=$bytes up=${stats.getLong("upBytes")}")
                                 throw CallMediaFailure("双向音频未能及时建立，电话由系统处理")
                             }
                         } else {
                             stalled = if (lastBytes == bytes) stalled + 1 else 0
-                            if (stalled >= 2) throw CallMediaFailure("运营商音频输入无进展，电话由系统处理")
+                            if (stalled >= 2) {
+                                CallDebugLog.note(app, "media", "uplink stalled at down=$bytes up=${stats.getLong("upBytes")}")
+                                throw CallMediaFailure("运营商音频输入无进展，电话由系统处理")
+                            }
                         }
                         lastBytes = bytes
                     }
