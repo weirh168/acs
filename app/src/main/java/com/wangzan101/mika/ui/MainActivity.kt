@@ -508,7 +508,8 @@ private fun MikaRoot(
     fun onboardingInputs() = Onboarding.Inputs(
         hasMainModel = store.roles.value.main != null,
         modelSetupDone = onboardingState.modelSetupDone(),
-        phoneNeeded = status.builtinShell != BuiltinShellStatus.Running && status.sdkInt >= Prerequisites.MIN_SDK,
+        phoneNeeded = status.builtinShell != BuiltinShellStatus.Running && status.sdkInt >= Prerequisites.MIN_SDK &&
+            !FeatureFlags.get(context).degradedScreen(),
         phoneGuideSeen = phoneSetup.guideSeen(),
     )
     fun goOnboarding(step: OnboardingStep?) {

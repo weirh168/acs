@@ -501,8 +501,12 @@ fun SettingsContent(
                     RowChevron()
                 }
             }
-            val phoneOpsReady = status.sdkInt >= Prerequisites.MIN_SDK &&
-                status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On
+            // 没有无线调试时还能走"无 ADB 模式"(无障碍直接操作主屏),这条也算可用
+            val phoneOpsReady = status.sdkInt >= Prerequisites.MIN_SDK && (
+                (status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On) ||
+                    (com.wangzan101.mika.settings.FeatureFlags.get(LocalContext.current).degradedScreen() &&
+                        status.accessibility == AccessibilityState.On)
+                )
             if (hit(tPhoneOps, "无障碍", "权限")) {
                 ListRow(MikaIcons.Phone, tPhoneOps, stringResource(R.string.settings_phone_ops_sub), onClick = onOpenPhoneOps) {
                     PhoneOpsPill(status)

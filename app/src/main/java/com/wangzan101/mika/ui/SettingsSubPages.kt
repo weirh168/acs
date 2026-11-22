@@ -10,6 +10,7 @@ import com.wangzan101.mika.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import com.wangzan101.mika.cap.phone.a11y.ScreenAccessibility
 import com.wangzan101.mika.settings.FeatureFlags
 import com.wangzan101.mika.settings.ThemeAccent
 import com.wangzan101.mika.settings.ThemeMode
@@ -97,6 +98,11 @@ fun PhoneOpsScreen(
 ) {
     val check = Prerequisites.check(status, hasMainModel = true)
     var confirmUnpair by remember { mutableStateOf(false) }
+    val phoneOpsContext = LocalContext.current
+    val phoneOpsFlags = remember(phoneOpsContext) { FeatureFlags.get(phoneOpsContext) }
+    var noAdbMode by remember { mutableStateOf(phoneOpsFlags.degradedScreen()) }
+    val accessibilityOn = ScreenAccessibility.instance.value != null
+    val helperRunning = status.builtinShell == BuiltinShellStatus.Running
     PageScaffold(stringResource(R.string.settings_phone_ops), onBack) {
         GroupLabel(stringResource(R.string.settings_status))
         GroupCard {
@@ -108,7 +114,11 @@ fun PhoneOpsScreen(
             // 安卓 12 以下手机功能不可用,不列这一行(系统版本那一行已说明)
             if (status.sdkInt >= Prerequisites.MIN_SDK) {
                 val helper = status.builtinShell
-                val (hText, hTone) = PhoneSetupCopy.statusValue(helper)
+                val (hText, hTone) = when {
+                    !helperRunning && noAdbMode && accessibilityOn ->
+                        stringResource(R.string.settings_phone_ops_degraded) to ValueTone.Ok
+                    else -> PhoneSetupCopy.statusValue(helper)
+                }
                 val reconnect = PhoneSetupCopy.canReconnect(helper)
                 ListRow(
                     MikaIcons.Link, PhoneSetupCopy.ROW_TITLE,
@@ -133,6 +143,22 @@ fun PhoneOpsScreen(
                     focusWarning -> RowValue(stringResource(R.string.pill_available), ValueTone.Plain)
                     else -> RowValue(stringResource(R.string.settings_meets), ValueTone.Ok)
                 }
+            }
+        }
+        if (status.sdkInt >= Prerequisites.MIN_SDK && !helperRunning) {
+            GroupLabel(stringResource(R.string.settings_degraded_screen))
+            GroupCard {
+                ListRow(
+                    MikaIcons.Phone, stringResource(R.string.settings_degraded_screen),
+                    stringResource(R.string.settings_degraded_screen_sub), first = true,
+                    onClick = { onProblem(Problem.PhoneHelper(status.builtinShell)) },
+                ) {
+                    MikaSwitch(noAdbMode, {
+                        phoneOpsFlags.setDegradedScreen(it)
+                        noAdbMode = it
+                    }, Modifier.testTag("phone-ops-no-adb"))
+                }
+                FooterNote(stringResource(R.string.settings_phone_ops_degraded_note))
             }
         }
         if (status.sdkInt >= Prerequisites.MIN_SDK) {

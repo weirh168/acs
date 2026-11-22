@@ -86,4 +86,6 @@
     <string name="sandbox_script">正在运行脚本</string>
     <string name="sandbox_online">可联网</string>
     <string name="runtime_preparing">正在准备</string>
+    <string name="settings_phone_ops_degraded">可用（无 ADB 模式）</string>
+    <string name="settings_phone_ops_degraded_note">这台手机没有无线调试,所以走无障碍:任务跑的时候 ACS 直接操作你自己的屏幕,期间屏幕归它用,不能和你并行。</string>
 </resources>

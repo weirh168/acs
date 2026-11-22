@@ -88,4 +88,6 @@
     <string name="sandbox_script">Running a script</string>
     <string name="sandbox_online">online</string>
     <string name="runtime_preparing">Preparing</string>
+    <string name="settings_phone_ops_degraded">Available (no-ADB mode)</string>
+    <string name="settings_phone_ops_degraded_note">No wireless debugging on this phone, so ACS works through accessibility: it drives your own screen while a task runs, takes over the screen meanwhile, and cannot run in parallel with your own use.</string>
 </resources>
