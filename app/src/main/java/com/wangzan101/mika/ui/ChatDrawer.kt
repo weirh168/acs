@@ -55,6 +55,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import com.wangzan101.mika.core.shell.HandoffJournal
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -417,6 +418,14 @@ fun ChatDrawer(
             .testTag("drawer"),
     ) {
         val (state, ok) = readiness(check)
+        // 抽屉到底拿着哪份 check:组合时写进交接日志,显示和判定对不上时一眼看出差在哪
+        LaunchedEffect(check.phoneReady, check.canStartTask, state) {
+            HandoffJournal.note(
+                "drawer",
+                "phoneReady=${check.phoneReady} canStart=${check.canStartTask} " +
+                    "-> state=$state ok=$ok problems=${check.problems.joinToString { it::class.simpleName ?: "?" }}",
+            )
+        }
         Row(
             Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 14.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,

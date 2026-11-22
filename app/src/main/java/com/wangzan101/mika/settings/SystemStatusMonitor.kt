@@ -37,7 +37,7 @@ private const val OP_RESTRICTED_SETTINGS = "android:access_restricted_settings"
 class SystemStatusMonitor(context: Context, private val shell: BuiltinShellControl) {
     private companion object {
         /** 无障碍从 On 掉下去后的宽限:这段时间内仍按 On 报,免得重绑瞬间界面闪成「没准备好」。 */
-        const val ACCESSIBILITY_GRACE_MS = 2_500L
+        const val ACCESSIBILITY_GRACE_MS = 8_000L
     }
 
     private val app = context.applicationContext
