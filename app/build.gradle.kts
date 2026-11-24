@@ -40,8 +40,8 @@ android {
         resValue("string", "app_name", "ACS")
         minSdk = 29
         targetSdk = 35
-        versionCode = 54
-        versionName = "1.7"
+        versionCode = 55
+        versionName = "1.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "GIT_HASH", "\"$gitHash\"")
         // 关于页版本号后的 Beta 标记;出正式版时改成 false

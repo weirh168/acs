@@ -226,18 +226,8 @@ internal fun AttachPanel(
             Tile(MikaIcons.Photo, AttachCopy.ALBUM, onAlbum)
             Tile(MikaIcons.Paperclip, AttachCopy.FILES, onFiles)
         }
-        if (access == PhotoAccess.None) {
-            Column(
-                Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
-            ) {
-                Text(AttachCopy.NEED_ACCESS, style = PanelText, color = c.ink2, textAlign = TextAlign.Center)
-                MikaButton(AttachCopy.GRANT, onGrant, kind = ButtonKind.Primary, size = ButtonSize.Medium)
-                Text(AttachCopy.GRANT_HINT, style = MikaType.Hint, color = c.ink3, textAlign = TextAlign.Center)
-            }
-            return@Column
-        }
+        // 没有照片权限时也不再显示说明和「允许访问照片」:面板留空,用户要授权可去系统设置。
+        if (access == PhotoAccess.None) return@Column
         Row(Modifier.fillMaxWidth().padding(start = 2.dp, end = 2.dp, top = 14.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 if (access == PhotoAccess.Partial) AttachCopy.RECENT_PARTIAL else AttachCopy.RECENT,

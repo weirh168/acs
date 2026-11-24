@@ -2109,14 +2109,7 @@ internal fun Composer(
                     },
                 ) {
                     Column(Modifier.fillMaxSize().padding(top = 4.dp)) {
-                        if (onTeach != null && panel == Panel.Open) {
-                            Text(
-                                stringResource(R.string.teach_menu),
-                                Modifier.fillMaxWidth().clickable { panel = Panel.Closed; onTeach() }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp).testTag("teach-mika"),
-                                color = c.accent, style = MikaType.Body,
-                            )
-                        }
+                        // 「教 ACS」那一行按用户要求去掉:面板只留相机/相册/文件与照片
                         Box(Modifier.weight(1f)) { attachPanel() }
                     }
                 }
