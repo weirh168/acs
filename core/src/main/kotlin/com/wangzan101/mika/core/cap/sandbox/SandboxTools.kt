@@ -261,19 +261,47 @@ internal class SandboxTools(
         else -> fail(e.code, "$path: ${e.message}", e.recoverable)
     }
 
-    internal fun readFile(a: Args, ws: String): ToolExecution {
+    internal suspend fun readFile(a: Args, ws: String, vision: com.wangzan101.mika.core.vision.VisionService? = null): ToolExecution {
         val t = resolve(ws, a.str("path", max = 4096)!!, write = false) ?: return outside()
         val offset = a.int("offset", 0, Int.MAX_VALUE) ?: 0
         val limit = a.int("limit", 1, MAX_READ_BYTES) ?: DEFAULT_READ
         val g = try { sandbox.files.openRead(t.root, t.rel) } catch (e: SandboxError) { return refused(t.path, e) }
-        return g.use { readOpened(t.path, g, offset, limit) }
+        return g.use { readOpened(t.path, g, offset, limit, vision) }
     }
 
-    private fun readOpened(path: String, g: GatedFile, offset: Int, limit: Int): ToolExecution {
+    private suspend fun readOpened(
+        path: String, g: GatedFile, offset: Int, limit: Int,
+        vision: com.wangzan101.mika.core.vision.VisionService? = null,
+    ): ToolExecution {
         val size = g.size
         val ext = g.name.substringAfterLast('.', "").lowercase()
         IMAGE_TYPES[ext]?.let { type ->
-            if (!visionEnabled) return notText(path, size, type, "This is an image, and the current model cannot view images.")
+            // 主模型看不了图时,先让「看图模型」把图读成文字:用户发来的照片、书里的插图都走这条路。
+            if (!visionEnabled) {
+                if (vision == null) {
+                    return notText(path, size, type, "This is an image, and the current model cannot view images.")
+                }
+                if (size > MAX_IMAGE) {
+                    return fail("file_too_large", "$path is ${size / MB} MB; images over 5 MB are not read. Make a smaller copy first.")
+                }
+                val bytes = g.read(0, size.toInt())
+                val read = runCatching {
+                    vision.ask(
+                        "你是把图片读成文字的眼睛。只描述你真正看见的内容,看不清的地方直说看不清。",
+                        "把这张图看清楚:说明画面内容(地形、建筑、罗盘、人物、器物等),照抄图中可辨认的文字与数字," +
+                            "并指出它想说明的要点。用中文,分条写,不要评论。",
+                        listOf(bytes),
+                    )
+                }
+                read.getOrNull()?.let { text ->
+                    return ToolExecution(okObj {
+                        put("path", path); put("size", size); put("type", type)
+                        put("read_by", "vision_model"); put("content", text)
+                        put("eof", true)
+                    })
+                }
+                return notText(path, size, type, "This is an image; the configured vision model could not read it.")
+            }
             if (size > MAX_IMAGE) return fail("file_too_large", "$path is ${size / MB} MB; images over 5 MB are not returned. Make a smaller copy first.")
             return ToolExecution(okObj { put("path", path); put("size", size); put("type", type) }, image = g.read(0, size.toInt()))
         }

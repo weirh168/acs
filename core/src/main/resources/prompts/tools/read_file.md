@@ -1,1 +1,1 @@
-Read a text file under /workspace or /opt/mika/skills, by byte offset and limit. Binary files return only their size and type; images are returned as images when you can see images.
+Read a text file under /workspace or /opt/mika/skills, by byte offset and limit. Binary files return only their size and type; images are returned as images when you can see images. When the main model cannot see images but a vision model is configured, an image is read by that vision model and its description is returned as text.

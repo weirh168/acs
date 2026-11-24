@@ -105,7 +105,9 @@ internal object ReadFile : SandboxTool {
             "limit" to int("Bytes to read, 1-262144 (default 65536).", 1, MAX_READ_BYTES),
         ), listOf("path"))
 
-    override suspend fun execute(a: Args, ctx: ToolContext) = ctx.sandboxRunner!!.run { ws, _ -> withContext(Dispatchers.IO) { readFile(a, ws) } }
+    override suspend fun execute(a: Args, ctx: ToolContext) = ctx.sandboxRunner!!.run { ws, _ ->
+        withContext(Dispatchers.IO) { readFile(a, ws, ctx.config.vision) }
+    }
     override fun observations(o: JsonObject, r: ToolExecution, log: EvidenceLog) =
         // 读回助手自己用 write_file 写的文件,读到的是它自己写的字,不算证据
         listOfNotNull(if (ok(r) && res(r, "path") !in log.writtenPaths) res(r, "content")?.let { output(it, Place.file("read_file ${res(r, "path")}")) } else null)
