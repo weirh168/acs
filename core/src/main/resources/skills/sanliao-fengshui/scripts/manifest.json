@@ -1,0 +1,9 @@
+[
+ {
+  "file": "scripts/sanliao.py",
+  "runnable": true,
+  "needs": [
+   "apk:python3"
+  ]
+ }
+]
