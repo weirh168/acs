@@ -95,11 +95,17 @@ object Prerequisites {
 
     private fun phoneOnly(p: Problem) = p is Problem.SystemTooOld || p is Problem.PhoneHelper || p is Problem.Accessibility
 
-    fun check(status: SystemStatus, hasMainModel: Boolean): Check = Check(
+    /**
+     * [degradedScreen] 为真表示用户开了「没有内置助手时读我的主屏」:这时助手没连是常态,
+     * 不再是待处理的故障,手机操作改走无障碍直连主屏,免得设置页一直挂着「还没设置」。
+     */
+    fun check(status: SystemStatus, hasMainModel: Boolean, degradedScreen: Boolean = false): Check = Check(
         buildList {
             if (status.sdkInt < MIN_SDK) add(Problem.SystemTooOld)
             // 安卓 12 以下手机功能不可用,已由 SystemTooOld 说明
-            if (status.sdkInt >= MIN_SDK && status.builtinShell != BuiltinShellStatus.Running) {
+            if (status.sdkInt >= MIN_SDK && status.builtinShell != BuiltinShellStatus.Running &&
+                !(degradedScreen && status.accessibility == AccessibilityState.On)
+            ) {
                 add(Problem.PhoneHelper(status.builtinShell))
             }
             if (status.sdkInt >= MIN_SDK && status.accessibility != AccessibilityState.On) {

@@ -96,7 +96,7 @@ fun PhoneOpsScreen(
     onUnpair: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val check = Prerequisites.check(status, hasMainModel = true)
+    val check = Prerequisites.check(status, hasMainModel = true, degradedScreen = FeatureFlags.get(LocalContext.current).degradedScreen())
     var confirmUnpair by remember { mutableStateOf(false) }
     val phoneOpsContext = LocalContext.current
     val phoneOpsFlags = remember(phoneOpsContext) { FeatureFlags.get(phoneOpsContext) }

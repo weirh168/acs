@@ -433,13 +433,14 @@ fun SettingsContent(
     autoArchiveDays: Int = 0,
     onOpenAutoArchive: () -> Unit = {},
 ) {
-    val check = Prerequisites.check(status, hasMainModel = mainModel != null)
+    val degradedScreen = FeatureFlags.get(LocalContext.current).degradedScreen()
+    val check = Prerequisites.check(status, hasMainModel = mainModel != null, degradedScreen = degradedScreen)
     PageScaffold(stringResource(R.string.settings_title), onBack) {
         StatusSummary(
             check, onProblem, onOpenNotifications = onOpenNotifications,
             callsEnabled = callsEnabled,
-            phoneOpsReady = status.sdkInt >= Prerequisites.MIN_SDK &&
-                status.builtinShell == BuiltinShellStatus.Running && status.accessibility == AccessibilityState.On,
+            phoneOpsReady = status.sdkInt >= Prerequisites.MIN_SDK && status.accessibility == AccessibilityState.On &&
+                (status.builtinShell == BuiltinShellStatus.Running || degradedScreen),
             wechatConnected = wechatState == WechatConnectionState.Connected,
         )
 

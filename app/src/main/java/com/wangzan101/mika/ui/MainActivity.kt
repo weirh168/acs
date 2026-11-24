@@ -418,7 +418,7 @@ private fun MikaRoot(
     val status by monitor.status.collectAsState()
     val roles by store.roles.collectAsState()
     val hasMain = roles.main != null
-    val check = Prerequisites.check(status, hasMain)
+    val check = Prerequisites.check(status, hasMain, FeatureFlags.get(context).degradedScreen())
     HandoffJournal.note("check", "phoneReady=${check.phoneReady} canStart=${check.canStartTask} " +
         "problems=${check.problems.joinToString { it::class.simpleName ?: "?" }}")
     val app = context.applicationContext as MikaApp
