@@ -78,6 +78,7 @@ data class CallAudioReport(
     val providerInputCommits: Long? = null,
     val inputFramesRead: Long? = null,
     val framesSkippedWhileHeld: Long? = null,
+    val framesSkippedEcho: Long? = null,
     val holdMaxMs: Long? = null,
     /** 1 = 直连电话音频, 2 = 系统通话音频重定向。 */
     val audioBackend: Long? = null,
@@ -100,6 +101,7 @@ data class CallAudioReport(
         "provider_input_commits=${providerInputCommits ?: "unknown"} " +
         "input_frames_read=${inputFramesRead ?: "unknown"} " +
         "frames_skipped_held=${framesSkippedWhileHeld ?: "unknown"} " +
+        "frames_echo_dropped=${framesSkippedEcho ?: "unknown"} " +
         "hold_max_ms=${holdMaxMs ?: "unknown"} " +
         "backend=${audioBackend ?: "unknown"} rx_dev=${rxDeviceType ?: "unknown"} tx_dev=${txDeviceType ?: "unknown"} " +
         "down_peak=${downPeakMax ?: "unknown"} accepted=${acceptedFrames ?: "unknown"}"

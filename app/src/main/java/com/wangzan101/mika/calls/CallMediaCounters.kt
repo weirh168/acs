@@ -45,6 +45,7 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
     private var inputFramesRead = 0L
     private var framesSkippedWhileHeld = 0L
     private var holdMaxNanos = 0L
+    private var framesSkippedEcho = 0L
     private var audioBackend = -1
     private var rxDeviceType = -1
     private var txDeviceType = -1
@@ -95,6 +96,9 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
         if (tx > 0) txDeviceType = tx
         if (downPeak > downPeakMax) downPeakMax = downPeak
     }
+
+    /** 被波形判成「自己刚说过的话」而丢掉的帧数。 */
+    @Synchronized fun inputSkippedEcho() { framesSkippedEcho++ }
 
     /** 一次 hold 持续了多久,只留最大值。 */
     @Synchronized fun holdEnded(nanos: Long) { holdMaxNanos = maxOf(holdMaxNanos, nanos.coerceAtLeast(0L)) }
@@ -193,6 +197,7 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
             providerInputCommits = providerInputCommits,
             inputFramesRead = inputFramesRead,
             framesSkippedWhileHeld = framesSkippedWhileHeld,
+            framesSkippedEcho = framesSkippedEcho,
             holdMaxMs = holdMaxNanos / 1_000_000,
             audioBackend = audioBackend.takeIf { it > 0 }?.toLong(),
             rxDeviceType = rxDeviceType.takeIf { it > 0 }?.toLong(),

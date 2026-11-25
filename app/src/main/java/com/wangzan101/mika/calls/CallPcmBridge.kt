@@ -55,6 +55,7 @@ internal class CallPcmBridge(
         }
         // The separate writer leaves model event collection responsive when a pipe is full.
         val holdInput = java.util.concurrent.atomic.AtomicBoolean(false)
+        val echoGuard = CallEchoGuard()
         // 最后一次真的往通话里写音频的时刻:VOICE_CALL 采的是混音轨,自己刚说完的回声尾巴不能当成对方说话。
         val lastPlaybackNanos = java.util.concurrent.atomic.AtomicLong(0L)
         val holdSince = java.util.concurrent.atomic.AtomicLong(0L)
@@ -83,6 +84,8 @@ internal class CallPcmBridge(
                         if (playbackQueue.isCurrent(block)) {
                             callPipeIo { playback.write(pcm, 0, block.byteCount) }
                             counters?.outputWritten(block.byteCount)
+                            // 留一份刚播出去的声音做参考,用来认出采回来的自己的回声
+                            echoGuard.remember(pcm, block.byteCount)
                         }
                     }
                 } finally {
@@ -112,7 +115,9 @@ internal class CallPcmBridge(
                         // 只在两种时候挡:AI 正在说(收到了 audio.started 还没收到 done),或刚播完的尾巴里。
                         // 不用「播放队列空不空」当门:队列在长回复里几乎一直非空,会把对方的话一起挡掉。
                         val echoTail = System.nanoTime() - lastPlaybackNanos.get() < ECHO_TAIL_NS
-                        val speakerActive = holdInput.get() || echoTail
+                        // 时间上:AI 正在说、或刚说完的尾巴;波形上:这一帧几乎就是我们刚播出去的声音。
+                        val looksLikeOwnVoice = !holdInput.get() && echoGuard.isEcho(frame)
+                        val speakerActive = holdInput.get() || echoTail || looksLikeOwnVoice
                         if (!speakerActive) {
                             // 只有真的在播、或刚播完(回声尾巴)时才不发;其他时候一律送上去
                             releaseCallerInput()
@@ -120,7 +125,7 @@ internal class CallPcmBridge(
                             counters?.inputAccepted(frame, System.nanoTime())
                         } else {
                             holdCallerInput()
-                            counters?.inputSkippedWhileHeld()
+                            if (looksLikeOwnVoice) counters?.inputSkippedEcho() else counters?.inputSkippedWhileHeld()
                         }
                         position = 0
                     }
