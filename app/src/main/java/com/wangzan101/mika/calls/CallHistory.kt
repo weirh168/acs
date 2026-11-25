@@ -76,6 +76,9 @@ data class CallAudioReport(
     val recognitionFailures: Long? = null,
     val emptyRecognitions: Long? = null,
     val providerInputCommits: Long? = null,
+    val inputFramesRead: Long? = null,
+    val framesSkippedWhileHeld: Long? = null,
+    val holdMaxMs: Long? = null,
 ) {
     @Serializable
     enum class Turn { NONE, SPEECH_DETECTED, TRANSCRIPT_RECEIVED, REPLY_AUDIO_RECEIVED }
@@ -87,7 +90,10 @@ data class CallAudioReport(
         "input_frames_rms_gt_200_after_audio_done=${inputSignalFramesAfterLastReply ?: "unknown"} " +
         "android_silenced_max_ms=${captureSilencedMaxMs ?: "unknown"} " +
         "asr_failures=${recognitionFailures ?: "unknown"} asr_empty=${emptyRecognitions ?: "unknown"} " +
-        "provider_input_commits=${providerInputCommits ?: "unknown"}"
+        "provider_input_commits=${providerInputCommits ?: "unknown"} " +
+        "input_frames_read=${inputFramesRead ?: "unknown"} " +
+        "frames_skipped_held=${framesSkippedWhileHeld ?: "unknown"} " +
+        "hold_max_ms=${holdMaxMs ?: "unknown"}"
 }
 
 internal class CallHistory(private val storage: Storage) {

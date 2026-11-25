@@ -65,7 +65,11 @@ internal class CallPcmBridge(
         }
         // 释放必须幂等:任何一条结束路径(AI 说完、被取消、写线程退出、超时兜底)都会调它。
         fun releaseCallerInput() {
-            if (holdInput.getAndSet(false)) holdSince.set(0L)
+            if (holdInput.getAndSet(false)) {
+                val held = System.nanoTime() - holdSince.get()
+                if (held > 0) counters?.holdEnded(held)
+                holdSince.set(0L)
+            }
             runCatching { session.setMuted(false) }
         }
         val output = launch(Dispatchers.IO) {
@@ -98,6 +102,7 @@ internal class CallPcmBridge(
                     if (count == 0) continue
                     position += count
                     if (position == frame.size) {
+                        counters?.inputRead()
                         // 兜底:AI 那头迟迟不发"说完了"(被取消、断线、丢帧)时,不能把上行一直掐着。
                         if (holdInput.get() && System.nanoTime() - holdSince.get() > HOLD_CALLER_INPUT_MAX_NS) {
                             releaseCallerInput()
@@ -105,6 +110,8 @@ internal class CallPcmBridge(
                         if (!holdInput.get()) {
                             if (!session.sendPcm16(frame)) throw CallMediaFailure("火山音频输入已中断")
                             counters?.inputAccepted(frame, System.nanoTime())
+                        } else {
+                            counters?.inputSkippedWhileHeld()
                         }
                         position = 0
                     }

@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Environment
 import android.provider.MediaStore
 import com.wangzan101.mika.MikaApp
+import com.wangzan101.mika.core.model.ModelRole
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -33,6 +34,18 @@ object VideoDraw {
     )
 
     private fun cfg(app: MikaApp): Cfg {
+        // 同生图:AI 引擎里选的那条配置优先,重启不用重配
+        val store = app.providers
+        val role = runCatching { store.configFor(ModelRole.Video) }.getOrNull()
+        if (role != null) {
+            val provider = role.providerId.takeIf { it.isNotBlank() }?.let { store.provider(it) }
+            val key = store.apiKey(role.id) ?: role.providerId.takeIf { it.isNotBlank() }?.let { store.providerKey(it) }
+            if (!key.isNullOrBlank()) {
+                val base = (provider?.baseUrl ?: role.baseUrl).ifBlank { FALLBACK_BASE }
+                return Cfg(role.model, base.trimEnd('/'), role.providerId.takeIf { it.isNotBlank() },
+                    mode = "text-to-video", disabled = false)
+            }
+        }
         val f = File(app.filesDir, "settings/videogen.json")
         val o = runCatching { Json.parseToJsonElement(f.readText()).jsonObject }.getOrNull()
         val model = o?.get("model")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: FALLBACK_MODEL

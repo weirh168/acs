@@ -42,6 +42,9 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
     private var recognitionFailures = 0L
     private var emptyRecognitions = 0L
     private var providerInputCommits = 0L
+    private var inputFramesRead = 0L
+    private var framesSkippedWhileHeld = 0L
+    private var holdMaxNanos = 0L
 
     /** Called only after sendPcm16 accepts the frame locally; not a server delivery acknowledgement. */
     fun inputAccepted(frame: ByteArray, acceptedAtNanos: Long) {
@@ -74,6 +77,15 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
             }
         }
     }
+
+    /** 从运营商音频管道读到的帧数(不论有没有上行)。读停 = 采集侧断了。 */
+    @Synchronized fun inputRead() { inputFramesRead++ }
+
+    /** 因为 AI 正在说话而被按住、没有上行的帧数。大 = hold 没放开。 */
+    @Synchronized fun inputSkippedWhileHeld() { framesSkippedWhileHeld++ }
+
+    /** 一次 hold 持续了多久,只留最大值。 */
+    @Synchronized fun holdEnded(nanos: Long) { holdMaxNanos = maxOf(holdMaxNanos, nanos.coerceAtLeast(0L)) }
 
     @Synchronized fun outputWritten(bytes: Int) { playbackWrittenBytes += bytes }
     @Synchronized fun outputQueued(bytes: Int) { playbackMaxQueuedBytes = maxOf(playbackMaxQueuedBytes, bytes.toLong()) }
@@ -167,11 +179,17 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
             recognitionFailures = recognitionFailures,
             emptyRecognitions = emptyRecognitions,
             providerInputCommits = providerInputCommits,
+            inputFramesRead = inputFramesRead,
+            framesSkippedWhileHeld = framesSkippedWhileHeld,
+            holdMaxMs = holdMaxNanos / 1_000_000,
         )
     }
 
     @Synchronized
     fun snapshot(): Map<String, Long> = mapOf(
+        "input_frames_read" to inputFramesRead,
+        "frames_skipped_while_held" to framesSkippedWhileHeld,
+        "hold_max_ms" to holdMaxNanos / 1_000_000,
         "input_frames_accepted" to inputFramesAccepted,
         "input_bytes_accepted" to inputBytesAccepted,
         "input_peak_max" to inputPeakMax,

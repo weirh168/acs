@@ -148,13 +148,13 @@ fun isAgnesModel(providerId: String, model: String): Boolean {
     return t.contains("agnes")
 }
 
-/** 只有这台手机(管理员机)显示「管理员 · 生成激活码」。换机时改这里。 */
-const val ADMIN_DEVICE = "BE1CF3"
+/** 管理员机(显示「管理员 · 生成激活码」,不受会员限制)。换机时改这里。 */
+val ADMIN_DEVICES = setOf("BE1CF3", "EDCEE4")
 
 /** 当前设备是不是管理员机。 */
 fun isAdminDevice(context: android.content.Context): Boolean {
     // 三道门:设备指纹对得上、安装包签名没被改过、没有调试器附着
-    if (LicenseCode.deviceFingerprint(context) != ADMIN_DEVICE) return false
+    if (LicenseCode.deviceFingerprint(context) !in ADMIN_DEVICES) return false
     if (!com.wangzan101.mika.settings.Integrity.trusted(context)) return false
     if (android.os.Debug.isDebuggerConnected()) return false
     return true

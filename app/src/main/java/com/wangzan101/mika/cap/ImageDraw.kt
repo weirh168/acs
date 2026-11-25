@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Environment
 import android.provider.MediaStore
 import com.wangzan101.mika.MikaApp
+import com.wangzan101.mika.core.model.ModelRole
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -32,6 +33,17 @@ object ImageDraw {
     private data class Cfg(val model: String, val baseUrl: String, val providerId: String?)
 
     private fun cfg(app: MikaApp): Cfg {
+        // AI 引擎里选的「生图模型」是唯一真相:重启后还在,Key 也按这条配置的服务商取
+        val store = app.providers
+        val role = runCatching { store.configFor(ModelRole.Image) }.getOrNull()
+        if (role != null) {
+            val provider = role.providerId.takeIf { it.isNotBlank() }?.let { store.provider(it) }
+            val key = store.apiKey(role.id) ?: role.providerId.takeIf { it.isNotBlank() }?.let { store.providerKey(it) }
+            if (!key.isNullOrBlank()) {
+                val base = (provider?.baseUrl ?: role.baseUrl).ifBlank { FALLBACK_BASE }
+                return Cfg(role.model, base.trimEnd('/'), role.providerId.takeIf { it.isNotBlank() })
+            }
+        }
         val f = File(app.filesDir, "settings/imagegen.json")
         val o = runCatching { Json.parseToJsonElement(f.readText()).jsonObject }.getOrNull()
         val model = o?.get("model")?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: FALLBACK_MODEL
