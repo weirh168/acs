@@ -677,7 +677,9 @@ internal class ShellCallAudio(private val context: Context) {
             // 重定向是 Android 13+ 官方给的通话音频拦截通道,先试它;直连在 Android 14 上常被
             // 系统掐成静音(下行峰值 0),所以放在后面兜底。
             AUTO -> buildList { if (redirect) add(REDIRECT); if (direct) add(DIRECT) }
-            DIRECT -> buildList { if (direct) add(DIRECT); if (redirect) add(REDIRECT) }
+            // 有些机型直连能开、路由也对,但 VOICE_DOWNLINK 采回来几乎没声音(HONOR/Android 14 实测
+            // down_peak=79、对方说话一帧都不过阈值)。所以直连也先把重定向排前面,能截到就用它。
+            DIRECT -> buildList { if (redirect) add(REDIRECT); if (direct) add(DIRECT) }
             REDIRECT -> if (redirect) listOf(REDIRECT) else emptyList()
             else -> emptyList()
         }
