@@ -23,6 +23,8 @@ internal class ToolConfig(
     val skills: GuideCatalog?,
     val recordFrames: Boolean,
     val vision: VisionService?,
+    /** 读图模型:打开照片、技能插图时用;没单独配时与 [vision] 相同。 */
+    val pictureVision: VisionService? = null,
     val inlineScreen: Boolean,
     /** 元素优先:可读页面不把截图送给主模型,读不到时自动补图。 */
     val adaptiveVision: Boolean,

@@ -106,7 +106,7 @@ internal object ReadFile : SandboxTool {
         ), listOf("path"))
 
     override suspend fun execute(a: Args, ctx: ToolContext) = ctx.sandboxRunner!!.run { ws, _ ->
-        withContext(Dispatchers.IO) { readFile(a, ws, ctx.config.vision) }
+        withContext(Dispatchers.IO) { readFile(a, ws, ctx.config.pictureVision ?: ctx.config.vision) }
     }
     override fun observations(o: JsonObject, r: ToolExecution, log: EvidenceLog) =
         // 读回助手自己用 write_file 写的文件,读到的是它自己写的字,不算证据

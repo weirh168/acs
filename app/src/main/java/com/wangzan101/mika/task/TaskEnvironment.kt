@@ -32,6 +32,8 @@ class TaskEnvironment {
     @Volatile var lightModelFactory: (Context, ModelSession) -> ChatModel? = defaultLightModelFactory
     /** 视觉模型(核查时看截图);设置里没有能看图的模型时为空。 */
     @Volatile var visionModelFactory: (Context, ModelSession) -> ChatModel? = defaultVisionModelFactory
+    /** 读图模型(照片、技能插图);为空时退回看图模型。 */
+    @Volatile var pictureModelFactory: (Context, ModelSession) -> ChatModel? = defaultPictureModelFactory
 
     /** 评测跑器用的钩子;产品里全是默认值。 */
     val evalHooks = EvalHooks()
@@ -45,6 +47,8 @@ class TaskEnvironment {
         val defaultModelFactory: (Context, ModelSession) -> ChatModel? = { c, s -> ProviderStore.get(c).modelFor(ModelRole.Main, s) }
         val defaultLightModelFactory: (Context, ModelSession) -> ChatModel? = { c, s -> ProviderStore.get(c).modelFor(ModelRole.Light, s) }
         val defaultVisionModelFactory: (Context, ModelSession) -> ChatModel? = { c, s -> ProviderStore.get(c).modelFor(ModelRole.Vision, s) }
+        /** 读图模型(照片、技能插图);设置里选「跟看图模型一样」时就是看图模型。 */
+        val defaultPictureModelFactory: (Context, ModelSession) -> ChatModel? = { c, s -> ProviderStore.get(c).modelFor(ModelRole.Picture, s) }
 
         fun of(context: Context): TaskEnvironment = (context.applicationContext as Owner).tasks
     }

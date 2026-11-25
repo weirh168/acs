@@ -673,6 +673,7 @@ class TaskRun(
                 !ProviderStore.get(service).roles.value.sameModel(ModelRole.Main, ModelRole.Light)
             }
             val vision = env.visionModelFactory(service, session)
+            val picture = env.pictureModelFactory(service, session)
 
             val (knowledge, skills) = withContext(Dispatchers.IO) {
                 // 用户对某个 App/站点的补充放在私有目录 personal/apps、personal/sites 下
@@ -1002,7 +1003,9 @@ class TaskRun(
             val selfPort = if (provenance.origin == RunOrigin.Ui && !conditionCheck) {
                 (service.application as? MikaApp)?.let { app -> com.wangzan101.mika.self.AndroidSelfPort(app, conversationId, key) }
             } else null
-            val tools = toolDispatcher(accessedPhone, model.capabilities.vision, catalog, recordFrames = true, vision = vision?.let { VisionService(it, BitmapImageOps) },
+            val tools = toolDispatcher(accessedPhone, model.capabilities.vision, catalog, recordFrames = true,
+                vision = vision?.let { VisionService(it, BitmapImageOps) },
+                pictureVision = (picture ?: vision)?.let { VisionService(it, BitmapImageOps) },
                 // 生图:acs_draw 的落地实现(取配置、调 API、存相册)
                 imageGen = { prompt -> com.wangzan101.mika.cap.ImageDraw.draw(service.application as MikaApp, conversationId, prompt) },
                 videoGen = { prompt -> com.wangzan101.mika.cap.VideoDraw.make(service.application as MikaApp, conversationId, prompt) },

@@ -57,6 +57,8 @@ fun toolDispatcher(
     recordFrames: Boolean = false,
     /** 看图模型;为空(设置里没有能看图的模型)时不提供视觉类工具。 */
     vision: VisionService? = null,
+    /** 读图模型(打开照片、技能插图时用);为空时与 [vision] 相同。 */
+    pictureVision: VisionService? = null,
     /** 内置浏览器;为空时不提供任何网页工具,只有手机界面。 */
     web: WebPort? = null,
     /** 网页上传的工作区路径检查(规范化、符号链接解析由 app 侧做)。 */
@@ -143,7 +145,7 @@ fun toolDispatcher(
             !runSpec.readOnly && runSpec.provenance.origin != com.wangzan101.mika.core.run.RunOrigin.Child &&
             (runSpec.capabilities == null || "sandbox" in runSpec.capabilities)
     }?.let { com.wangzan101.mika.core.cap.sandbox.WorkspaceScreenshots(it, workspace) }
-    val config = ToolConfig(visionEnabled, skills, recordFrames, vision, inlineScreen, adaptiveVision, memory, profile, utterances, conversationId,
+    val config = ToolConfig(visionEnabled, skills, recordFrames, vision, pictureVision ?: vision, inlineScreen, adaptiveVision, memory, profile, utterances, conversationId,
         imageOps, scheduleTrigger, scheduleAdmin, runSpec, childHost, userScreens, personalSkills, selfConfig, runRecords, webSearch, self, selfOperate,
         screenshotStore?.let { store -> { path, png -> store.save(path, png) } }, taskMemory = taskMemory, notices = notices)
     val providers: List<CapabilityProvider> = listOf(

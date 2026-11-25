@@ -61,7 +61,7 @@ internal object ViewImage : AgentTool {
             }, image = bytes)
         }
         // 2) 主模型不能看图、但配了看图模型:让看图模型先读一遍,把读到的文字带回来。
-        val vision = ctx.config.vision
+        val vision = ctx.config.pictureVision ?: ctx.config.vision
         if (vision != null) {
             val read = runCatching {
                 vision.ask(VISION_SYSTEM, "把这张图看清楚:说明画面内容(地形、建筑、罗盘、人物、器物等)," +

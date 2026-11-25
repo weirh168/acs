@@ -182,6 +182,8 @@ sealed interface RoleChoice {
     /** 用 [configId] 这条模型配置。 */
     data class Model(val configId: String) : RoleChoice
     data object SameAsMain : RoleChoice
+    /** 读图模型专用:跟「看图模型」用同一个模型(读屏怎么配,读图就怎么配)。 */
+    data object SameAsVision : RoleChoice
     data object Off : RoleChoice
 }
 
@@ -192,6 +194,8 @@ sealed interface RoleChoice {
 data class RoleChoices(
     val main: String? = null,
     val vision: RoleChoice = RoleChoice.Off,
+    /** 读图模型:打开照片、技能里的插图时用;默认跟看图模型一致。 */
+    val picture: RoleChoice = RoleChoice.SameAsVision,
     val light: RoleChoice = RoleChoice.SameAsMain,
     /** 生图模型:画图/配图时用;不需要时用 Off。 */
     val image: RoleChoice = RoleChoice.Off,
@@ -204,6 +208,7 @@ data class RoleChoices(
     operator fun get(role: ModelRole): RoleChoice? = when (role) {
         ModelRole.Main -> main?.let(RoleChoice::Model)
         ModelRole.Vision -> vision
+        ModelRole.Picture -> picture
         ModelRole.Light -> light
         ModelRole.Image -> image
         ModelRole.Video -> video
@@ -213,6 +218,7 @@ data class RoleChoices(
     fun resolve(role: ModelRole): String? = when (val c = get(role)) {
         is RoleChoice.Model -> c.configId
         RoleChoice.SameAsMain -> main
+        RoleChoice.SameAsVision -> resolve(ModelRole.Vision)
         RoleChoice.Off, null -> null
     }
 
@@ -229,6 +235,7 @@ data class RoleChoices(
     fun with(role: ModelRole, choice: RoleChoice): RoleChoices? = (when (role) {
         ModelRole.Main -> (choice as? RoleChoice.Model)?.let { copy(main = it.configId) }
         ModelRole.Vision -> copy(vision = choice)
+        ModelRole.Picture -> copy(picture = choice)
         ModelRole.Light -> if (choice == RoleChoice.Off) null else copy(light = choice)
         ModelRole.Image -> copy(image = choice)
         ModelRole.Video -> copy(video = choice)
@@ -248,6 +255,7 @@ data class RoleChoices(
         return RoleChoices(
             main = main?.takeIf { it in valid },
             vision = if (vision.gone()) RoleChoice.Off else vision,
+            picture = if (picture.gone()) RoleChoice.SameAsVision else picture,
             light = if (light.gone()) RoleChoice.SameAsMain else light,
             // 生图、生视频也要跟着检查,否则每次启动都会被重建成默认的「不用」
             image = if (image.gone()) RoleChoice.Off else image,
@@ -1154,6 +1162,7 @@ class ProviderStore(
             return when (c["use"]?.jsonPrimitive?.content) {
                 USE_MODEL -> c["config"]?.jsonPrimitive?.content?.let(RoleChoice::Model)
                 USE_MAIN -> RoleChoice.SameAsMain
+                USE_VISION -> RoleChoice.SameAsVision
                 USE_NONE -> RoleChoice.Off
                 else -> null
             }
@@ -1242,6 +1251,7 @@ class ProviderStore(
                             _roles.value.reasoningEfforts[role]?.let { put("reasoningEffort", it) }
                         }
                         RoleChoice.SameAsMain -> putJsonObject(role.name) { put("use", USE_MAIN) }
+                        RoleChoice.SameAsVision -> putJsonObject(role.name) { put("use", USE_VISION) }
                         RoleChoice.Off -> putJsonObject(role.name) { put("use", USE_NONE) }
                         null -> Unit
                     }
@@ -1282,6 +1292,7 @@ class ProviderStore(
         private const val USE_MODEL = "model"
         private const val USE_MAIN = "main"
         private const val USE_NONE = "none"
+        private const val USE_VISION = "vision"
 
         // 连服务商的客户端都经 NetProxy 建:走设置 › 网络代理,本机、局域网地址(本地模型)直连
         private val http by lazy { NetProxy.shared.client(OkHttpClient.Builder().readTimeout(120, TimeUnit.SECONDS)) }

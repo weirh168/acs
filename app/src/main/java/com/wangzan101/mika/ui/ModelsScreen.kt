@@ -187,6 +187,7 @@ class RolePickerActions(
 internal fun fixedChoices(role: ModelRole): List<RoleChoice> = when (role) {
     ModelRole.Main -> emptyList()
     ModelRole.Vision -> listOf(RoleChoice.SameAsMain, RoleChoice.Off)
+    ModelRole.Picture -> listOf(RoleChoice.SameAsVision, RoleChoice.Off)
     ModelRole.Light -> listOf(RoleChoice.SameAsMain)
     ModelRole.Image -> listOf(RoleChoice.Off)
     ModelRole.Video -> listOf(RoleChoice.Off)
@@ -654,6 +655,7 @@ object ModelsCopy {
     val SAME_AS_MAIN: String get() = tr(R.string.models_same_as_main)
     val MAIN_NOT_PICKED: String get() = tr(R.string.models_main_not_picked)
     val OFF: String get() = tr(R.string.models_off)
+    val SAME_AS_VISION: String get() = "跟看图模型一样"
     val OFF_NOTE: String get() = tr(R.string.models_off_note)
     val VISION_SAME_NOTE: String get() = tr(R.string.models_vision_same_note)
     val LIGHT_SAME_NOTE: String get() = tr(R.string.models_light_same_note)
@@ -830,6 +832,7 @@ object ModelsCopy {
     fun roleName(role: ModelRole) = when (role) {
         ModelRole.Main -> tr(R.string.role_main)
         ModelRole.Vision -> tr(R.string.role_vision)
+        ModelRole.Picture -> "读图模型"
         ModelRole.Light -> tr(R.string.role_light)
         ModelRole.Image -> "生图模型"
         ModelRole.Video -> "生视频模型"
@@ -839,6 +842,7 @@ object ModelsCopy {
     fun roleWhat(role: ModelRole) = when (role) {
         ModelRole.Main -> tr(R.string.role_main_what)
         ModelRole.Vision -> tr(R.string.role_vision_what)
+        ModelRole.Picture -> "打开照片、技能插图时用"
         ModelRole.Light -> tr(R.string.role_light_what)
         ModelRole.Image -> "画图、配图时用"
         ModelRole.Video -> "做视频时用"
@@ -850,6 +854,7 @@ object ModelsCopy {
     fun roleHint(role: ModelRole) = when (role) {
         ModelRole.Main -> tr(R.string.role_main_hint)
         ModelRole.Vision -> tr(R.string.role_vision_hint)
+        ModelRole.Picture -> "读照片、技能里的图片时用这个模型;选「跟看图模型一样」就不单独区分。读屏始终用看图模型。"
         ModelRole.Light -> tr(R.string.role_light_hint)
         ModelRole.Image -> "让 ACS 画图时用这个模型;选「不用」就不画图。"
         ModelRole.Video -> "让 ACS 做视频时用这个模型;选「不用」就不做视频。"
@@ -868,6 +873,7 @@ object ModelsCopy {
     fun roleIcon(role: ModelRole): ImageVector = when (role) {
         ModelRole.Main -> MikaIcons.Spark
         ModelRole.Vision -> MikaIcons.Eye
+        ModelRole.Picture -> MikaIcons.Photo
         ModelRole.Light -> MikaIcons.Leaf
         ModelRole.Image -> MikaIcons.Spark
         ModelRole.Video -> MikaIcons.Spark
@@ -880,16 +886,22 @@ object ModelsCopy {
         return when (val choice = ui.roles[role]) {
             null -> RoleLine(UNSET, if (ui.providers.isEmpty()) MAIN_ADD_FIRST else MAIN_PICK, unset = true)
             RoleChoice.SameAsMain -> RoleLine(SAME_AS_MAIN, main?.model ?: MAIN_NOT_PICKED)
-            RoleChoice.Off -> RoleLine(OFF, if (role == ModelRole.Image) "不画图" else if (role == ModelRole.Video) "不做视频" else OFF_NOTE)
+            RoleChoice.SameAsVision -> RoleLine(SAME_AS_VISION, ui.configFor(ModelRole.Vision)?.model ?: OFF)
+            RoleChoice.Off -> RoleLine(OFF, if (role == ModelRole.Image) "不画图" else if (role == ModelRole.Video) "不做视频" else if (role == ModelRole.Picture) "不读图" else OFF_NOTE)
             is RoleChoice.Model -> ui.configs.firstOrNull { it.id == choice.configId }?.let(::modelLine)
                 ?: RoleLine(UNSET, MAIN_PICK, unset = true)
         }
     }
 
-    fun choiceTitle(choice: RoleChoice) = if (choice == RoleChoice.Off) OFF else SAME_AS_MAIN
+    fun choiceTitle(choice: RoleChoice) = when (choice) {
+        RoleChoice.Off -> OFF
+        RoleChoice.SameAsVision -> SAME_AS_VISION
+        else -> SAME_AS_MAIN
+    }
 
     fun choiceNote(role: ModelRole, choice: RoleChoice) = when {
         choice == RoleChoice.Off -> OFF_NOTE
+        choice == RoleChoice.SameAsVision -> "读图片和看图模型用同一个模型"
         role == ModelRole.Vision -> VISION_SAME_NOTE
         else -> LIGHT_SAME_NOTE
     }

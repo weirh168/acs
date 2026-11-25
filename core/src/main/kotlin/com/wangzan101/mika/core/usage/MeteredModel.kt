@@ -12,12 +12,13 @@ import kotlinx.coroutines.withContext
 
 /** 一次调用是为哪个用途发的。存储里记 [key];认不出的 key(以后的版本写的)读成 [Other]。 */
 enum class UsagePurpose(val key: String) {
-    Main("main"), Vision("vision"), Light("light"), Image("image"), Video("video"), Other("other"), Proactive("proactive");
+    Main("main"), Vision("vision"), Picture("picture"), Light("light"), Image("image"), Video("video"), Other("other"), Proactive("proactive");
 
     companion object {
         fun of(role: ModelRole): UsagePurpose = when (role) {
             ModelRole.Main -> Main
             ModelRole.Vision -> Vision
+            ModelRole.Picture -> Picture
             ModelRole.Light -> Light
             ModelRole.Image -> Image
             ModelRole.Video -> Video
