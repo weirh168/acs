@@ -19,15 +19,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import com.wangzan101.mika.cap.phone.PhoneServices
+import com.wangzan101.mika.core.shell.BuiltinShellStatus
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /** Keeps an explicitly enabled phone standby visible. Telecom still owns the actual call. */
+private const val HEAL_INTERVAL_MS = 60_000L
+
 class CallStandbyService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var runtime: CallRuntime? = null
     private var statusJob: Job? = null
+    private var healJob: Job? = null
     private var promoted = false
     internal var stickyAutoAnswer = false
         private set
@@ -77,6 +83,7 @@ class CallStandbyService : Service() {
 
         stickyAutoAnswer = incoming
         calls.onStandbyStarted(this)
+        startHelperSelfHeal()
         if (statusJob == null) statusJob = scope.launch {
             calls.state.map { state ->
                 val lockedDial = calls.hasLockedDialForegroundWork()
@@ -105,7 +112,27 @@ class CallStandbyService : Service() {
         return if (incoming) START_STICKY else START_NOT_STICKY
     }
 
+    /**
+     * 助手自愈:待命服务活着的时候,每分钟看一眼内置助手还在不在。
+     * 只要这台手机已经用「无线调试」配过对,就算开机恢复没赶上(开机广播被系统压掉、
+     * Wi-Fi 还没连上),这里也会自己把助手拉起来,不用用户插线、也不用点按钮。
+     */
+    private fun startHelperSelfHeal() {
+        if (healJob != null) return
+        val phone = runCatching { PhoneServices.of(applicationContext) }.getOrNull() ?: return
+        healJob = scope.launch {
+            while (true) {
+                delay(HEAL_INTERVAL_MS)
+                val control = runCatching { phone.shellControl }.getOrNull() ?: continue
+                if (control.status.value == BuiltinShellStatus.Running) continue
+                if (!control.paired) continue
+                runCatching { control.retry() }
+            }
+        }
+    }
+
     override fun onDestroy() {
+        healJob?.cancel()
         scope.cancel()
         runtime?.onStandbyStopped(this)
         runtime = null
