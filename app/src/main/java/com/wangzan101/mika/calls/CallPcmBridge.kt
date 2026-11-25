@@ -115,16 +115,17 @@ internal class CallPcmBridge(
                         // 只在两种时候挡:AI 正在说(收到了 audio.started 还没收到 done),或刚播完的尾巴里。
                         // 不用「播放队列空不空」当门:队列在长回复里几乎一直非空,会把对方的话一起挡掉。
                         val echoTail = System.nanoTime() - lastPlaybackNanos.get() < ECHO_TAIL_NS
-                        // 时间上:AI 正在说、或刚说完的尾巴;波形上:这一帧几乎就是我们刚播出去的声音。
-                        val looksLikeOwnVoice = !holdInput.get() && echoGuard.isEcho(frame)
-                        val speakerActive = holdInput.get() || echoTail || looksLikeOwnVoice
-                        if (!speakerActive) {
-                            // 只有真的在播、或刚播完(回声尾巴)时才不发;其他时候一律送上去
+                        // 三个理由挡这一帧:①AI 正在说(audio.started 到 done)②刚播完的 350ms 尾巴
+                        // ③波形上几乎就是我们刚播出去的声音。
+                        // 注意:挡的时候不能再调 holdCallerInput(),否则 holdInput 自己把自己锁住,
+                        // 整通电话都放不开(1.23 就是这个死锁:1274 帧里只上去 7 帧)。
+                        val looksLikeOwnVoice = echoGuard.isEcho(frame)
+                        val drop = holdInput.get() || echoTail || looksLikeOwnVoice
+                        if (!drop) {
                             releaseCallerInput()
                             if (!session.sendPcm16(frame)) throw CallMediaFailure("火山音频输入已中断")
                             counters?.inputAccepted(frame, System.nanoTime())
                         } else {
-                            holdCallerInput()
                             if (looksLikeOwnVoice) counters?.inputSkippedEcho() else counters?.inputSkippedWhileHeld()
                         }
                         position = 0
@@ -236,7 +237,7 @@ internal suspend fun commitDrainedFarewell(commit: () -> Boolean): Boolean {
 private const val ECHO_TAIL_NS = 350_000_000L
 
 /** AI 说话期间最多把上行掐这么久;超过就是它没发"说完了",当没在说话处理。 */
-private const val HOLD_CALLER_INPUT_MAX_MS = 45_000L
+private const val HOLD_CALLER_INPUT_MAX_MS = 6_000L
 private const val HOLD_CALLER_INPUT_MAX_NS = HOLD_CALLER_INPUT_MAX_MS * 1_000_000L
 
 /** Bounded by time at 24 kHz PCM16 mono, independent of cloud packet boundaries. */
