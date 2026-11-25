@@ -109,8 +109,10 @@ internal class CallPcmBridge(
                         if (holdInput.get() && System.nanoTime() - holdSince.get() > HOLD_CALLER_INPUT_MAX_NS) {
                             releaseCallerInput()
                         }
+                        // 只在两种时候挡:AI 正在说(收到了 audio.started 还没收到 done),或刚播完的尾巴里。
+                        // 不用「播放队列空不空」当门:队列在长回复里几乎一直非空,会把对方的话一起挡掉。
                         val echoTail = System.nanoTime() - lastPlaybackNanos.get() < ECHO_TAIL_NS
-                        val speakerActive = holdInput.get() || !playbackQueue.drained() || echoTail
+                        val speakerActive = holdInput.get() || echoTail
                         if (!speakerActive) {
                             // 只有真的在播、或刚播完(回声尾巴)时才不发;其他时候一律送上去
                             releaseCallerInput()

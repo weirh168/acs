@@ -85,6 +85,7 @@ data class CallAudioReport(
     val txDeviceType: Long? = null,
     /** 采到的下行峰值:0 说明整个过程一点对方的声音都没进来。 */
     val downPeakMax: Long? = null,
+    val acceptedFrames: Long? = null,
 ) {
     @Serializable
     enum class Turn { NONE, SPEECH_DETECTED, TRANSCRIPT_RECEIVED, REPLY_AUDIO_RECEIVED }
@@ -101,7 +102,7 @@ data class CallAudioReport(
         "frames_skipped_held=${framesSkippedWhileHeld ?: "unknown"} " +
         "hold_max_ms=${holdMaxMs ?: "unknown"} " +
         "backend=${audioBackend ?: "unknown"} rx_dev=${rxDeviceType ?: "unknown"} tx_dev=${txDeviceType ?: "unknown"} " +
-        "down_peak=${downPeakMax ?: "unknown"}"
+        "down_peak=${downPeakMax ?: "unknown"} accepted=${acceptedFrames ?: "unknown"}"
 }
 
 internal class CallHistory(private val storage: Storage) {

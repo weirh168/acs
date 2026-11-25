@@ -198,6 +198,7 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
             rxDeviceType = rxDeviceType.takeIf { it > 0 }?.toLong(),
             txDeviceType = txDeviceType.takeIf { it > 0 }?.toLong(),
             downPeakMax = downPeakMax.toLong(),
+            acceptedFrames = inputFramesAccepted,
         )
     }
 
