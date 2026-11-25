@@ -42,9 +42,14 @@ internal class CallTelecomAccess(private val context: Context) {
             ?: return "无法读回系统默认拨号器"
         val restoreOp = journal.getString(PREVIOUS_OP, null)
         if (original != "allow") {
-            if (!journal.edit().putString(PREVIOUS_OP, original).commit()) return "无法保存电话权限还原信息"
             val change = command(shell, "cmd appops set --user $user $pkg MANAGE_ONGOING_CALLS allow")
-            if (change != CallTelecomCommandOutcome.OK || readOp(shell) != "allow" || !managePermission()) {
+            val changed = change == CallTelecomCommandOutcome.OK && readOp(shell) == "allow"
+            if (changed) {
+                if (!journal.edit().putString(PREVIOUS_OP, original).commit()) return "无法保存电话权限还原信息"
+            } else if (change == CallTelecomCommandOutcome.SHELL_APP_OPS_DENIED && managePermission()) {
+                // 有的系统(realme/部分 ColorOS)不让 shell 改 appop,但 Telecom 经角色已经允许 ACS
+                // 管理通话。这种情况照样启用电话伴侣:没有写过 appop,回滚时也就不去还原它。
+            } else {
                 rollback(shell)
                 return change.appOpsFailureMessage
             }
