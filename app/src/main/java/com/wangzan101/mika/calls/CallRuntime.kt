@@ -580,7 +580,9 @@ class CallRuntime(private val app: MikaApp) {
         if (armed || rearmAttempted) return
         val helper = shell ?: return
         val config = settings.state.value
-        if (!config.enabled || !config.autoAnswer) return
+        // 只要求「AI 电话」开着:自动接听关着时也要把电话伴侣配好,否则页面永远显示「尚未就绪」,
+        // 用户还得自己去点「检查并准备」。
+        if (!config.enabled) return
         rearmAttempted = true
         accessLock.withLock {
             if (armed) return@withLock
@@ -594,7 +596,7 @@ class CallRuntime(private val app: MikaApp) {
                 scope.launch {
                     delay(REARM_RETRY_MS)
                     rearmAttempted = false
-                    if (settings.state.value.enabled && settings.state.value.autoAnswer) {
+                    if (settings.state.value.enabled) {
                         rearmIfNeeded()
                         maybeStartAutoAnswer()
                     }
