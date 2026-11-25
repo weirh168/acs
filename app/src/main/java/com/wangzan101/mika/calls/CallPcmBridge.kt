@@ -120,7 +120,10 @@ internal class CallPcmBridge(
                         // 注意:挡的时候不能再调 holdCallerInput(),否则 holdInput 自己把自己锁住,
                         // 整通电话都放不开(1.23 就是这个死锁:1274 帧里只上去 7 帧)。
                         val looksLikeOwnVoice = echoGuard.isEcho(frame)
-                        val drop = holdInput.get() || echoTail || looksLikeOwnVoice
+                        // 只要还有待播/在播的音频就挡(voice call 采集里全是我们自己的声音),
+                        // 加上播完的尾巴和波形判断。这里不再动 holdInput,所以不会像 1.20 那样把自己锁死。
+                        val playing = !playbackQueue.drained()
+                        val drop = holdInput.get() || playing || echoTail || looksLikeOwnVoice
                         if (!drop) {
                             releaseCallerInput()
                             if (!session.sendPcm16(frame)) throw CallMediaFailure("火山音频输入已中断")
