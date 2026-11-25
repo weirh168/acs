@@ -1732,7 +1732,7 @@ class CallRuntime(private val app: MikaApp) {
         val deviceReady = enabled && armed && shell != null && audioReady
         val manualReady = deviceReady && serviceReady && prerequisite(ignoreWork = true, notificationReady = notificationReady) == null
         val dialReady = manualReady && sims.isNotEmpty()
-        val autoAnswerReady = manualReady && config.audioVerified && CallStandbyService.notificationsAvailable(app) &&
+        val autoAnswerReady = manualReady && CallStandbyService.notificationsAvailable(app) &&
             CallPolicy.answersSomeCallers(config)
         mutable.value = CallRuntimeState(
             prepared = enabled && armed && !configuring,

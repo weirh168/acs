@@ -254,7 +254,9 @@ internal object CallPolicy {
         /** 这通电话走的是哪张 SIM(平台标识);不知道就传 null。 */
         simKey: String? = null,
     ): Boolean {
-        if (!config.enabled || !config.autoAnswer || !config.credentialsConfigured || !config.audioVerified) return false
+        // 「已实测」只作为提示,不再当作开关的前置条件:验证标记会随通道/升级丢失,
+        // 那时自动接听会静默变成「已关闭」,用户只会以为功能坏了。
+        if (!config.enabled || !config.autoAnswer || !config.credentialsConfigured) return false
         if (autoAnswerPauseRemainingMs(config, nowMs) > 0L || isBypassed(config, number)) return false
         val f = facts ?: CallerFacts(inContacts = inContacts, hidden = number == null)
         val key = number?.let(::incomingMatchKey)

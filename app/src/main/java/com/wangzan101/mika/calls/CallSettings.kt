@@ -119,7 +119,7 @@ class CallSettings(
     @Synchronized
     internal fun authorizeBackgroundStandby(): Boolean {
         val config = mutable.value
-        if (!config.enabled || !config.autoAnswer || !config.audioVerified || !config.credentialsConfigured) return false
+        if (!config.enabled || !config.autoAnswer || !config.credentialsConfigured) return false
         if (config.backgroundStandbyAuthorized) return true
         if (!prefs.edit().putBoolean(BACKGROUND_AUTHORIZED, true).commit()) return false
         mutable.value = config.copy(backgroundStandbyAuthorized = true)
@@ -180,7 +180,7 @@ class CallSettings(
         val verified = prefs.getString("audio_verified_build", null)?.let { it == Build.FINGERPRINT } == true
         CallConfig(
             enabled = enabled,
-            autoAnswer = enabled && verified && prefs.getBoolean("auto_answer", false),
+            autoAnswer = enabled && prefs.getBoolean("auto_answer", false),
             backgroundStandbyAuthorized = enabled && verified && prefs.getBoolean("auto_answer", false) &&
                 prefs.getBoolean(BACKGROUND_AUTHORIZED, false),
             autoAnswerDelaySeconds = prefs.getInt("auto_answer_delay_seconds", defaults.autoAnswerDelaySeconds)
