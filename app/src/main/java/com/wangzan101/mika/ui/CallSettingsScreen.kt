@@ -564,6 +564,7 @@ private fun CallReceivePage(
             reason = state.autoAnswerBlockedReason ?: stringResource(R.string.calls_needs_setup),
             onReprepare = onReprepare,
             enabled = controlsEnabled,
+            shellConnected = state.shellConnected,
         )
     }
     Spacer(Modifier.size(12.dp))
@@ -973,21 +974,52 @@ private fun CallReadinessActions(
     }
 }
 
-/** 权限被系统收回后的提示条:说清「现在接不了」,并给一键重新准备。 */
+/**
+ * 自动接听起不来的提示条。
+ *
+ * 内置助手没连上时「重新准备」根本点不动(准备本身要助手),所以那种情况改成把启动命令摆出来并允许复制:
+ * 插线上电脑跑一次,助手一连上 App 会自己补配置、自己开待命,不用再点任何按钮。
+ */
 @Composable
-private fun ReArmBanner(reason: String, onReprepare: () -> Unit, enabled: Boolean) {
+private fun ReArmBanner(reason: String, onReprepare: () -> Unit, enabled: Boolean, shellConnected: Boolean) {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val usbCommand = remember(shellConnected) {
+        runCatching { (ctx.applicationContext as com.wangzan101.mika.MikaApp).phone.shellManager.usbScript.command() }.getOrNull()
+    }
     Column(
         Modifier.fillMaxWidth().background(MikaTheme.colors.warnSoft, RoundedCornerShape(12.dp))
             .padding(14.dp).testTag("call-rearm-banner"),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text("自动接听暂时用不了", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MikaTheme.colors.warn)
-        Text(
-            "$reason。系统可能在重装或升级时收回了电话权限，重新准备一次就好。",
-            fontSize = 13.sp, color = MikaTheme.colors.ink2,
-        )
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            MikaButton("重新准备", { onReprepare() }, enabled = enabled, size = ButtonSize.Small, modifier = Modifier.align(Alignment.CenterVertically))
+        if (!shellConnected && usbCommand != null) {
+            Text(
+                "内置助手没在跑,电话这一路就没法工作。把手机的 USB 数据线插到电脑上,在电脑里双击 acs-helper.cmd," +
+                    "或者跑下面这条命令;助手一连上会自动补好配置、自动开始待命,这里不用再点按钮。",
+                fontSize = 13.sp, color = MikaTheme.colors.ink2,
+            )
+            Text(
+                usbCommand,
+                Modifier.fillMaxWidth().padding(top = 2.dp).testTag("call-usb-command"),
+                fontSize = 11.sp, color = MikaTheme.colors.ink3,
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                MikaButton("复制命令", {
+                    runCatching {
+                        ctx.getSystemService(android.content.ClipboardManager::class.java)
+                            ?.setPrimaryClip(android.content.ClipData.newPlainText("ACS helper", usbCommand))
+                    }
+                }, enabled = enabled, size = ButtonSize.Small)
+            }
+        } else {
+            Text(
+                "$reason。系统可能在重装或升级时收回了电话权限，重新准备一次就好。",
+                fontSize = 13.sp, color = MikaTheme.colors.ink2,
+            )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                MikaButton("重新准备", { onReprepare() }, enabled = enabled, size = ButtonSize.Small, modifier = Modifier.align(Alignment.CenterVertically))
+            }
         }
     }
 }

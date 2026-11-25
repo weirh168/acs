@@ -159,6 +159,7 @@ class CallRuntime(private val app: MikaApp) {
                 shell = current
                 audioReady = false
                 audioDetail = null
+                if (current != null) rearmAttempted = false
                 publish()
                 if (settings.state.value.enabled && current != null) probeAudio()
                 rearmIfNeeded()
@@ -553,7 +554,8 @@ class CallRuntime(private val app: MikaApp) {
         val config = settings.state.value
         val id = config.activeVoiceProfileId
         withContext(Dispatchers.IO) { voiceProfiles.markAudioVerified(id, config.audioMode, verified) }
-        settings.save(config.copy(audioVerified = verified, autoAnswer = verified && config.autoAnswer))
+        // 取消实测只清掉「已实测」这个标记,自动接听开关留给用户:关掉的话升级后用户会以为功能坏了
+        settings.save(config.copy(audioVerified = verified))
         publish()
         ok(if (verified) "已记录本机双向音频验证" else "已取消双向音频验证，自动接听已关闭")
     }
@@ -587,6 +589,16 @@ class CallRuntime(private val app: MikaApp) {
                 armed = true
                 detail = "已自动恢复电话伴侣配置"
                 publish()
+            } else {
+                // 这轮没补上(通话中、Telecom 还没准备好):过一会儿再试一次
+                scope.launch {
+                    delay(REARM_RETRY_MS)
+                    rearmAttempted = false
+                    if (settings.state.value.enabled && settings.state.value.autoAnswer) {
+                        rearmIfNeeded()
+                        maybeStartAutoAnswer()
+                    }
+                }
             }
         }
     }
@@ -1985,13 +1997,5 @@ internal class CallStopReason {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
+/** 自动补配置没成功时,隔多久再试(助手刚连上、Telecom 还没备好的情况)。 */
+private const val REARM_RETRY_MS = 20_000L

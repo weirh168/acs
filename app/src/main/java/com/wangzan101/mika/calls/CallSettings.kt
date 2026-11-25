@@ -59,7 +59,8 @@ class CallSettings(
             blockedPrefixes = blockPrefixes,
             autoAnswerPausedUntilMs = config.autoAnswerPausedUntilMs?.takeIf { it > System.currentTimeMillis() },
             audioVerified = audioVerified,
-            autoAnswer = config.enabled && audioVerified && config.autoAnswer,
+            // 用户开着就保持开着:音频没实测、助手没连上时由拦截原因说明,不能悄悄改用户的意图
+            autoAnswer = config.enabled && config.autoAnswer,
             backgroundStandbyAuthorized = previous.backgroundStandbyAuthorized && config.enabled && audioVerified && config.autoAnswer,
             autoAnswerDelaySeconds = config.autoAnswerDelaySeconds.coerceIn(
                 CallConfig.MIN_AUTO_ANSWER_DELAY_SECONDS, CallConfig.MAX_AUTO_ANSWER_DELAY_SECONDS,
