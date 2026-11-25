@@ -61,10 +61,10 @@ internal class CallPcmBridge(
         val holdSince = java.util.concurrent.atomic.AtomicLong(0L)
         // 对方的声音在 AI 说话时先不送上去:既免回声,也免一句插话就把播报掐掉。说完立刻恢复。
         fun holdCallerInput() {
-            holdInput.set(true)
+            if (holdInput.getAndSet(true)) return
             holdSince.set(System.nanoTime())
-            // 本地不再上行,同时也让云端静音:双保险,避免回声把这一轮播报打断。
-            runCatching { session.setMuted(true) }
+            // 不再往云端发 mute:上行本来就是本地丢帧,云端静音消息在 1.25 里每帧都发一次,
+            // 火山会话被这种高频控制消息打断,表现就是「接通后没声音」。
         }
         // 释放必须幂等:任何一条结束路径(AI 说完、被取消、写线程退出、超时兜底)都会调它。
         fun releaseCallerInput() {
@@ -73,7 +73,6 @@ internal class CallPcmBridge(
                 if (held > 0) counters?.holdEnded(held)
                 holdSince.set(0L)
             }
-            runCatching { session.setMuted(false) }
         }
         val output = launch(Dispatchers.IO) {
             val pcm = ByteArray(CallPlaybackQueue.WRITE_BYTES)

@@ -46,6 +46,7 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
     private var framesSkippedWhileHeld = 0L
     private var holdMaxNanos = 0L
     private var framesSkippedEcho = 0L
+    private var stopNoteText: String? = null
     private var audioBackend = -1
     private var rxDeviceType = -1
     private var txDeviceType = -1
@@ -88,6 +89,9 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
 
     /** 因为 AI 正在说话而被按住、没有上行的帧数。大 = hold 没放开。 */
     @Synchronized fun inputSkippedWhileHeld() { framesSkippedWhileHeld++ }
+
+    /** 这一通为什么被交还系统(音频失败、会话断开等),写进记录诊断里。 */
+    @Synchronized fun noteStop(text: String) { if (stopNoteText == null) stopNoteText = text.take(120) }
 
     /** 助手报来的音频通道事实:DIRECT=1、REDIRECT=2,以及上下行设备类型、下行峰值(0 = 一点声音都没采到)。 */
     @Synchronized fun shellStats(backend: Int, rx: Int, tx: Int, downPeak: Int) {
@@ -204,6 +208,7 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
             txDeviceType = txDeviceType.takeIf { it > 0 }?.toLong(),
             downPeakMax = downPeakMax.toLong(),
             acceptedFrames = inputFramesAccepted,
+            stopNote = stopNoteText,
         )
     }
 

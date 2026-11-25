@@ -1176,9 +1176,11 @@ class CallRuntime(private val app: MikaApp) {
             throw e
         } catch (e: CallProblem) {
             debugMediaException(w, e)
+            w.mediaCounters.noteStop(e.message ?: "AI 电话未就绪")
             w.stopReason.record(e.message ?: "AI 电话未就绪")
         } catch (e: CallMediaFailure) {
             debugMediaException(w, e)
+            w.mediaCounters.noteStop(e.message ?: "通话音频失败")
             if (w.stopReason.value == null) {
                 w.stopReason.record(shellAudioFailure(w) ?: e.message ?: "通话音频已断开")
             }

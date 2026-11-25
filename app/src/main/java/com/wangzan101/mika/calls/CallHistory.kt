@@ -87,6 +87,8 @@ data class CallAudioReport(
     /** 采到的下行峰值:0 说明整个过程一点对方的声音都没进来。 */
     val downPeakMax: Long? = null,
     val acceptedFrames: Long? = null,
+    /** 为什么交还系统,例如「运营商音频输入已断开」。 */
+    val stopNote: String? = null,
 ) {
     @Serializable
     enum class Turn { NONE, SPEECH_DETECTED, TRANSCRIPT_RECEIVED, REPLY_AUDIO_RECEIVED }
@@ -104,7 +106,8 @@ data class CallAudioReport(
         "frames_echo_dropped=${framesSkippedEcho ?: "unknown"} " +
         "hold_max_ms=${holdMaxMs ?: "unknown"} " +
         "backend=${audioBackend ?: "unknown"} rx_dev=${rxDeviceType ?: "unknown"} tx_dev=${txDeviceType ?: "unknown"} " +
-        "down_peak=${downPeakMax ?: "unknown"} accepted=${acceptedFrames ?: "unknown"}"
+        "down_peak=${downPeakMax ?: "unknown"} accepted=${acceptedFrames ?: "unknown"} " +
+        "stop=${stopNote ?: "none"}"
 }
 
 internal class CallHistory(private val storage: Storage) {
