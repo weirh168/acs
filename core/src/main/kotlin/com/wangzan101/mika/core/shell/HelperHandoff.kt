@@ -68,13 +68,6 @@ object HelperHandoff {
     /** 「用电脑启动」的脚本文件名,放在 App 的外部文件目录里(电脑经 USB 调试以 shell 身份读它)。 */
     const val USB_SCRIPT = "usb-start.sh"
 
-    /**
-     * 助手的 APK 副本。直接从 /data/app/.../base.apk 起助手的话,App 一升级那个文件就被换掉,
-     * 正在跑的助手下次加载类就崩(所以每次升级完都得重新插线起一次)。改成先把这个包拷到 shell 可写、
-     * 升级不会动的目录,从副本起;升级后助手继续活着,重启手机才需要重来。
-     */
-    const val HELPER_APK_COPY = "/data/local/tmp/acs-helper.apk"
-
     /** 主用户的外部存储在 shell 里也叫 /sdcard;给用户看的命令用这个短写法。别的用户照实际路径写。 */
     private const val PRIMARY_STORAGE = "/storage/emulated/0/"
 
@@ -104,14 +97,8 @@ object HelperHandoff {
             |  echo "ACS was updated or reinstalled. Open ACS once, then run this command again."
             |  exit 1
             |fi
-            |# 拷一份到 shell 可写、升级不会动的位置,从副本起助手:以后升级 App 这个进程不会崩
-            |helper_apk=${quote(HELPER_APK_COPY)}
-            |if [ ! -f "${'$'}helper_apk" ] || ! cmp -s ${quote(apkPath)} "${'$'}helper_apk"; then
-            |  cp -f ${quote(apkPath)} "${'$'}helper_apk" 2>/dev/null
-            |fi
-            |if [ ! -f "${'$'}helper_apk" ]; then helper_apk=${quote(apkPath)}; fi
             |n=${quote(nonce)}
-            |(echo "${'$'}n" | CLASSPATH="${'$'}helper_apk" nohup setsid app_process /system/bin --nice-name=$name $HELPER_CLASS ${quote(packageName)} $appUid ${quote(certPin)} >/dev/null 2>&1 &)
+            |(echo "${'$'}n" | CLASSPATH=${quote(apkPath)} nohup setsid app_process /system/bin --nice-name=$name $HELPER_CLASS ${quote(packageName)} $appUid ${quote(certPin)} >/dev/null 2>&1 &)
             |sleep 2
             |if pidof $name >/dev/null 2>&1; then
             |  echo "ACS helper starting... Open ACS to confirm phone control is ready."
