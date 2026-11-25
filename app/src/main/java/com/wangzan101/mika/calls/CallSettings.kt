@@ -108,8 +108,9 @@ class CallSettings(
             .putString("speaker", next.speaker)
             .putString("active_voice_profile_id", next.activeVoiceProfileId)
             .commit()
-        // A failed write may not leave auto-answer running with a policy the user tried to change.
-        mutable.value = if (committed) next else previous.copy(enabled = next.enabled && previous.enabled, autoAnswer = false, backgroundStandbyAuthorized = false)
+        // 写失败就整份回退到上一版(设置本来就没生效),不要顺手把「自动接听」清零——
+        // 那样用户刚打开的开关会在一次写盘失败后自己变成「已关闭」,看起来像功能坏了。
+        mutable.value = if (committed) next else previous
         check(committed) { "无法保存电话设置" }
         return next
     }
