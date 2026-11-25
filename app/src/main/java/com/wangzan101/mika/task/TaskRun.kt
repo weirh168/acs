@@ -1072,9 +1072,20 @@ class TaskRun(
                     null
                 }
             } else null
+            // 带图片附件的任务:在系统提示里提醒先读图,否则模型常只回一句「我看看」就不读
+            val imageHint = run {
+                val exts = setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic")
+                val hasImage = goal.lineSequence()
+                    .filter { it.startsWith("附件:") }
+                    .any { line -> line.substringAfterLast('.', "").substringBefore('(').trim().lowercase() in exts }
+                if (hasImage) {
+                    "\n\n用户这次带来了图片附件(消息里的「附件:/workspace/inbox/…jpg」这类行)。" +
+                        "图片不是文字:必须先用 read_file 打开那张图片读到内容,再回答;读不到就说明读不到,不要凭猜测或记忆回答。"
+                } else ""
+            }
             val agent = AgentLoop(
                 model, tools,
-                SystemPrompt.identity(),
+                SystemPrompt.identity() + imageHint,
                 // 助手断开、被挪走只在这一步用的是手机时才查
                 gate = { w ->
                     if (phoneScreen.acquired && dispatcher?.surface != WEB) phone?.screen?.let { awaitUserPick(it, taskGate, w) }
