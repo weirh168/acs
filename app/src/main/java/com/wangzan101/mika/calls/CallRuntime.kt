@@ -1389,6 +1389,10 @@ class CallRuntime(private val app: MikaApp) {
                                 ?: "设备已停止双向音频，电话由系统处理")
                         }
                         val bytes = stats.getLong("downBytes")
+                        w.mediaCounters.shellStats(
+                            stats.getInt("mode", -1), stats.getInt("rxDevice", -1),
+                            stats.getInt("txDevice", -1), stats.getInt("downPeak", 0),
+                        )
                         CallDebugLog.note(app, "media", "stats down=$bytes up=${stats.getLong("upBytes")} ai=${w.aiActive}")
                         if (!w.aiActive) {
                             if (callAudioHasStarted(greeting, bytes, stats.getLong("upBytes"))) {

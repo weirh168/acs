@@ -45,6 +45,10 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
     private var inputFramesRead = 0L
     private var framesSkippedWhileHeld = 0L
     private var holdMaxNanos = 0L
+    private var audioBackend = -1
+    private var rxDeviceType = -1
+    private var txDeviceType = -1
+    private var downPeakMax = 0
 
     /** Called only after sendPcm16 accepts the frame locally; not a server delivery acknowledgement. */
     fun inputAccepted(frame: ByteArray, acceptedAtNanos: Long) {
@@ -83,6 +87,14 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
 
     /** 因为 AI 正在说话而被按住、没有上行的帧数。大 = hold 没放开。 */
     @Synchronized fun inputSkippedWhileHeld() { framesSkippedWhileHeld++ }
+
+    /** 助手报来的音频通道事实:DIRECT=1、REDIRECT=2,以及上下行设备类型、下行峰值(0 = 一点声音都没采到)。 */
+    @Synchronized fun shellStats(backend: Int, rx: Int, tx: Int, downPeak: Int) {
+        if (backend > 0) audioBackend = backend
+        if (rx > 0) rxDeviceType = rx
+        if (tx > 0) txDeviceType = tx
+        if (downPeak > downPeakMax) downPeakMax = downPeak
+    }
 
     /** 一次 hold 持续了多久,只留最大值。 */
     @Synchronized fun holdEnded(nanos: Long) { holdMaxNanos = maxOf(holdMaxNanos, nanos.coerceAtLeast(0L)) }
@@ -182,6 +194,10 @@ internal class CallMediaCounters(private val measureInputSignal: Boolean = true)
             inputFramesRead = inputFramesRead,
             framesSkippedWhileHeld = framesSkippedWhileHeld,
             holdMaxMs = holdMaxNanos / 1_000_000,
+            audioBackend = audioBackend.takeIf { it > 0 }?.toLong(),
+            rxDeviceType = rxDeviceType.takeIf { it > 0 }?.toLong(),
+            txDeviceType = txDeviceType.takeIf { it > 0 }?.toLong(),
+            downPeakMax = downPeakMax.toLong(),
         )
     }
 

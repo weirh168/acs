@@ -674,8 +674,10 @@ internal class ShellCallAudio(private val context: Context) {
         private val PIPE_CLOSED get() = OsConstants.POLLERR or OsConstants.POLLHUP or OsConstants.POLLNVAL
 
         internal fun candidates(mode: Int, direct: Boolean, redirect: Boolean): List<Int> = when (mode) {
-            AUTO -> buildList { if (direct) add(DIRECT); if (redirect) add(REDIRECT) }
-            DIRECT -> if (direct) listOf(DIRECT) else emptyList()
+            // 重定向是 Android 13+ 官方给的通话音频拦截通道,先试它;直连在 Android 14 上常被
+            // 系统掐成静音(下行峰值 0),所以放在后面兜底。
+            AUTO -> buildList { if (redirect) add(REDIRECT); if (direct) add(DIRECT) }
+            DIRECT -> buildList { if (direct) add(DIRECT); if (redirect) add(REDIRECT) }
             REDIRECT -> if (redirect) listOf(REDIRECT) else emptyList()
             else -> emptyList()
         }
