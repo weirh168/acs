@@ -55,6 +55,8 @@ internal class CallPcmBridge(
         }
         // The separate writer leaves model event collection responsive when a pipe is full.
         val holdInput = java.util.concurrent.atomic.AtomicBoolean(false)
+        // 最后一次真的往通话里写音频的时刻:VOICE_CALL 采的是混音轨,自己刚说完的回声尾巴不能当成对方说话。
+        val lastPlaybackNanos = java.util.concurrent.atomic.AtomicLong(0L)
         val holdSince = java.util.concurrent.atomic.AtomicLong(0L)
         // 对方的声音在 AI 说话时先不送上去:既免回声,也免一句插话就把播报掐掉。说完立刻恢复。
         fun holdCallerInput() {
@@ -84,7 +86,7 @@ internal class CallPcmBridge(
                         }
                     }
                 } finally {
-                    releaseCallerInput()
+                    lastPlaybackNanos.set(System.nanoTime())
                     playbackQueue.release(block)
                 }
             }
@@ -107,10 +109,15 @@ internal class CallPcmBridge(
                         if (holdInput.get() && System.nanoTime() - holdSince.get() > HOLD_CALLER_INPUT_MAX_NS) {
                             releaseCallerInput()
                         }
-                        if (!holdInput.get()) {
+                        val echoTail = System.nanoTime() - lastPlaybackNanos.get() < ECHO_TAIL_NS
+                        val speakerActive = holdInput.get() || !playbackQueue.drained() || echoTail
+                        if (!speakerActive) {
+                            // 只有真的在播、或刚播完(回声尾巴)时才不发;其他时候一律送上去
+                            releaseCallerInput()
                             if (!session.sendPcm16(frame)) throw CallMediaFailure("火山音频输入已中断")
                             counters?.inputAccepted(frame, System.nanoTime())
                         } else {
+                            holdCallerInput()
                             counters?.inputSkippedWhileHeld()
                         }
                         position = 0
@@ -218,6 +225,9 @@ internal suspend fun commitDrainedFarewell(commit: () -> Boolean): Boolean {
     return commit()
 }
 
+/** 播完之后这段内的采集当回声丢掉(混音轨会把 AI 自己的声音也采回来)。 */
+private const val ECHO_TAIL_NS = 350_000_000L
+
 /** AI 说话期间最多把上行掐这么久;超过就是它没发"说完了",当没在说话处理。 */
 private const val HOLD_CALLER_INPUT_MAX_MS = 45_000L
 private const val HOLD_CALLER_INPUT_MAX_NS = HOLD_CALLER_INPUT_MAX_MS * 1_000_000L
@@ -271,6 +281,9 @@ internal class CallPlaybackQueue(capacityBytes: Int = MAX_PENDING_BYTES) {
             if (signal.receiveCatching().isClosed) return null
         }
     }
+
+    /** 没有待播、也没有正在写的块:声音已经放完。 */
+    fun drained(): Boolean = synchronized(lock) { pending == 0 && writing == 0 }
 
     fun isCurrent(block: Block): Boolean = generation == block.generation
 
