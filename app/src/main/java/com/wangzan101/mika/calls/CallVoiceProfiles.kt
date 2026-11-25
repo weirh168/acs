@@ -158,8 +158,13 @@ class CallVoiceProfileStore internal constructor(
     }
 
     @Synchronized
-    fun isAudioVerified(id: String, mode: CallAudioMode, fingerprint: String = Build.FINGERPRINT ?: "unknown"): Boolean =
-        get(id)?.audioVerifications?.contains(verificationKey(mode, fingerprint)) == true
+    fun isAudioVerified(id: String, mode: CallAudioMode, fingerprint: String = Build.FINGERPRINT ?: "unknown"): Boolean {
+        val verifications = get(id)?.audioVerifications ?: return false
+        if (verifications.contains(verificationKey(mode, fingerprint))) return true
+        // 「这台手机通话双方都能听到」验证的是机器,不是某条音频通道。已经在本机实测过之后,
+        // 换通道(DIRECT/REDIRECT)不该把结论清掉——否则自动接听会莫名其妙变成「已关闭」。
+        return verifications.any { it.endsWith(":$fingerprint") }
+    }
 
     @Synchronized
     fun credentials(id: String): VolcRealtimeCredentials? {
