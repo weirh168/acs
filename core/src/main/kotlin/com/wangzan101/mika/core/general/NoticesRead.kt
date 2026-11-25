@@ -64,7 +64,7 @@ internal object NoticesRead : AgentTool {
         mapOf(
             "day" to str("summary and messages views only. Which day: today (default) or yesterday.", listOf("today", "yesterday")),
             "view" to str("summary (default): counts per app and the notes already written about that day. messages: the notification text itself, oldest first. " +
-                "days, weeks, months: the daily, weekly or monthly digests Mika has stored, newest first.", listOf("summary", "messages", "days", "weeks", "months")),
+                "days, weeks, months: the daily, weekly or monthly digests ACS has stored, newest first.", listOf("summary", "messages", "days", "weeks", "months")),
             "app" to str("Only this app: its name or package as listed by a summary call. Leave out for all apps."),
             "query" to str("Not for summary. Keep only items whose chat name, sender or text contains this exact piece of text (one name or phrase, not a list of keywords)."),
             "offset" to int("Item to start from, taken from nextOffset of the previous call with the same day and view (default 0).", 0),

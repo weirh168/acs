@@ -93,7 +93,7 @@ class A11yOnDisplayTest {
 
     private fun service(): ScreenAccessibility = runBlocking {
         withTimeoutOrNull(10_000) { ScreenAccessibility.instance.filterNotNull().first() }
-    } ?: error("Mika accessibility service is not enabled")
+    } ?: error("ACS accessibility service is not enabled")
 
     private fun settingsOnNewDisplay(): AgentDisplay {
         val d = AgentDisplay(shell, 720, 1600, 320, InstrumentationRegistry.getInstrumentation().targetContext.getSystemService(android.hardware.display.DisplayManager::class.java)).also { display = it }

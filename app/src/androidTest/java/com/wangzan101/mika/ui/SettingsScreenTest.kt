@@ -84,7 +84,7 @@ class SettingsScreenTest {
     fun homeRowsOpenTheirPages() {
         val opened = mutableListOf<String>()
         home(opened = opened)
-        for (t in listOf("模型", "手机操作", "微信", "任务运行", "悬浮胶囊", "语言与外观", "通知", "记忆与数据", "应用访问", "高级与其他", "关于 Mika")) {
+        for (t in listOf("模型", "手机操作", "微信", "任务运行", "悬浮胶囊", "语言与外观", "通知", "记忆与数据", "应用访问", "高级与其他", "关于 ACS")) {
             scrollTo(t)
             compose.onNodeWithText(t).performClick()
         }
@@ -111,8 +111,8 @@ class SettingsScreenTest {
             compose.onNodeWithText(t).performClick()
         }
         compose.onNodeWithText("开发者选项").performScrollTo().performClick()
-        scrollTo("完全退出 Mika")
-        compose.onNodeWithText("完全退出 Mika").performClick()
+        scrollTo("完全退出 ACS")
+        compose.onNodeWithText("完全退出 ACS").performClick()
         assertEquals(listOf("proxy", "sandbox", "computer", "mcp", "recovery", "dev", "quit"), opened)
     }
 

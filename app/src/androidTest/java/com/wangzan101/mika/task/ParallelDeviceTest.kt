@@ -122,7 +122,7 @@ class ParallelDeviceTest {
         assertNotNull(pollUntil(20_000) { ended(first) })
         assertNotNull(pollUntil(20_000) { ended(second) })
         assertNotNull(pollUntil(15_000) { DeviceTaskState.busy.value.takeIf { !it } })
-        assertFalse("Mika display left behind", "mika-agent" in sh("dumpsys display"))
+        assertFalse("ACS display left behind", "mika-agent" in sh("dumpsys display"))
     }
 
     /** 两个任务都要开设置:后开的那个拿到 app_in_use_by_other_task,不把设置从第一个任务手里抢走。 */
@@ -168,7 +168,7 @@ class ParallelDeviceTest {
                     if (pkg == FLAGS_KEY) continue
                     assertEquals(pkg, saved.getString(pkg), pollUntil(60_000) { shell.getAudioMode(pkg)?.takeIf { it == saved.getString(pkg) } })
                 }
-                assertFalse("Mika display left behind", "mika-agent" in sh("dumpsys display"))
+                assertFalse("ACS display left behind", "mika-agent" in sh("dumpsys display"))
             } finally {
                 // 收尾里也会还原;这里先还原,断言失败时开关也不留着开
                 FeatureFlags.get(context).setSpeed(priorFlags)
@@ -192,7 +192,7 @@ class ParallelDeviceTest {
         // 看到记录文件出现后在开发机上跑 adb shell am force-stop <包名>。等不到就清掉记录、按失败收尾
         Thread.sleep(KILL_WAIT_MS)
         record.delete()
-        error("Mika was not killed: run `adb shell am force-stop ${context.packageName}` after ${record.name} appears, then rerun this test")
+        error("ACS was not killed: run `adb shell am force-stop ${context.packageName}` after ${record.name} appears, then rerun this test")
     }
 
     private companion object {

@@ -36,7 +36,7 @@ class AttachedPageTest {
 
     @Test fun noTitleNoSelectionNoWords() {
         val text = AttachedPage.compose(AttachedPage.Page("https://a.example/", "  "), "")
-        assertEquals("[Web page I'm viewing in Mika's browser. It is attached to this task as your current web tab.]\nURL: https://a.example/\n[End of page]", text)
+        assertEquals("[Web page I'm viewing in ACS's browser. It is attached to this task as your current web tab.]\nURL: https://a.example/\n[End of page]", text)
         val p = AttachedPage.parse(text)
         assertEquals(AttachedPage.Page("https://a.example/", "", null), p.page)
         assertEquals("", p.words)

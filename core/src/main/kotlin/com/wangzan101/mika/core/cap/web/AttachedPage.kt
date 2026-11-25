@@ -18,7 +18,7 @@ package com.wangzan101.mika.core.cap.web
  * 选中的字每行以「| 」开头,和说明的其余几行分得开;页面标题、选中的字都会截短。
  */
 object AttachedPage {
-    const val HEADER = "[Web page I'm viewing in Mika's browser. It is attached to this task as your current web tab.]"
+    const val HEADER = "[Web page I'm viewing in ACS's browser. It is attached to this task as your current web tab.]"
     const val END = "[End of page]"
     private const val TITLE = "Title: "
     private const val URL = "URL: "

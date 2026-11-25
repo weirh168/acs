@@ -1,12 +1,12 @@
 # 在 USB 连接的手机上读取完整运行日志
 
 `./gradlew :app:assembleLogs` 生成本地检查包 `app-logs.apk`，显示名称为
-**Mika Logs**，包名为 `com.wangzan101.mika.logs`。它使用本机调试签名，
-与官方 Mika 并排安装，不覆盖原应用的对话、密钥和设置。
+**ACS Logs**，包名为 `com.wangzan101.mika.logs`。它使用本机调试签名，
+与官方 ACS 并排安装，不覆盖原应用的对话、密钥和设置。
 
 该构建开启 Android `debuggable`，所以已获 USB 调试授权的电脑可以通过
 `adb run-as` 读取此应用的私有目录；它不改变其他应用的访问权限。
-详细 Trace 默认开启，也可在 Mika 的设置中关闭。运行结束后，现有的调试包
+详细 Trace 默认开启，也可在 ACS 的设置中关闭。运行结束后，现有的调试包
 逻辑还会把 `run.json`、`events.jsonl` 和截图镜像到外部文件目录 `runs/`。
 
 安装并配置模型、手机助手后，执行一次任务，再拉取记录：

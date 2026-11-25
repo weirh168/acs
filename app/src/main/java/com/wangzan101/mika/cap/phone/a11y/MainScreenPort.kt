@@ -43,7 +43,7 @@ internal class MainScreenPort(
             runCatching {
                 android.os.Handler(android.os.Looper.getMainLooper()).post {
                     android.widget.Toast.makeText(
-                        a11y, "Mika 正在读取你的主屏（降级模式：内置助手未连接）", android.widget.Toast.LENGTH_LONG,
+                        a11y, "ACS 正在读取你的主屏（降级模式：内置助手未连接）", android.widget.Toast.LENGTH_LONG,
                     ).show()
                 }
             }
@@ -354,7 +354,7 @@ internal class MainScreenPort(
         const val SYSTEM_UNSUPPORTED = "system_action_unsupported"
 
         const val HINT =
-            "This action is not available in the fallback mode: the built-in helper is not connected, so Mika works on " +
+            "This action is not available in the fallback mode: the built-in helper is not connected, so ACS works on " +
                 "your main screen with accessibility only. Reconnect the helper from Settings › Phone for the full set."
         const val HINT_TAP = "That element has no tappable area in fallback mode. Read the screen again, or use coordinates."
         const val HINT_TYPE = "No text field has focus. Tap the field first, then type."

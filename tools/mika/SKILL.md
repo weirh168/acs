@@ -1,11 +1,11 @@
 ---
 name: mika
-description: Delegate tasks to Mika on a connected Android phone, follow progress, add instructions to running tasks, answer task questions, and retrieve results through the bundled CLI. Requires an Android phone running Mika, reachable by USB ADB or Wi-Fi. Use when the user wants Mika to operate phone apps, browse, or work with phone files.
+description: Delegate tasks to ACS on a connected Android phone, follow progress, add instructions to running tasks, answer task questions, and retrieve results through the bundled CLI. Requires an Android phone running ACS, reachable by USB ADB or Wi-Fi. Use when the user wants ACS to operate phone apps, browse, or work with phone files.
 ---
 
-# Mika on your phone
+# ACS on your phone
 
-Mika runs its own agent on Android. Give it the user's complete goal, target and constraints; it chooses the phone actions. The bundled CLI talks directly to Mika's task API. No MCP client or MCP configuration is required.
+ACS runs its own agent on Android. Give it the user's complete goal, target and constraints; it chooses the phone actions. The bundled CLI talks directly to ACS's task API. No MCP client or MCP configuration is required.
 
 ## Quick start / first connection
 
@@ -13,19 +13,19 @@ Do these in order, without asking the user unless a step says so.
 
 1. Pick the command. If `mika --version` works, use `mika`. Otherwise use the bundled script (skill-dir = the folder containing this SKILL.md; Python 3.10+): POSIX `python3 <skill-dir>/scripts/mika_cli.py`, Windows `py -3 <skill-dir>\scripts\mika_cli.py`. Below, `mika` means whichever you chose.
 2. Use the connection method the user picked on the phone. You cannot see the phone: if the user has not said which one, ask once.
-3. USB/ADB: `mika devices --json` lists ADB phones; run `mika connect --device SERIAL --json` for the chosen one. This enables computer access through Mika's official bootstrap script. With several phones online, ask the user which one, then keep that device for the whole task.
+3. USB/ADB: `mika devices --json` lists ADB phones; run `mika connect --device SERIAL --json` for the chosen one. This enables computer access through ACS's official bootstrap script. With several phones online, ask the user which one, then keep that device for the whole task.
 4. `mika doctor --device SERIAL --json` checks connection and phone state. Only then submit tasks.
 
 Wi-Fi/private VPN: use `--url http://PHONE:8765 --token-file /path/to/token-file` (both from the user) instead of `--device`. Never print, read aloud or put token contents in a command, goal or reply.
 
 Notes:
 - ADB mode needs Android platform-tools; the APK must include task API v1 (an older MCP-only APK is insufficient). Humans can run `mika ui` for a local task desk; agents should use the commands below.
-- If the user selects a parallel Mika build, add `--package APPLICATION_ID` to `connect`, `doctor` and each `task` command. The default ADB package is `com.wangzan101.mika`.
+- If the user selects a parallel ACS build, add `--package APPLICATION_ID` to `connect`, `doctor` and each `task` command. The default ADB package is `com.wangzan101.mika`.
 
 ## Common failures
 
 For missing app notifications, `mika notification-doctor --device SERIAL --package com.example.app --json`
-reads configuration through ADB without a running Mika server. Optional `--dependency com.example.push`
+reads configuration through ADB without a running ACS server. Optional `--dependency com.example.push`
 checks a related package and `--listener com.example.agent/.Listener` checks listener access and binding.
 Use `--user ID` for another Android profile. This command does not launch apps, change settings, or return
 notification contents. A clear report does not prove delivery; test with a real incoming notification afterward.
@@ -36,9 +36,9 @@ notification contents. A clear report does not prove delivery; test with a real 
 | `adb_unavailable` | Install Android platform-tools or pass `--adb PATH`. |
 | `device_selection`, `device_offline` | Run `devices`, choose `--device SERIAL`; replug or reconnect if offline. |
 | `stale_connection`, `credentials` | Phone rebooted or token changed: rerun `connect`. |
-| `connection_info` | Mika's connection information could not be read or is invalid: ask the user to unlock the phone and open Mika once, then rerun `connect`. |
-| `incompatible_api` | Update the Mika APK on the phone. |
-| `adb` / `connection` errors, phone locked | Ask the user to unlock the phone and open Mika, then rerun `connect`. |
+| `connection_info` | ACS's connection information could not be read or is invalid: ask the user to unlock the phone and open ACS once, then rerun `connect`. |
+| `incompatible_api` | Update the ACS APK on the phone. |
+| `adb` / `connection` errors, phone locked | Ask the user to unlock the phone and open ACS, then rerun `connect`. |
 
 ## Delegate and follow the task
 
@@ -60,7 +60,7 @@ If the task is stuck, failed, or behaved unexpectedly, export the redacted run r
 mika --device SERIAL task export TASK_OR_RUN_ID --json
 ```
 
-Keep the returned task ID and conversation ID. A successful submission only means that Mika accepted the task.
+Keep the returned task ID and conversation ID. A successful submission only means that ACS accepted the task.
 
 Wait rule: call `task wait --timeout 45` (allowed 1-50) in the foreground, one call at a time, and re-check the returned state each time. A wait never cancels or resubmits; a timeout is not a failure, so never resubmit on timeout. Stop and report to the user when the task needs an answer or phone takeover, or after a reasonable budget (for example 10-15 waits, longer if progress is clearly advancing). Do not build a background polling loop.
 

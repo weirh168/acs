@@ -103,7 +103,7 @@ class AuthSpillDeviceTest {
             .any { it.root?.packageName?.toString() == DeviceSupport.TEST_PACKAGE }
         println("after: opened=$opened stillOnMain=$stillThere vd top=${shell.topTaskId(vd)} (before $vdBefore)")
         assertTrue("the authenticator page was moved off the user's screen", stillThere)
-        assertEquals("Mika's screen changed", vdBefore, shell.topTaskId(vd))
+        assertEquals("ACS's screen changed", vdBefore, shell.topTaskId(vd))
         assertNotNull("the auth page was not reported to the model", opened)
         assertTrue("the auth page was reported as pulled back: $opened",
             !opened!!.pulledBack && opened.onUserScreen && opened.needsUser)

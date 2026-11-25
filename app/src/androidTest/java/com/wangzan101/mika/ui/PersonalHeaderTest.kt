@@ -65,7 +65,7 @@ class PersonalHeaderTest {
         compose.runOnIdle { preview.value = PersonalPhonePreview(second.conversationId, frame) }
         compose.onNodeWithText("正在查看日程").assertExists()
         val avatar = compose.onNodeWithTag("personal-profile").fetchSemanticsNode().boundsInRoot
-        val name = compose.onNodeWithText("Mika").fetchSemanticsNode().boundsInRoot
+        val name = compose.onNodeWithText("ACS").fetchSemanticsNode().boundsInRoot
         val thumbnail = compose.onNodeWithTag("personal-phone-preview").fetchSemanticsNode().boundsInRoot
         val progress = compose.onNodeWithTag("personal-task-progress").fetchSemanticsNode().boundsInRoot
         assertEquals(idleAvatar.center.x, avatar.center.x, 1f)

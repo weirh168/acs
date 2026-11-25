@@ -65,7 +65,7 @@ object McpUsb {
             |  i=0
             |  while [ -f "${'$'}info" ]; do
             |    i=${'$'}((i + 1))
-            |    if [ ${'$'}i -gt 10 ]; then echo "Mika did not confirm. Open Mika > Settings > Computer access (MCP) and turn off USB there."; exit 1; fi
+            |    if [ ${'$'}i -gt 10 ]; then echo "ACS did not confirm. Open ACS > Settings > Computer access (MCP) and turn off USB there."; exit 1; fi
             |    sleep 1
             |  done
             |  echo "Computer access over USB is off. The old token no longer works."
@@ -76,11 +76,11 @@ object McpUsb {
             |fi
             |boot=${'$'}(settings get global boot_count 2>/dev/null)
             |out=${'$'}(am start-foreground-service -n ${quote(component)} -a ${quote(onAction)} 2>&1)
-            |case "${'$'}out" in *rror*|*xception*) echo "${'$'}out"; echo "Is Mika installed and up to date?"; exit 1 ;; esac
+            |case "${'$'}out" in *rror*|*xception*) echo "${'$'}out"; echo "Is ACS installed and up to date?"; exit 1 ;; esac
             |i=0
             |until grep -q "\"boot\": *\"${'$'}boot\"" "${'$'}info" 2>/dev/null; do
             |  i=${'$'}((i + 1))
-            |  if [ ${'$'}i -gt 15 ]; then echo "Mika did not open the connection. Open Mika > Settings > Computer access (MCP) to see why, then run this again."; exit 1; fi
+            |  if [ ${'$'}i -gt 15 ]; then echo "ACS did not open the connection. Open ACS > Settings > Computer access (MCP) to see why, then run this again."; exit 1; fi
             |  sleep 1
             |done
             |echo "Computer access over USB is on. On the computer, run: ${forward(port)}"

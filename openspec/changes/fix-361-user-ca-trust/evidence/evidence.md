@@ -6,8 +6,8 @@
 
 模拟 issue #361 的企业内网场景，全程在真机上：
 
-1. 电脑上用 openssl 造「公司内部 CA」（`CN=Mika Test Internal CA`，指纹见 ca-fingerprint.txt）+ 由它签发的服务器证书（SAN: IP 127.0.0.1），mock-endpoint.py 起一个 OpenAI 兼容 HTTPS 端点（GET /v1/models、POST /v1/chat/completions）监听 127.0.0.1:8443。
-2. `adb reverse tcp:8443 tcp:8443`，手机上 Mika 以 `https://127.0.0.1:8443/v1` 添加自定义服务商，链路不依赖 WiFi。
+1. 电脑上用 openssl 造「公司内部 CA」（`CN=ACS Test Internal CA`，指纹见 ca-fingerprint.txt）+ 由它签发的服务器证书（SAN: IP 127.0.0.1），mock-endpoint.py 起一个 OpenAI 兼容 HTTPS 端点（GET /v1/models、POST /v1/chat/completions）监听 127.0.0.1:8443。
+2. `adb reverse tcp:8443 tcp:8443`，手机上 ACS 以 `https://127.0.0.1:8443/v1` 添加自定义服务商，链路不依赖 WiFi。
 3. 对照变量只有一个：用户 CA 装没装（系统设置 › 安全 › 更多安全设置 › 加密和凭据 › 从存储设备安装）。
 
 ## 时间线

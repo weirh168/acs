@@ -1,4 +1,4 @@
-# Mika Mod —— 本仓库说明
+# ACS Mod —— 本仓库说明
 
 这是 [wangzan101/mika](https://github.com/wangzan101/mika) 的修改版（Apache-2.0，保留原 `LICENSE`、`NOTICE` 与版权声明）。
 仓库历史里第一个提交是**原样导入的上游源码包 0.1.42**，之后的提交都是本仓库的改动，
@@ -25,8 +25,8 @@ Windows 上需要把工作区映射成 ASCII 盘符再构建（中文路径会�
 
 ```bash
 subst X: <本仓库父目录>
-X:\\Mika-main\\build-mika.sh            # 调试包
-X:\\Mika-main\\build-mika.sh :app:assembleRelease   # 发布包（需要 keystore.properties）
+X:\\ACS-main\\build-mika.sh            # 调试包
+X:\\ACS-main\\build-mika.sh :app:assembleRelease   # 发布包（需要 keystore.properties）
 ```
 
 `build-mika.sh`、`keystore.properties`、`*.jks` 都**不在仓库里**：前者是本机的构建脚本，
@@ -47,7 +47,7 @@ git rebase upstream/main        # 或 git merge upstream/main
 
 - 仓库里带着 `app/src/main/assets/runtime/rootfs.tar.xz`（56 MB，沙盒运行环境）；GitHub 单文件上限 100 MB 够用，
   但克隆会慢。想瘦身可以转 Git LFS 或改用「首次使用下载」（见 `架构差异-优化建议.md` 里 P1-3 的计划）。
-- 本仓库的发布签名是**自签名**，与官方 Mika 不同，不能覆盖安装官方包，可以并存（包名 `com.wangzan101.mika.mod`）。
+- 本仓库的发布签名是**自签名**，与官方 ACS 不同，不能覆盖安装官方包，可以并存（包名 `com.wangzan101.mika.mod`）。
 
 ## 名称与图标
 
@@ -1583,14 +1583,14 @@ background_standby_authorized = true
 
 ### 自我介绍
 
-来电接起后 AI 自称 **小乐电话助手**,不再是 Mika / ACS:
+来电接起后 AI 自称 **小乐电话助手**,不再是 ACS / ACS:
 
 ```
 您好，我是小乐电话助手。请问有什么需要我转告？
 ```
 
 - 文案在 `CallPolicy.kt` 的 `IDENTITY_GREETING`;
-- 旧默认值(`Mika AI 电话助手` / `Mika 的 AI 电话助手` / `ACS 电话助手`)写在
+- 旧默认值(`ACS AI 电话助手` / `ACS 的 AI 电话助手` / `ACS 电话助手`)写在
   `LEGACY_IDENTITY_GREETINGS` 里,`migrateDefaultGreeting()` 会在读取设置时换成
   新开场白,所以**老配置不用手动改**;
 - 要改称呼只改 `IDENTITY_GREETING` 一处,开场白和拨打问候会一起变。

@@ -112,9 +112,9 @@ class EvalClassesTest {
         assertEquals("用App查长江", EvalTasks.withChannel("用App查长江", "app"))
     }
 
-    private val alarmTask = EvalTask(id = "alarm", goal = "在手机自带的时钟里新建闹钟「Mika评测-{run}」", apps = listOf("{app:alarm}"),
+    private val alarmTask = EvalTask(id = "alarm", goal = "在手机自带的时钟里新建闹钟「ACS评测-{run}」", apps = listOf("{app:alarm}"),
         category = EvalCategory.Write, requires = listOf("app:alarm"), expect = Expect.Succeeded,
-        checks = listOf(Check.ScreenHas("{app:alarm}", "Mika评测-{run}")), marker = "Mika评测-{run}")
+        checks = listOf(Check.ScreenHas("{app:alarm}", "ACS评测-{run}")), marker = "ACS评测-{run}")
 
     @Test fun systemAppsResolveFromCapabilities() {
         assertEquals(emptyList<String>(), EvalTasks.validate(alarmTask))

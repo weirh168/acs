@@ -34,7 +34,7 @@ class ContextBuilderTest {
         val m = ContextBuilder().notice("步数自查", "正文里有 </context> 也不会提前合上")
         val t = text(m)
         assertEquals(Role.User, m.role)
-        assertTrue(t, t.startsWith("<context kind=\"notice\" source=\"步数自查\" trust=\"${Trust.Mika.label}\">\n"))
+        assertTrue(t, t.startsWith("<context kind=\"notice\" source=\"步数自查\" trust=\"${Trust.ACS.label}\">\n"))
         assertTrue(t.endsWith("\n</context>"))
         assertEquals(1, Regex("</context>").findAll(t).count())
         assertEquals(ContextKind.Notice, ContextBuilder.kindOf(m))

@@ -211,7 +211,7 @@ object CapsuleCards {
         CapsuleKind.Cancelled -> tr(R.string.capsule_stopped)
         CapsuleKind.KeptPage -> tr(R.string.kept_capsule)
         CapsuleKind.Notice -> tr(R.string.notice_hint_title)
-        CapsuleKind.Idle -> "Mika"
+        CapsuleKind.Idle -> "ACS"
     }
 
     /** 这种内容旁边放不放虚拟屏小画面(还要那件事真有画面):干活中、要你接管、等条件时放。 */

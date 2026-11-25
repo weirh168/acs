@@ -262,30 +262,30 @@ class CapsuleCardContentTest {
 
     @Test fun idleTeachStaysFoldedAboveTheInput() {
         show(CardView.Chat("c1", title = "买牙膏"), thread = history(1))
-        compose.onNodeWithText("教 Mika").assertDoesNotExist()
+        compose.onNodeWithText("教 ACS").assertDoesNotExist()
         val shelf = compose.onNodeWithTag("capsule-teach-shelf").assertIsDisplayed().fetchSemanticsNode()
         val input = compose.onNodeWithTag("capsule-input").fetchSemanticsNode()
         assertTrue("箭头在输入栏上方", shelf.boundsInRoot.bottom <= input.boundsInRoot.top)
         with(compose.density) {
             assertTrue("收起时只留一条箭头", shelf.boundsInRoot.height <= 32.dp.toPx())
         }
-        assertEquals("展开教 Mika", shelf.config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription])
+        assertEquals("展开教 ACS", shelf.config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription])
         compose.onNodeWithTag("capsule-teach-shelf").performClick()
-        compose.onNodeWithText("教 Mika").assertIsDisplayed().performClick()
+        compose.onNodeWithText("教 ACS").assertIsDisplayed().performClick()
         assertEquals(listOf("teach"), calls)
         val opened = compose.onNodeWithTag("capsule-teach-shelf").fetchSemanticsNode()
         val inputAfter = compose.onNodeWithTag("capsule-input").fetchSemanticsNode()
-        assertEquals("收起教 Mika", opened.config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription])
+        assertEquals("收起教 ACS", opened.config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription])
         assertTrue("展开后箭头仍在输入栏上方", opened.boundsInRoot.bottom <= inputAfter.boundsInRoot.top)
         compose.onNodeWithTag("capsule-teach-shelf").performClick()
-        compose.onNodeWithText("教 Mika").assertDoesNotExist()
+        compose.onNodeWithText("教 ACS").assertDoesNotExist()
     }
 
     @Test fun runningChatDoesNotShowTeachShelf() {
         val r = run("a", TaskState.Running(1, "n"), CapsuleKind.Running)
         show(chat(r), thread = CapsuleThreads.build(emptyList(), CapsuleThreads.PAGE, listOf(r)))
         compose.onAllNodesWithTag("capsule-teach-shelf").assertCountEquals(0)
-        compose.onNodeWithText("教 Mika").assertDoesNotExist()
+        compose.onNodeWithText("教 ACS").assertDoesNotExist()
     }
 
     @Test fun idleCardContinuesOrStartsFresh() {
@@ -530,7 +530,7 @@ class CapsuleCardContentTest {
     /** 标题栏的电源按钮只问一句,不直接退;确认卡片里「退出」「取消」各走各的。 */
     @Test fun quitIsConfirmedInsideTheCard() {
         show(detail(run("a", TaskState.Running(1, "n"), CapsuleKind.Running, "在搜")))
-        compose.onNodeWithContentDescription("完全退出 Mika").performClick()
+        compose.onNodeWithContentDescription("完全退出 ACS").performClick()
         compose.runOnIdle { assertEquals(listOf("askQuit"), calls) }
     }
 
@@ -538,8 +538,8 @@ class CapsuleCardContentTest {
         compose.setContent {
             MikaTheme(dark = false, reduceMotion = true) { QuitCard(actions, 420.dp) }
         }
-        compose.onNodeWithText("完全退出 Mika").assertIsDisplayed()
-        compose.onNodeWithText("下次打开 Mika 就回来。", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("完全退出 ACS").assertIsDisplayed()
+        compose.onNodeWithText("下次打开 ACS 就回来。", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("capsule-quit").performClick()
         compose.onNodeWithTag("capsule-quit-cancel").performClick()
         compose.runOnIdle { assertEquals(listOf("quit", "cancelQuit"), calls) }

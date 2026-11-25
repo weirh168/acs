@@ -28,7 +28,7 @@ class ObservedContextTest {
                 ObservedContext.Person("李四", group = false, relation = ContactRelation.Unknown, userSet = false),
             ),
         )!!
-        assertTrue(text.startsWith("Gathered by Mika from the user's notifications. The user did not say any of this"))
+        assertTrue(text.startsWith("Gathered by ACS from the user's notifications. The user did not say any of this"))
         for (title in listOf("Today so far:", "Yesterday:", "Noticed about the user over several days:")) assertTrue(title, "\n$title\n${Untrusted.OPEN}" in text)
         assertEquals(3, Regex(Regex.escape(Untrusted.OPEN)).findAll(text).count())
         assertEquals(3, Regex(Regex.escape(Untrusted.CLOSE)).findAll(text).count())

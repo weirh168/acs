@@ -2,7 +2,7 @@
 
 ## Why
 
-部分手机的系统服务占用 8765 端口，Mika 的电脑连接（MCP/CLI）绑定失败就无法使用（issue #392）。设置存储 `McpSettings` 其实已支持 `port` 字段（读取并校验 1024–65535、默认 8765），运行时全链路（服务绑定、`mcp-usb.json` 连接信息、`connect-computer.sh`、`adb forward` 提示、CLI 动态读端口）都已走这个值——唯独没有写入入口：没有 setter、没有设置 UI。补上这最后一环即可。
+部分手机的系统服务占用 8765 端口，ACS 的电脑连接（MCP/CLI）绑定失败就无法使用（issue #392）。设置存储 `McpSettings` 其实已支持 `port` 字段（读取并校验 1024–65535、默认 8765），运行时全链路（服务绑定、`mcp-usb.json` 连接信息、`connect-computer.sh`、`adb forward` 提示、CLI 动态读端口）都已走这个值——唯独没有写入入口：没有 setter、没有设置 UI。补上这最后一环即可。
 
 ## What Changes
 

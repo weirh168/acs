@@ -51,10 +51,10 @@ class WebEditorInputTest {
         val s = snapUntil { snap -> snap.elements.any { it.editable } }
         val field = s.elements.first { it.editable }
 
-        val r = screen.typeText(field.ref, s.snapshotId, "你好 Mika")
+        val r = screen.typeText(field.ref, s.snapshotId, "你好 ACS")
         assertTrue("$r", r is ActionResult.Ok)
         assertEquals(Verification.MATCH, (r as ActionResult.Ok).verification)
-        val after = snapUntil { snap -> status(snap)?.endsWith("text=你好 Mika") == true }
+        val after = snapUntil { snap -> status(snap)?.endsWith("text=你好 ACS") == true }
         assertTrue(status(after)!!, !status(after)!!.startsWith("inputs=0"))
 
         // 再打一次是替换,不是接在后面

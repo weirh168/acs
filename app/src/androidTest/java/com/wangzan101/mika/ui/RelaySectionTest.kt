@@ -78,6 +78,6 @@ class RelaySectionTest {
         compose.runOnIdle { state.value = RelayState.Unauthorized }
         compose.onNodeWithText("配对已失效或被撤销，请重新配对网关").assertIsDisplayed()
         compose.runOnIdle { state.value = RelayState.Incompatible }
-        compose.onNodeWithText("请将 Mika 与网关更新到匹配的版本").assertIsDisplayed()
+        compose.onNodeWithText("请将 ACS 与网关更新到匹配的版本").assertIsDisplayed()
     }
 }

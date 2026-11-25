@@ -30,7 +30,7 @@ object NetworkProbe {
                 connectTimeout = timeoutMs
                 readTimeout = timeoutMs
                 instanceFollowRedirects = true
-                setRequestProperty("User-Agent", "Mika-NetProbe")
+                setRequestProperty("User-Agent", "ACS-NetProbe")
             }
             val code = connection.responseCode
             val elapsed = System.currentTimeMillis() - start

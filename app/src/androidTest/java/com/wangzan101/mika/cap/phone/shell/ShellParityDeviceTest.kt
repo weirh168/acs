@@ -460,7 +460,7 @@ class ShellParityDeviceTest {
         ParityClip.put(context, null)
         assertEquals(ShellService.CLIP_SET, shell.setClipText("parity-ours"))
         shell.restoreClip()
-        assertNull("Mika's text leaked", ParityClip.text(context))
+        assertNull("ACS's text leaked", ParityClip.text(context))
     }
 
     @Test
@@ -506,7 +506,7 @@ class ShellParityDeviceTest {
         ParityClip.put(context, null)
         assertEquals(ShellService.CLIP_SET, shell.setClipText("parity-ours"))
         shell.restoreClipText("", "parity-ours")
-        assertNull("Mika's text leaked", ParityClip.text(context))
+        assertNull("ACS's text leaked", ParityClip.text(context))
     }
 
     @Test

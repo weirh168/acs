@@ -234,7 +234,7 @@ class BrowserScriptDeviceTest {
         assertEquals(r.toString(), "true", r.s("ok"))
         assertEquals("\"clicks=2\"", r.result())
         assertEquals("2", page("window.clicks"))
-        assertEquals("\"Mika\"", page("document.getElementById('name').value"))
+        assertEquals("\"ACS\"", page("document.getElementById('name').value"))
         assertEquals(listOf("snapshot", "tap", "snapshot", "tap", "snapshot", "type", "text"), r["actions"]!!.jsonArray.map { it.jsonObject.s("op") })
         assertTrue(r["logs"]!!.jsonArray[0].jsonPrimitive.content.startsWith("typed"))
         val recorded = events.filterIsInstance<RunEvent.ToolResult>().filter { it.source == "script" }

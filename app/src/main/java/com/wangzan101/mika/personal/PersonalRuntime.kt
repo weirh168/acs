@@ -220,6 +220,6 @@ internal fun personalMemoryText(items: List<MemoryItem>, max: Int = PERSONAL_MEM
     return out.toString()
 }
 
-internal const val PERSONAL_INFERRED_MARK = "(Mika 自己归纳的,不是用户说的)"
+internal const val PERSONAL_INFERRED_MARK = "(ACS 自己归纳的,不是用户说的)"
 private const val PERSONAL_MEMORY_ITEMS = 40
 private const val PERSONAL_MEMORY_CHARS = 6500

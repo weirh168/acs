@@ -468,8 +468,8 @@ fun ChatDrawer(
             // 管理员:在这台手机上生成激活码发给会员
             // 只有管理员机(本机)才有入口;分发到别的手机不会出现
             val drawerCtx = androidx.compose.ui.platform.LocalContext.current
-            // 管理员入口只在「调试包 + 管理员机」出现:发布的正式包(非 DEBUG)里根本没有这个入口
-            if (com.wangzan101.mika.BuildConfig.DEBUG && isAdminDevice(drawerCtx)) {
+            // 管理员入口给管理员机(作者自用的包整包都是管理员机;发给别人的分支自行关掉 ADMIN_FOR_THIS_BUILD)
+            if (isAdminDevice(drawerCtx)) {
                 var adminOpen by remember { mutableStateOf(false) }
                 NavEntry(MikaIcons.Gear, "管理员", onClick = { adminOpen = true })
                 if (adminOpen) AdminCodeDialog(isAdmin = true) { adminOpen = false }

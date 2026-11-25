@@ -24,7 +24,7 @@ import java.time.ZoneOffset
 class CalendarBulkWriterDeviceTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
-    private val marker = "Mika calendar device test ${System.nanoTime()}"
+    private val marker = "ACS calendar device test ${System.nanoTime()}"
     private val titles = listOf("$marker timed", "$marker all day")
 
     @Before fun grantCalendarAccess() {

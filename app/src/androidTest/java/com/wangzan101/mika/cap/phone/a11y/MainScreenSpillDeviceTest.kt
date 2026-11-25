@@ -80,9 +80,9 @@ class MainScreenSpillDeviceTest {
         val vdBefore = shell.topTaskId(vd)
         assertTrue(shell.injectTap(vd, b.centerX, b.centerY))
         val landed = pollUntil(5_000) { shell.topTaskId(Display.DEFAULT_DISPLAY).takeIf { it != mainBefore } }
-        println("before: main top $mainBefore -> $landed (${landed?.let { shell.packageOfTask(it) }}), Mika screen top $vdBefore -> ${shell.topTaskId(vd)}")
+        println("before: main top $mainBefore -> $landed (${landed?.let { shell.packageOfTask(it) }}), ACS screen top $vdBefore -> ${shell.topTaskId(vd)}")
         assertNotNull("launch did not land on the main screen", landed)
-        assertEquals("Mika's screen changed", vdBefore, shell.topTaskId(vd))
+        assertEquals("ACS's screen changed", vdBefore, shell.topTaskId(vd))
     }
 
     @Test
@@ -97,7 +97,7 @@ class MainScreenSpillDeviceTest {
         val opened = (r as ActionResult.Ok).opened
         assertNotNull("tap did not report opened: $r", opened)
         val now = screen.snapshot()
-        println("spill result: $r; on Mika's screen (${now.packageName}): ${now.elements.filter { it.clickable }.map { it.name }}")
+        println("spill result: $r; on ACS's screen (${now.packageName}): ${now.elements.filter { it.clickable }.map { it.name }}")
         if (!opened!!.picker) {
             assertTrue("not pulled back: $opened", opened.pulledBack)
             assertEquals(target, shell.packageOfTask(shell.topTaskId(vd)))
@@ -109,7 +109,7 @@ class MainScreenSpillDeviceTest {
         val chooserTask = shell.topTaskId(Display.DEFAULT_DISPLAY)
         assertEquals("question is not on the main screen", opened.packageName, shell.packageOfTask(chooserTask))
         assertNotNull("run is not waiting for the user", screen.userPick.value)
-        assertEquals("Mika's screen changed", SpillTestActivity::class.java.name, shell.topActivity(vd))
+        assertEquals("ACS's screen changed", SpillTestActivity::class.java.name, shell.topActivity(vd))
         // 仪器参数 pickOption=<第几个,从 0 起> 或 back:这时测试当用户,在主屏上点那个选项(或按返回关掉问题)
         val pick = InstrumentationRegistry.getArguments().getString("pickOption") ?: return@runBlocking
         if (pick == "back") sh("input keyevent 4")
@@ -128,7 +128,7 @@ class MainScreenSpillDeviceTest {
         if (settled is AndroidScreen.PickResult.NeedsUser) screen.afterUserStep(settled)
         val after = screen.snapshot()
         val top = shell.topTaskId(vd)
-        println("after the user ($pick): $settled; opened=${after.opened}; Mika's screen top ${shell.packageOfTask(top)} user ${shell.userOfTask(top)}; " +
+        println("after the user ($pick): $settled; opened=${after.opened}; ACS's screen top ${shell.packageOfTask(top)} user ${shell.userOfTask(top)}; " +
             "main top ${shell.topTaskId(Display.DEFAULT_DISPLAY)} (before $mainBefore)")
         if (pick == "back") assertTrue("not reported closed: ${after.opened}", after.opened?.closed == true)
         else {
@@ -148,7 +148,7 @@ class MainScreenSpillDeviceTest {
         assertTrue("no home handler", homeApps.isNotEmpty())
         val ownPackage = InstrumentationRegistry.getInstrumentation().targetContext.packageName
         sh("am start --display 0 -n $ownPackage/com.wangzan101.mika.ui.MainActivity")
-        assertNotNull("Mika did not come to the main screen", pollUntil(3_000) {
+        assertNotNull("ACS did not come to the main screen", pollUntil(3_000) {
             shell.topTaskId(Display.DEFAULT_DISPLAY).takeIf { shell.packageOfTask(it) == ownPackage }
         })
         val topBefore = shell.topTaskId(Display.DEFAULT_DISPLAY)

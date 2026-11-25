@@ -6,7 +6,7 @@
 - 任务经 USB 连接通道 `POST /api/v1/tasks` 提交：**打开华为音乐播放每日推荐歌曲，保持播放不要停**（run `28846183-…`）。
 - 声音开关经 debug-only 临时广播触发 `TaskRun.togglePipSound()`（与 pip 按钮同一入口；验证后已移除临时代码，不进 PR）。
 
-**为何用广播而不是点按钮**：任务在虚拟屏上操作 App 期间，系统输入焦点被虚拟屏 display 持有（`mFocusedWindow=com.huawei.music`，display 94），`adb shell input tap` 全部路由进虚拟屏，主屏 Mika 窗口的 overlay 收不到注入；`input` 无 `--display` 参数（API 31），`sendevent` 被 ROM 拒绝（Permission denied）。此为该设备的环境限制，与修复本身无关；按钮点击链路（`AgentPip` → `ChatViewModel.togglePipSound` → `togglePipSoundIn` → `TaskRun.togglePipSound`）由 `ChatViewModelTest` 覆盖。
+**为何用广播而不是点按钮**：任务在虚拟屏上操作 App 期间，系统输入焦点被虚拟屏 display 持有（`mFocusedWindow=com.huawei.music`，display 94），`adb shell input tap` 全部路由进虚拟屏，主屏 ACS 窗口的 overlay 收不到注入；`input` 无 `--display` 参数（API 31），`sendevent` 被 ROM 拒绝（Permission denied）。此为该设备的环境限制，与修复本身无关；按钮点击链路（`AgentPip` → `ChatViewModel.togglePipSound` → `togglePipSoundIn` → `TaskRun.togglePipSound`）由 `ChatViewModelTest` 覆盖。
 
 ## appops 时间线（PLAY_AUDIO of com.huawei.music）
 

@@ -9,7 +9,7 @@ class ReleasesTest {
     private val github = """
         {
           "tag_name": "v0.2.0",
-          "name": "Mika 0.2.0",
+          "name": "ACS 0.2.0",
           "html_url": "https://github.com/wangzan101/Mika/releases/tag/v0.2.0",
           "published_at": "2026-11-05T08:30:00Z",
           "prerelease": false,
@@ -25,7 +25,7 @@ class ReleasesTest {
     fun readsGitHubRelease() {
         val r = Releases.fromGitHub(github)
         assertEquals("0.2.0", r.version)
-        assertEquals("Mika 0.2.0", r.name)
+        assertEquals("ACS 0.2.0", r.name)
         assertEquals("2026-11-05", r.date)
         assertEquals("https://github.com/wangzan101/Mika/releases/tag/v0.2.0", r.pageUrl)
         assertEquals("https://github.com/x/mika-0.2.0.apk", r.apkUrl)
@@ -66,8 +66,8 @@ class ReleasesTest {
           "tag_name": "v0.1.40",
           "html_url": "https://github.com/wangzan101/Mika/releases/tag/v0.1.40",
           "assets": [
-            {"name": "Mika-v0.1.40-arm64.apk", "browser_download_url": "https://github.com/x/Mika-v0.1.40-arm64.apk", "size": 50, "digest": "sha256:arm"},
-            {"name": "Mika-v0.1.40.apk", "browser_download_url": "https://github.com/x/Mika-v0.1.40.apk", "size": 80, "digest": "sha256:all"}
+            {"name": "ACS-v0.1.40-arm64.apk", "browser_download_url": "https://github.com/x/Mika-v0.1.40-arm64.apk", "size": 50, "digest": "sha256:arm"},
+            {"name": "ACS-v0.1.40.apk", "browser_download_url": "https://github.com/x/Mika-v0.1.40.apk", "size": 80, "digest": "sha256:all"}
           ]
         }
     """.trimIndent()
@@ -92,7 +92,7 @@ class ReleasesTest {
     @Test
     fun archApkForAnotherDeviceIsNotOffered() {
         val only = """{"tag_name":"v0.1.40","html_url":"https://github.com/wangzan101/Mika/releases/tag/v0.1.40",
-            "assets":[{"name":"Mika-v0.1.40-arm64.apk","browser_download_url":"https://github.com/x/Mika-v0.1.40-arm64.apk"}]}"""
+            "assets":[{"name":"ACS-v0.1.40-arm64.apk","browser_download_url":"https://github.com/x/Mika-v0.1.40-arm64.apk"}]}"""
         val r = Releases.fromGitHub(only, listOf("x86_64", "x86"))
         assertNull(r.apkUrl)
         assertEquals(r.pageUrl, r.downloadUrl)

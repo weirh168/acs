@@ -38,8 +38,8 @@ object DeviceSupport {
     fun awaitShell(c: ShellBinding, timeoutMs: Long = 30_000): IMikaShell = runBlocking {
         withTimeoutOrNull(timeoutMs) { c.shell.filterNotNull().first { it.asBinder().pingBinder() } }
     } ?: error(
-        "Mika's phone helper is not running (status=${phone.shellControl.status.value}): " +
-            "pair it once in Mika (设置手机操作) with Wireless debugging on, keep Wireless debugging on, then rerun",
+        "ACS's phone helper is not running (status=${phone.shellControl.status.value}): " +
+            "pair it once in ACS (设置手机操作) with Wireless debugging on, keep Wireless debugging on, then rerun",
     )
 
     /** 服务掉线(前面的测试结束了本进程的绑定等)时先促使系统重绑,再等它连上。 */
@@ -47,7 +47,7 @@ object DeviceSupport {
         if (ScreenAccessibility.instance.value == null) rebindAccessibility()
         return runBlocking {
             withTimeoutOrNull(10_000) { ScreenAccessibility.instance.filterNotNull().first() }
-        } ?: error("Mika accessibility service is not enabled")
+        } ?: error("ACS accessibility service is not enabled")
     }
 
     class Agent(val display: AgentDisplay, val screen: AndroidScreen) {

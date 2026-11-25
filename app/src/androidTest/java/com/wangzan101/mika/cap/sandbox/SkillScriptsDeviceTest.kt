@@ -86,10 +86,10 @@ class SkillScriptsDeviceTest {
 
     @Test fun extractPdfGetsText() {
         File(SandboxDirs(context).workspace(ws), "inbox/sample.pdf").apply { parentFile!!.mkdirs() }
-            .writeBytes(samplePdf("Hello from Mika page one", "Second page text"))
+            .writeBytes(samplePdf("Hello from ACS page one", "Second page text"))
         val r = runScript("skills/documents", "scripts/extract_pdf.py", "inbox/sample.pdf")
         assertRan(r)
-        assertTrue(r.toString(), r.s("output")!!.contains("--- page 1 ---\nHello from Mika page one"))
+        assertTrue(r.toString(), r.s("output")!!.contains("--- page 1 ---\nHello from ACS page one"))
         assertTrue(r.toString(), r.s("output")!!.contains("Second page text"))
         val meta = runScript("skills/documents", "scripts/extract_pdf.py", "inbox/sample.pdf", "--metadata")
         assertRan(meta)

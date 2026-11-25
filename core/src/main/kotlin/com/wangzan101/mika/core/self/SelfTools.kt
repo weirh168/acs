@@ -59,13 +59,13 @@ internal object MikaStatus : SelfTool {
 /** 打开 Mika 自己的一页;只改用户眼前的页面,不改任何设置。 */
 internal object MikaOpenScreen : SelfTool {
     override val verb = Verb.SelfOpenScreen
-    override val label = "打开 Mika 的页面"
+    override val label = "打开 ACS 的页面"
     override val risk = Risk.Write
     override val def = ToolDef(
         "mika_open_screen",
         Prompts.tool("mika_open_screen"),
         mapOf(
-            "screen" to str("Which Mika screen to open.", SelfScreen.entries.map { it.wire }),
+            "screen" to str("Which ACS screen to open.", SelfScreen.entries.map { it.wire }),
             "note" to str("Optional short reason shown to the user, in the user's language."),
         ),
         listOf("screen"),
@@ -119,7 +119,7 @@ internal object MikaNotify : SelfTool {
         mapOf(
             "title" to str("Short notification title, in the user's language."),
             "body" to str("What happened, in one or two sentences, in the user's language."),
-            "screen" to str("Optional Mika screen to open from the notification.", SelfScreen.entries.map { it.wire }),
+            "screen" to str("Optional ACS screen to open from the notification.", SelfScreen.entries.map { it.wire }),
         ),
         listOf("title", "body"),
     )

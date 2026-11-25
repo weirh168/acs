@@ -208,7 +208,7 @@ object PairingNotifier {
         // 没允许通知时系统会丢掉它;引导页在配对这一步先请用户允许
         runCatching { nm.notify(ID, b.build()) }.onFailure { Log.w(TAG, "pairing notification not posted", it) }
         // 发出去了也可能不弹:总开关、频道的重要程度都记一句(厂商另外的「悬浮通知」开关读不到)
-        if (!nm.areNotificationsEnabled()) Log.w(TAG, "notifications are off for Mika; the pairing notice is dropped")
+        if (!nm.areNotificationsEnabled()) Log.w(TAG, "notifications are off for ACS; the pairing notice is dropped")
         else nm.getNotificationChannel(channel)?.let { if (it.importance < NotificationManager.IMPORTANCE_HIGH) Log.i(TAG, "pairing channel importance ${it.importance}; it won't pop up") }
     }
 

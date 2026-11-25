@@ -151,8 +151,12 @@ fun isAgnesModel(providerId: String, model: String): Boolean {
 /** 管理员机(显示「管理员 · 生成激活码」,不受会员限制)。换机时改这里。 */
 val ADMIN_DEVICES = setOf("BE1CF3", "EDCEE4")
 
+/** 作者自用的这个包:整包按管理员机运行,会员功能不再参与判断(发出去的分支把它改成 false 即可)。 */
+const val ADMIN_FOR_THIS_BUILD = true
+
 /** 当前设备是不是管理员机。 */
 fun isAdminDevice(context: android.content.Context): Boolean {
+    if (ADMIN_FOR_THIS_BUILD) return true
     // 三道门:设备指纹对得上、安装包签名没被改过、没有调试器附着
     if (LicenseCode.deviceFingerprint(context) !in ADMIN_DEVICES) return false
     if (!com.wangzan101.mika.settings.Integrity.trusted(context)) return false

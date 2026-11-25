@@ -121,7 +121,7 @@ class SharedWakeLock(private val lock: WakeLockPort) {
  */
 class ScreenWakeLock(context: Context) : WakeLockPort {
     private val lock = context.getSystemService(PowerManager::class.java)
-        .newWakeLock(LEVEL, "Mika:task")
+        .newWakeLock(LEVEL, "ACS:task")
         .apply { setReferenceCounted(false) }
 
     override fun acquire() = lock.acquire(MAX_HOLD_MS)

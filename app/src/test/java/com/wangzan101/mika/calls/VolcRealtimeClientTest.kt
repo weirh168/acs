@@ -48,7 +48,7 @@ class VolcRealtimeClientTest {
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) { protocolClosed.complete(Unit) }
             }))
             val transport = transport(server, http)
-            val connect = async { transport.connect(VolcRealtimeCredentials(apiKey = "test-key"), VolcRealtimeConfig("Mika speaks plainly.")) }
+            val connect = async { transport.connect(VolcRealtimeCredentials(apiKey = "test-key"), VolcRealtimeConfig("ACS speaks plainly.")) }
             val socket = withTimeout(3_000) { serverSocket.await() }
             val create = withTimeout(3_000) { messages.receive() }
             assertEquals("session.create", create.type)
@@ -62,7 +62,7 @@ class VolcRealtimeClientTest {
             assertNull(request.getHeader("Authorization"))
             val sessionConfig = create.getValue("session").jsonObject
             assertEquals("1.2.6.1", sessionConfig.getValue("model").jsonPrimitive.content)
-            assertEquals("Mika speaks plainly.", sessionConfig.getValue("instructions").jsonPrimitive.content)
+            assertEquals("ACS speaks plainly.", sessionConfig.getValue("instructions").jsonPrimitive.content)
             val audioConfig = sessionConfig.getValue("audio").jsonObject
             val input = audioConfig.getValue("input").jsonObject.getValue("format").jsonObject
             val output = audioConfig.getValue("output").jsonObject

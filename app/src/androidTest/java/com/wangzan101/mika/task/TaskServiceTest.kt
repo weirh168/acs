@@ -123,7 +123,7 @@ class TaskServiceTest {
         pollUntil(10_000) { DeviceTaskState.state.value.takeIf(predicate) } ?: error("state never matched: ${DeviceTaskState.state.value}")
 
     private fun mikaScreenLock(): String? =
-        sh("dumpsys power").lines().map { it.trim() }.firstOrNull { "'Mika:task'" in it }
+        sh("dumpsys power").lines().map { it.trim() }.firstOrNull { "'ACS:task'" in it }
 
     /**
      * 产品路径上回答不另请核查(任务以 reviewFinalAnswer = false 运行):模型给的回答原样交出,结局是办成、未经核查;
@@ -252,7 +252,7 @@ class TaskServiceTest {
     fun keepsScreenOnDuringTask() {
         startWithSettingsOpen()
         val line = mikaScreenLock()
-        assertNotNull("Mika holds no screen wake lock while running", line)
+        assertNotNull("ACS holds no screen wake lock while running", line)
         // 有的系统在类型前加锁对象编号(mLock:<id>),只认类型字样
         // 只保持亮屏、允许系统调暗,不锁在全亮
         assertTrue(line!!, "SCREEN_DIM_WAKE_LOCK" in line)
@@ -275,7 +275,7 @@ class TaskServiceTest {
         start("测试任务")
         val held = pollUntil(5_000) { mikaScreenLock() }
         opening.countDown()
-        assertNotNull("Mika holds no screen wake lock while preparing", held)
+        assertNotNull("ACS holds no screen wake lock while preparing", held)
         assertEquals(1, model.awaitCall().number)
         finishAndAwait()
     }

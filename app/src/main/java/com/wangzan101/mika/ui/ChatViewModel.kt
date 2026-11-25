@@ -2365,7 +2365,7 @@ class ToolLabels(private val tools: ToolIndex, private val legacy: LegacyNames =
             "查看设置" to R.string.tool_list_settings,
             "改设置" to R.string.tool_set_setting,
             "查看自身状态" to R.string.tool_mika_status,
-            "打开 Mika 的页面" to R.string.tool_mika_open_screen,
+            "打开 ACS 的页面" to R.string.tool_mika_open_screen,
             "打开文件" to R.string.tool_mika_open_file,
             "发通知" to R.string.tool_mika_notify,
             "复制文字" to R.string.tool_mika_copy,

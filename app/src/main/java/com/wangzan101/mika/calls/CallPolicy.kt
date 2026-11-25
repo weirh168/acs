@@ -344,8 +344,8 @@ internal object CallPolicy {
 
     /** 以前默认开场白用过别的自我介绍，保存下来的旧默认值要换成现在的。 */
     private val LEGACY_IDENTITY_GREETINGS = listOf(
-        "您好，我是 Mika AI 电话助手。",
-        "您好，我是 Mika 的 AI 电话助手。",
+        "您好，我是 ACS AI 电话助手。",
+        "您好，我是 ACS 的 AI 电话助手。",
         "您好，我是 ACS 电话助手。",
     )
 

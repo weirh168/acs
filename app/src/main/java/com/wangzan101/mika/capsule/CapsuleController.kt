@@ -1524,7 +1524,7 @@ class CapsuleController(
     /** 回到 Mika 的那个对话(和点通知同一个入口)。 */
     private fun open(conversationId: String?) {
         runCatching { context.startActivity(TaskService.openAppIntent(context, conversationId)) }
-            .onFailure { Log.w(TAG, "could not open Mika from capsule", it) }
+            .onFailure { Log.w(TAG, "could not open ACS from capsule", it) }
     }
 
     private fun appLabel(pkg: String): String = appLabels.getOrPut(pkg) { ConfirmationNotifier.appLabel(context, pkg) }

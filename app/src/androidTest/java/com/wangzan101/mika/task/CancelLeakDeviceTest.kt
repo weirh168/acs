@@ -61,8 +61,8 @@ class CancelLeakDeviceTest {
             assertNotNull("round $i did not end", pollUntil(15_000) { DeviceTaskState.busy.value.takeIf { !it } })
         }
         val displays = sh("dumpsys display")
-        assertFalse("Mika agent display left behind", "mika-agent" in displays)
-        assertFalse("Mika web display left behind", "mika-web" in displays)
+        assertFalse("ACS agent display left behind", "mika-agent" in displays)
+        assertFalse("ACS web display left behind", "mika-web" in displays)
     }
 
     private companion object {

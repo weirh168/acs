@@ -2,7 +2,7 @@
 
 ## 通话功能（calls/）实现
 
-- Source: https://github.com/DzsGatsby/FlashPhone（Mika 的 Apache-2.0 fork）
+- Source: https://github.com/DzsGatsby/FlashPhone（ACS 的 Apache-2.0 fork）
 - License: Apache-2.0
 - Usage: 通话功能（拨号、接听、挂断、AI 接听、人工接管、PCM 音频桥、实时语音客户端）按上游
   Apache-2.0 许可并入,涉及:
@@ -13,7 +13,7 @@
   - `app/src/test/java/com/wangzan101/mika/cap/phone/shell/ShellCallAudioTest.kt`
   - `app/src/test/java/com/wangzan101/mika/ui/CallDeviceReadinessTest.kt`
   - `core/src/test/kotlin/com/wangzan101/mika/core/mcp/McpCallToolsTest.kt`
-- Modifications: 默认问候语等产品文案按 Mika 调整为「Mika AI 电话助手」,相关测试断言随之同步。
+- Modifications: 默认问候语等产品文案按 ACS 调整为「ACS AI 电话助手」,相关测试断言随之同步。
 - Service: 实时语音经火山引擎（Volcengine）的 WebSocket 接口,凭证由用户在通话设置页填写。
 
 ## scrcpy
@@ -169,7 +169,7 @@ The Apache Software Foundation (https://www.apache.org/).
 - SHA-256 (source archive): 29248aac2a7ce10c3bd5ee5602742ec33b2532310ff9cf73b79f3c133e5a5f68
 - Usage: 独立可执行程序。由 `tools/sandbox/build-native.sh` 从上述源码编译为
   `app/src/main/jniLibs/arm64-v8a/libproot.so` 与其载入器 `libproot_loader.so`,随 APK 发布;
-  Mika 只以子进程方式运行它,不链接它。源码地址、版本与校验值同时记录在 `tools/sandbox/sources.lock`。
+  ACS 只以子进程方式运行它,不链接它。源码地址、版本与校验值同时记录在 `tools/sandbox/sources.lock`。
   `libproot.so` 不内嵌载入器(只嵌空占位),运行时经 `PROOT_LOADER` 使用 `libproot_loader.so`。
 - Modifications: 打了四个补丁,同样以 GPL-2.0-or-later 发布:
   `tools/sandbox/patches/proot-0001-exitkill.patch`(跟踪选项加上 `PTRACE_O_EXITKILL`:PRoot 退出时内核杀掉所有被跟踪的进程);
@@ -181,7 +181,7 @@ The Apache Software Foundation (https://www.apache.org/).
   `tools/sandbox/patches/proot-0004-link2symlink-fstat-nonfile.patch`(link2symlink 扩展在 fstat 管道、套接字等非文件描述符时
   不再读未初始化的 stat 结构、把成功的调用改成失败)。
 - 附带组件 uthash(BSD 许可证,Copyright (c) Troy D. Hanson):PRoot 源码树以子模块形式引用它,
-  只有 `care` 扩展用到;源码归档里该目录为空,Mika 的编译不包含 `care`,因此 `libproot.so` 里没有 uthash 的代码。
+  只有 `care` 扩展用到;源码归档里该目录为空,ACS 的编译不包含 `care`,因此 `libproot.so` 里没有 uthash 的代码。
 
 ## talloc
 
@@ -192,7 +192,7 @@ The Apache Software Foundation (https://www.apache.org/).
 - Source: https://www.samba.org/ftp/talloc/talloc-2.4.3.tar.gz
 - Version: 2.4.3
 - SHA-256 (source archive): dc46c40b9f46bb34dd97fe41f548b0e8b247b77a918576733c528e83abd854dd
-- Usage: 只编译 `talloc.c`(未修改),静态链接进独立可执行程序 `libproot.so`;Mika 自身不链接它。
+- Usage: 只编译 `talloc.c`(未修改),静态链接进独立可执行程序 `libproot.so`;ACS 自身不链接它。
   重新链接所需的全部源码与编译脚本见 `tools/sandbox/`。
 
 ## Alpine Linux
@@ -202,7 +202,7 @@ The Apache Software Foundation (https://www.apache.org/).
 - License: 各软件包各自的许可证(GPL、LGPL、MIT、BSD、MPL 等);逐个软件包的名称、版本与许可证见
   `app/src/main/assets/runtime/packages.json`,App 的「开源许可」页也逐个列出
 - Usage: **随 APK 发布**,文件 `app/src/main/assets/runtime/rootfs.tar.xz`,由 `tools/sandbox/build-runtime.py`
-  按 `tools/sandbox/runtime/sources.lock` 从 Alpine 官方源取得并核对签名后生成;Mika 只以子进程方式运行其中的程序,不链接它们。
+  按 `tools/sandbox/runtime/sources.lock` 从 Alpine 官方源取得并核对签名后生成;ACS 只以子进程方式运行其中的程序,不链接它们。
   GPL/LGPL/MPL 软件包的对应源码(Alpine 的构建配方与上游源码)随每个版本放进 `mika-<版本>-gpl-sources.tar.gz`,
   做法见 `tools/sandbox/README.md`。
 
@@ -231,7 +231,7 @@ The Apache Software Foundation (https://www.apache.org/).
 - Project: https://github.com/commonmark/commonmark-java
 - Artifacts: `org.commonmark:commonmark:0.30.1`、`commonmark-ext-gfm-tables:0.30.1`、`commonmark-ext-gfm-strikethrough:0.30.1`
 - License: BSD-2-Clause
-- Usage: 以库的形式依赖,未修改其代码;把对话里回答的 Markdown 解析成语法树,再由 Mika 自己的界面代码显示
+- Usage: 以库的形式依赖,未修改其代码;把对话里回答的 Markdown 解析成语法树,再由 ACS 自己的界面代码显示
   (`app/src/main/java/com/wangzan101/mika/ui/MarkdownModel.kt`)。
 - License text:
 

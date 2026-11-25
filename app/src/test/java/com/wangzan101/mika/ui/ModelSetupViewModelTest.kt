@@ -53,7 +53,7 @@ class ModelSetupViewModelTest {
     private fun store() = ProviderStore(
         tmp.root, AesGcmKeyCipher { key },
         newId = { "id${++ids}" },
-        userAgent = "Mika/1.2.3",
+        userAgent = "ACS/1.2.3",
         modelFactory = { cfg, _, _, setup -> built += cfg.model to setup; Fake(cfg.capabilities) { reply() } },
         modelLister = { kind, url, apiKey, _ -> listCalls += Triple(kind, url, apiKey); listing[url] ?: ModelListResult.Ok(emptyList()) },
     )
@@ -132,7 +132,7 @@ class ModelSetupViewModelTest {
         val (model, setup) = built.first()
         assertEquals("deepseek-chat", model)
         assertEquals(1024, setup.maxOutputTokens)
-        assertEquals("Mika/1.2.3", setup.headers["User-Agent"])
+        assertEquals("ACS/1.2.3", setup.headers["User-Agent"])
         assertEquals("DeepSeek 没声明会话头", setOf("User-Agent"), setup.headers.keys)
         val (_, messages, tools) = probes.single()
         assertEquals(1, messages.size)

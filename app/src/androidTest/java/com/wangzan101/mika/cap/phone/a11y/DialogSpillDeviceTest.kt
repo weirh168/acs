@@ -103,7 +103,7 @@ class DialogSpillDeviceTest {
         // 弹窗还在主屏,用户能接着点确认
         assertTrue("the dialog was moved off the user's screen", stillThere)
         // Mika 的屏还是原来那一页
-        assertEquals("Mika's screen changed", vdBefore, shell.topTaskId(vd))
+        assertEquals("ACS's screen changed", vdBefore, shell.topTaskId(vd))
         assertNotNull("the popup was not reported to the model", opened)
         assertEquals(DeviceSupport.TEST_PACKAGE, opened!!.packageName)
         assertTrue("the popup was reported as pulled back: $opened", !opened.pulledBack && opened.onUserScreen && opened.needsUser)
