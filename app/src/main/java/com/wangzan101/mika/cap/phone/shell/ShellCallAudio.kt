@@ -106,6 +106,9 @@ internal class ShellCallAudio(private val context: Context) {
     }
 
     private fun start(backend: Int, owner: IBinder): Bundle {
+        // 采集源:先试 VOICE_CALL(整通混音轨,对方的声音在里面),不行再退回 VOICE_DOWNLINK。
+        // 这台 HONOR 上 VOICE_DOWNLINK 采回来是静音(实测 down_peak 只有 79/5),所以顺序反过来了。
+        var captureSource = MediaRecorder.AudioSource.VOICE_CALL
         var record: AudioRecord? = null
         var track: AudioTrack? = null
         var fromCall: Array<ParcelFileDescriptor>? = null
@@ -113,7 +116,11 @@ internal class ShellCallAudio(private val context: Context) {
         var session: Session? = null
         try {
             if (backend == DIRECT) {
-                record = recordBuilder().setAudioSource(MediaRecorder.AudioSource.VOICE_DOWNLINK).build()
+                record = runCatching { recordBuilder().setAudioSource(captureSource).build() }
+                    .getOrElse {
+                        captureSource = MediaRecorder.AudioSource.VOICE_DOWNLINK
+                        recordBuilder().setAudioSource(captureSource).build()
+                    }
                 track = trackBuilder(AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build()).build()
@@ -129,15 +136,15 @@ internal class ShellCallAudio(private val context: Context) {
                 track = api.track(::trackBuilder)
             }
             check(record.state == AudioRecord.STATE_INITIALIZED) { "Downlink audio could not be initialized." }
-            check(record.audioSource == MediaRecorder.AudioSource.VOICE_DOWNLINK) {
-                "The recorder is not using the cellular downlink source."
+            check(record.audioSource == captureSource) {
+                "The recorder is not using the cellular capture source."
             }
             check(track.state == AudioTrack.STATE_INITIALIZED) { "Uplink audio could not be initialized." }
             fromCall = ParcelFileDescriptor.createPipe()
             toCall = ParcelFileDescriptor.createPipe()
             nonBlocking(fromCall[1].fileDescriptor)
             nonBlocking(toCall[0].fileDescriptor)
-            val created = Session(owner, backend, record, track, fromCall[1], toCall[0])
+            val created = Session(owner, backend, captureSource, record, track, fromCall[1], toCall[0])
             session = created
             owner.linkToDeath(created.death, 0)
             check(inPstnCall() && owner.isBinderAlive) { "Cellular call or its owner ended." }
@@ -322,6 +329,7 @@ internal class ShellCallAudio(private val context: Context) {
     private inner class Session(
         val owner: IBinder,
         private val backend: Int,
+        private val captureSource: Int,
         private val record: AudioRecord,
         private val track: AudioTrack,
         private val down: ParcelFileDescriptor,
@@ -410,8 +418,11 @@ internal class ShellCallAudio(private val context: Context) {
                 clientSilencedEver = clientSilencedEver || observation.silenced
             }
             val captureSilenced = captureSilence.observe(observation?.silenced, SystemClock.elapsedRealtime())
-            check(rxDevice < 0 || rxDevice == AudioDeviceInfo.TYPE_TELEPHONY) {
-                "Downlink unexpectedly routed to device type $rxDevice."
+            // VOICE_CALL 采的是通话混音轨,路由设备不一定是 TYPE_TELEPHONY;只有 VOICE_DOWNLINK 要求 telephony。
+            if (captureSource == MediaRecorder.AudioSource.VOICE_DOWNLINK) {
+                check(rxDevice < 0 || rxDevice == AudioDeviceInfo.TYPE_TELEPHONY) {
+                    "Downlink unexpectedly routed to device type $rxDevice."
+                }
             }
             check(txDevice < 0 || txDevice == AudioDeviceInfo.TYPE_TELEPHONY) {
                 "Uplink unexpectedly routed to device type $txDevice."
@@ -567,6 +578,7 @@ internal class ShellCallAudio(private val context: Context) {
                 putBoolean("upPlaybackRouteReady", playbackActive && playbackRouteReady())
                 putLong("upFlushMaxMs", playbackDiagnostics.flushMaxMs)
                 putInt("downPeak", downPeak)
+                putInt("captureSource", captureSource)
                 putInt("rxDevice", rxDevice)
                 putInt("txDevice", txDevice)
                 val config = recordingDiagnostics
