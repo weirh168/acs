@@ -28,7 +28,9 @@ internal class CallTelecomAccess(private val context: Context) {
     fun ready(): Boolean {
         if (!supported || !hasPhonePermissions()) return false
         val preparedHere = currentBootPrepared || boot?.let { it == journal.getString(PREPARED, null) } == true
-        return preparedHere && managePermission()
+        // 直接模式:ACS 是系统默认拨号器,通话由 Telecom 直接绑到我们自己的 InCallService,
+        // 不依赖 MANAGE_ONGOING_CALLS,也就不需要「电话伴侣」那条 shell 通道。
+        return preparedHere && (managePermission() || journal.getBoolean(DIRECT, false))
     }
 
     private fun managePermission(): Boolean = Build.VERSION.SDK_INT >= 31 &&
@@ -40,6 +42,10 @@ internal class CallTelecomAccess(private val context: Context) {
         val original = readOp(shell) ?: return "无法读回电话权限状态"
         val systemDialer = runCatching { telecom?.defaultDialerPackage }.getOrNull()
             ?: return "无法读回系统默认拨号器"
+        // 有的系统(realme/ColorOS)既不给 shell 改 appop,也没有 add-or-remove-call-companion-app。
+        // 如果 ACS 本身就是系统默认拨号器,InCallService 会被 Telecom 直接绑定,这条通道不需要。
+        val defaultDialer = systemDialer == pkg
+        var directMode = false
         val restoreOp = journal.getString(PREVIOUS_OP, null)
         if (original != "allow") {
             val change = command(shell, "cmd appops set --user $user $pkg MANAGE_ONGOING_CALLS allow")
@@ -49,30 +55,41 @@ internal class CallTelecomAccess(private val context: Context) {
             } else if (change == CallTelecomCommandOutcome.SHELL_APP_OPS_DENIED && managePermission()) {
                 // 有的系统(realme/部分 ColorOS)不让 shell 改 appop,但 Telecom 经角色已经允许 ACS
                 // 管理通话。这种情况照样启用电话伴侣:没有写过 appop,回滚时也就不去还原它。
+            } else if (defaultDialer) {
+                directMode = true
             } else {
                 rollback(shell)
                 return change.appOpsFailureMessage
             }
-        } else if (!managePermission()) {
+        } else if (!managePermission() && !defaultDialer) {
             return "此系统不允许 ACS 管理运营商通话"
         }
         // No public API lists this test override. Reuse external setup when the allow was
         // already granted independently; only remove a registration made by this runtime.
-        if (original != "allow" || restoreOp != null || journal.getBoolean(COMPANION, false)) {
+        if (!directMode && (original != "allow" || restoreOp != null || journal.getBoolean(COMPANION, false))) {
             if (!journal.edit().putBoolean(COMPANION, true).commit()) {
                 rollback(shell)
                 return "无法保存电话伴侣还原信息"
             }
             if (command(shell, "cmd telecom add-or-remove-call-companion-app $pkg 1") != CallTelecomCommandOutcome.OK) {
-                rollback(shell)
-                return "此系统未接受电话伴侣注册"
+                if (defaultDialer) {
+                    // 命令缺失但我们是默认拨号器:清掉伴侣登记记录,改走直接模式
+                    journal.edit().remove(COMPANION).commit()
+                    directMode = true
+                } else {
+                    rollback(shell)
+                    return "此系统未接受电话伴侣注册"
+                }
             }
         }
         if (runCatching { telecom?.defaultDialerPackage }.getOrNull() != systemDialer) {
             rollback(shell)
             return "系统默认拨号器发生变化，已停止配置"
         }
-        if (!journal.edit().putString(PREPARED, boot).commit()) {
+        val saved = journal.edit().putString(PREPARED, boot)
+            .putBoolean(DIRECT, directMode)
+            .commit()
+        if (!saved) {
             rollback(shell)
             return "无法保存电话伴侣配置"
         }
@@ -82,7 +99,7 @@ internal class CallTelecomAccess(private val context: Context) {
 
     fun rollback(shell: IMikaShell?): Boolean {
         currentBootPrepared = false
-        val disabled = journal.edit().remove(PREPARED).commit()
+        val disabled = journal.edit().remove(PREPARED).remove(DIRECT).commit()
         if (!journal.getBoolean(COMPANION, false) && !journal.contains(PREVIOUS_OP)) return disabled
         if (shell == null) return false
         var restored = disabled
@@ -120,6 +137,7 @@ internal class CallTelecomAccess(private val context: Context) {
         const val PREPARED = "prepared_boot"
         const val PREVIOUS_OP = "previous_call_op"
         const val COMPANION = "owns_companion"
+        const val DIRECT = "direct_dialer"
     }
 }
 
